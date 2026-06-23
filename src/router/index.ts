@@ -1,41 +1,45 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createMemoryHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', redirect: '/teacher/dashboard' },
+  { path: '/', redirect: '/teacher/class' },
 
   {
     path: '/teacher',
     component: () => import('@/components/layout/TeacherLayout.vue'),
     children: [
-      { path: '',             redirect: '/teacher/dashboard' },
-      { path: 'dashboard',   name: 'TeacherDashboard',  component: () => import('@/pages/teacher/DashboardPage.vue') },
-      { path: 'class',       name: 'ClassManagement',   component: () => import('@/pages/teacher/ClassManagementPage.vue') },
-      { path: 'modules',     name: 'Modules',           component: () => import('@/pages/teacher/ModulesPage.vue') },
-      { path: 'modules/new', name: 'UploadMaterial',    component: () => import('@/pages/teacher/UploadMaterialPage.vue') },
-      { path: 'progress',    name: 'StudentProgress',   component: () => import('@/pages/teacher/StudentProgressPage.vue') },
-      { path: 'progress/:id',name: 'StudentDetail',     component: () => import('@/pages/teacher/StudentDetailPage.vue') },
-      { path: 'quizzes',     name: 'Quizzes',           component: () => import('@/pages/teacher/QuizzesPage.vue') },
-      { path: 'quizzes/new', name: 'QuizCreator',       component: () => import('@/pages/teacher/QuizCreatorPage.vue') },
+      { path: '',            redirect: '/teacher/dashboard' },
+      { path: 'dashboard',   name: 'TeacherDashboard', component: () => import('@/pages/teacher/DashboardPage.vue') },
+      { path: 'class',       name: 'ClassManagement',  component: () => import('@/pages/teacher/ClassManagementPage.vue') },
+      { path: 'modules',     name: 'Modules',          component: () => import('@/pages/teacher/ModulesPage.vue') },
+      { path: 'activities',  name: 'TeacherActivities', component: () => import('@/pages/teacher/ActivitiesPage.vue') },
+      { path: 'quizzes',     name: 'Quizzes',          component: () => import('@/pages/teacher/QuizzesPage.vue') },
     ],
   },
 
+  // Dashboard keeps the student sidebar layout
   {
     path: '/student',
     component: () => import('@/components/layout/StudentLayout.vue'),
     children: [
-      { path: '',          redirect: '/student/dashboard' },
-      { path: 'dashboard', name: 'StudentDashboard', component: () => import('@/pages/student/DashboardPage.vue') },
-      { path: 'topic',     name: 'TopicViewer',      component: () => import('@/pages/student/TopicViewerPage.vue') },
-      { path: 'quiz',      name: 'QuizPage',         component: () => import('@/pages/student/QuizPage.vue') },
+      { path: '',           redirect: '/student/dashboard' },
+      { path: 'dashboard',  name: 'StudentDashboard', component: () => import('@/pages/student/DashboardPage.vue') },
+      { path: 'activities', name: 'Activities',       component: () => import('@/pages/student/ActivitiesPage.vue') },
     ],
+  },
+
+  // Topic viewer renders full-screen, no sidebar — only its own Go Back button
+  {
+    path: '/student/topic',
+    name: 'TopicViewer',
+    component: () => import('@/pages/student/TopicViewerPage.vue'),
   },
 
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
 export const router = createRouter({
-  history: createWebHashHistory(),
+  history: createMemoryHistory(),
   routes,
   scrollBehavior: () => ({ top: 0 }),
 })

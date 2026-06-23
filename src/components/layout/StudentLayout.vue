@@ -1,27 +1,36 @@
 <template>
-  <div class="flex h-screen overflow-hidden bg-surface">
-    <aside class="w-[176px] min-w-[176px] flex flex-col bg-white border-r border-gray-100 shadow-sm z-10">
-      <div class="px-4 py-4 border-b border-gray-100 bg-yellow-300">
-        <div class="font-display font-bold text-xl tracking-tight">Learnify</div>
-        <div class="font-mono text-[9px] tracking-widest uppercase text-gray-600 mt-0.5">LMS</div>
+  <div class="flex h-screen overflow-hidden bg-white">
+
+    <!-- Sidebar -->
+    <aside class="w-[180px] min-w-[180px] flex flex-col bg-white border-r-[3px] border-black">
+      <!-- Logo -->
+      <div class="px-4 py-3.5 border-b-[3px] border-black bg-[#FFE135]">
+        <div class="font-display font-black text-2xl leading-none tracking-tight">Learnify</div>
+        <div class="font-mono text-[9px] tracking-[3px] uppercase text-gray-700 mt-0.5">LMS</div>
       </div>
-      <nav class="flex-1 py-2 px-2.5">
-        <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" custom v-slot="{ isActive, navigate }">
-          <div
-            @click="navigate"
-            :class="[
-              'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-semibold mb-0.5 cursor-pointer transition-all',
-              isActive ? 'bg-brand-blue text-white shadow-md' : 'text-ink-soft hover:bg-surface hover:text-ink',
-            ]"
-          >
-            <span class="text-base w-5 text-center">{{ item.icon }}</span>
-            {{ item.label }}
-          </div>
-        </RouterLink>
+
+      <!-- Nav -->
+      <nav class="flex-1 py-3 px-2.5">
+        <div v-for="item in navItems" :key="item.label"
+          @click="item.to ? router.push(item.to) : null"
+          :class="[
+            'flex items-center gap-2.5 px-3 py-2.5 mb-1.5 text-[13px] font-bold transition-all',
+            item.to && route.path === item.to
+              ? 'bg-[#1565FF] text-white border-[2px] border-black cursor-pointer'
+              : item.to
+                ? 'text-gray-700 hover:bg-gray-50 cursor-pointer'
+                : 'text-gray-400 cursor-default',
+          ]"
+        >
+          <span class="text-base w-5 text-center">{{ item.icon }}</span>
+          {{ item.label }}
+        </div>
       </nav>
-      <div class="px-4 py-3 border-t border-gray-100 text-[10px] text-ink-soft font-mono">© 2025 Learnify</div>
+
+      <div class="px-4 py-3 border-t-[3px] border-black font-mono text-[10px] text-gray-500">© 2025 Learnify</div>
     </aside>
 
+    <!-- Main -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <main class="flex-1 overflow-y-auto scrollbar-thin">
         <RouterView v-slot="{ Component }">
@@ -35,12 +44,15 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink, RouterView, useRoute } from 'vue-router'
-const route = useRoute()
+import { RouterView, useRoute, useRouter } from 'vue-router'
+const route  = useRoute()
+const router = useRouter()
+
 const navItems = [
-  { to: '/student/dashboard', label: 'Dashboard',  icon: '🏠' },
-  { to: '/student/topic',     label: 'Videos',     icon: '▶️' },
-  { to: '/student/quiz',      label: 'Quizzes',    icon: '📋' },
+  { to: '/student/dashboard',  label: 'Dashboard',  icon: '🏠' },
+  { to: null,                  label: 'Videos',     icon: '▶️' },
+  { to: null,                  label: 'Quizzes',    icon: '📋' },
+  { to: '/student/activities', label: 'Activities', icon: '📂' },
 ]
 </script>
 

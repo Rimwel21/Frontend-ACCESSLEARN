@@ -12,13 +12,14 @@ export default {
         ink: { DEFAULT: '#1a1a2e', soft: '#4a4a6a' },
         surface: { DEFAULT: '#f7f7fb', 2: '#eeeef7' },
         brand: {
-          blue: '#4361ee',
-          'blue-soft': '#e8ecff',
+          blue: '#1565FF',
+          'blue-soft': '#D6E4FF',
           violet: '#7b2ff7',
           teal: '#06b6d4',
           rose: '#f43f5e',
           amber: '#f59e0b',
           green: '#10b981',
+          yellow: '#FFE135',
         },
       },
       boxShadow: {
