@@ -1,61 +1,62 @@
 <template>
   <div class="flex h-screen overflow-hidden bg-surface">
-    <!-- Sidebar -->
-    <aside class="w-[200px] min-w-[200px] flex flex-col bg-white border-r border-gray-100 shadow-sm z-10">
-      <div class="px-5 py-5 border-b border-gray-100 bg-brand-blue-soft">
-        <div class="font-display font-bold text-2xl text-brand-blue tracking-tight">Learnify</div>
-        <div class="font-mono text-[10px] tracking-widest uppercase text-ink-soft mt-0.5">LMS</div>
+    <aside class="z-10 flex w-[200px] min-w-[200px] flex-col border-r border-gray-100 bg-white shadow-sm">
+      <div class="border-b border-gray-100 bg-brand-blue-soft px-5 py-5">
+        <div class="font-display text-2xl font-bold tracking-tight text-brand-blue">Learnify</div>
+        <div class="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-ink-soft">LMS</div>
       </div>
 
-      <div class="mx-3 my-3 p-3 bg-brand-blue-soft rounded-xl flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-brand-blue to-brand-violet flex items-center justify-center text-white text-base flex-shrink-0">
-          👩‍🏫
+      <button class="mx-3 my-3 flex items-center gap-2.5 rounded-xl bg-brand-blue-soft p-3 text-left" @click="router.push('/profile/setup')">
+        <img v-if="profile.image?.file_url" :src="profile.image.file_url" alt="" class="h-9 w-9 flex-shrink-0 rounded-full object-cover" />
+        <div v-else class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-blue to-brand-violet text-base font-bold text-white">
+          {{ profile.initial }}
         </div>
-        <div>
-          <div class="font-semibold text-[13px] text-ink">Ms. Rymuel</div>
+        <div class="min-w-0">
+          <div class="truncate text-[13px] font-semibold text-ink">{{ profile.displayName }}</div>
           <div class="text-[11px] text-ink-soft">Instructor</div>
         </div>
-      </div>
+      </button>
 
-      <nav class="flex-1 px-2.5 py-1">
+      <nav class="flex-1 px-2.5 py-1" aria-label="Teacher navigation">
         <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" custom v-slot="{ isActive, navigate }">
-          <div
+          <button
+            type="button"
             @click="navigate"
             :class="[
-              'flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-[13.5px] font-medium mb-0.5 cursor-pointer transition-all',
+              'mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left text-[13.5px] font-medium transition-all',
               isActive
                 ? 'bg-brand-blue text-white shadow-md shadow-blue-200'
                 : 'text-ink-soft hover:bg-surface hover:text-ink',
             ]"
           >
-            <span class="text-base w-5 text-center">{{ item.icon }}</span>
+            <span :class="['nav-icon-box', item.iconClass]" aria-hidden="true"></span>
             {{ item.label }}
-          </div>
+          </button>
         </RouterLink>
       </nav>
 
-      <div class="px-4 py-3.5 border-t border-gray-100 text-[11px] text-ink-soft font-mono tracking-wide">© 2025 Learnify</div>
+      <div class="border-t border-gray-100 px-4 py-3.5">
+        <button class="w-full rounded-lg bg-surface px-3 py-2 text-xs font-bold text-ink-soft transition-all hover:bg-red-50 hover:text-brand-rose" @click="logout">
+          Logout
+        </button>
+      </div>
     </aside>
 
-    <!-- Main -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <header class="bg-white border-b border-gray-100 px-7 py-3.5 flex items-center gap-3.5 flex-shrink-0">
-        <span class="font-display font-semibold text-[18px] text-ink">{{ currentTitle }}</span>
+    <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <header class="flex flex-shrink-0 items-center gap-3.5 border-b border-gray-100 bg-white px-7 py-3.5">
+        <span class="font-display text-[18px] font-semibold text-ink">{{ currentTitle }}</span>
         <div class="ml-auto flex items-center gap-2.5">
-          <div class="flex items-center gap-2 bg-surface border border-gray-200 rounded-full px-4 py-2 w-56 focus-within:border-brand-blue focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-            <span class="text-sm">🔍</span>
-            <input class="border-0 bg-transparent outline-none text-sm font-body flex-1 text-ink" placeholder="Search…" />
+          <div class="hidden items-center gap-2 rounded-full border border-gray-200 bg-surface px-4 py-2 transition-all focus-within:border-brand-blue focus-within:ring-2 focus-within:ring-blue-100 md:flex md:w-56">
+            <span class="text-sm">Search</span>
+            <input class="min-w-0 flex-1 border-0 bg-transparent font-body text-sm text-ink outline-none" placeholder="Search..." />
           </div>
-          <button class="w-9 h-9 rounded-full bg-surface border border-gray-200 flex items-center justify-center text-base hover:bg-brand-blue-soft hover:border-brand-blue transition-all relative">
-            🔔
-            <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-rose border-2 border-white"></span>
+          <button class="rounded-full border border-gray-200 bg-surface px-3 py-2 text-xs font-bold transition-all hover:bg-brand-blue-soft" @click="router.push('/profile/setup')">
+            Profile
           </button>
-          <button class="w-9 h-9 rounded-full bg-surface border border-gray-200 flex items-center justify-center text-base hover:bg-brand-blue-soft hover:border-brand-blue transition-all">💬</button>
-          <button class="w-9 h-9 rounded-full bg-surface border border-gray-200 flex items-center justify-center text-base hover:bg-brand-blue-soft hover:border-brand-blue transition-all">👤</button>
         </div>
       </header>
 
-      <main class="flex-1 overflow-y-auto scrollbar-thin p-7">
+      <main class="scrollbar-thin flex-1 overflow-y-auto p-7">
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
             <component :is="Component" :key="route.fullPath" />
@@ -67,32 +68,44 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { useProfileStore } from '@/stores/profile'
 
 const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
+const profile = useProfileStore()
 
 const navItems = [
-  { to: '/teacher/dashboard',   label: 'Dashboard',        icon: '🏠' },
-  { to: '/teacher/class',       label: 'Class Management', icon: '📚' },
-  { to: '/teacher/modules',     label: 'Modules',          icon: '📖' },
-  { to: '/teacher/activities',  label: 'Activities',       icon: '🎯' },
-  { to: '/teacher/quizzes',     label: 'Quizzes',          icon: '📝' },
+  { to: '/teacher/dashboard', label: 'Home', iconClass: 'rounded-full' },
+  { to: '/teacher/class', label: 'Class Management', iconClass: 'rounded-sm' },
 ]
 
 const titleMap: Record<string, string> = {
-  TeacherDashboard:  'Dashboard',
-  ClassManagement:   'Class Management',
-  Modules:           'Learning Materials',
+  TeacherDashboard: 'Home',
+  ClassManagement: 'Class Management',
+  Modules: 'Learning Materials',
   TeacherActivities: 'Activities',
-  Quizzes:           'Quizzes / Activities',
+  Quizzes: 'Quizzes / Activities',
 }
 
 const currentTitle = computed(() => titleMap[route.name as string] ?? 'Learnify LMS')
+
+onMounted(() => {
+  profile.fetchProfile().catch(() => null)
+})
+
+function logout() {
+  auth.logout()
+  profile.clear()
+  router.push('/')
+}
 </script>
 
 <style scoped>
 .page-enter-active, .page-leave-active { transition: opacity .2s, transform .2s; }
 .page-enter-from { opacity: 0; transform: translateY(8px); }
-.page-leave-to   { opacity: 0; transform: translateY(-4px); }
+.page-leave-to { opacity: 0; transform: translateY(-4px); }
 </style>

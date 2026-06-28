@@ -1,145 +1,140 @@
 <template>
-  <div class="bg-white min-h-screen">
-
-    <!-- Hero -->
-    <div class="bg-[#1565FF] px-8 py-8 flex items-center justify-between relative overflow-hidden border-b-[3px] border-black">
-      <div class="relative z-10">
-        <h1 class="font-display font-black text-[32px] text-white leading-tight mb-1.5">Welcome, {{ store.studentName }}!</h1>
-        <p class="text-white font-mono text-[11px] tracking-widest">▶ READY TO STUDY?</p>
-      </div>
-      <div class="flex items-end gap-3 relative z-10">
-        <div class="text-5xl" style="animation: float 3s ease-in-out infinite;">🧪</div>
-        <div class="text-5xl" style="animation: float 3.4s ease-in-out infinite .3s;">📔</div>
+  <div class="min-h-screen bg-white">
+    <div class="border-b-[3px] border-black bg-[#1565FF] px-8 py-8">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <h1 class="font-display text-[32px] font-black leading-tight text-white">Welcome, {{ store.studentName }}!</h1>
+          <p class="font-mono text-[11px] tracking-widest text-white">READY TO STUDY?</p>
+        </div>
+        <div class="text-5xl">📚</div>
       </div>
     </div>
 
-    <div class="px-7 py-6 space-y-7">
-
-      <!-- Top row: search + icons -->
+    <div class="space-y-7 px-7 py-6">
       <div class="flex items-center gap-3">
-        <div class="flex-1 flex items-center gap-2 bg-white border-[3px] border-black px-4 py-2.5" style="box-shadow:4px 4px 0 #000">
-          <input type="text" placeholder="Search" class="flex-1 border-0 outline-none text-sm bg-transparent text-gray-700 font-bold" />
-          <span class="text-gray-500 text-sm">🔍</span>
+        <div class="flex flex-1 items-center gap-2 border-[3px] border-black bg-white px-4 py-2.5" style="box-shadow:4px 4px 0 #000">
+          <input v-model="search" type="text" placeholder="Search" class="flex-1 border-0 bg-transparent text-sm font-bold text-gray-700 outline-none" />
+          <span class="text-sm text-gray-500">Search</span>
         </div>
-        <div class="flex gap-2">
-          <div class="w-[42px] h-[42px] border-[3px] border-black bg-white" style="box-shadow:3px 3px 0 #000" />
-          <div class="w-[42px] h-[42px] border-[3px] border-black bg-white" style="box-shadow:3px 3px 0 #000" />
-          <div class="w-[42px] h-[42px] rounded-full border-[3px] border-black bg-white" style="box-shadow:3px 3px 0 #000" />
-        </div>
-      </div>
-
-      <!-- Modules section -->
-      <div>
-        <div class="flex items-center gap-3 mb-4">
-          <h2 class="font-display font-black text-sm uppercase tracking-widest">Modules</h2>
-          <div class="flex-1 h-[2.5px] bg-black" />
-        </div>
-        <div class="grid grid-cols-4 gap-4">
-          <div v-for="mod in store.modules" :key="mod.id"
-            @click="mod.locked ? null : router.push('/student/topic')"
-            class="border-[3px] border-black overflow-hidden cursor-pointer transition-all hover:-translate-x-[3px] hover:-translate-y-[3px]"
-            style="box-shadow: 5px 5px 0 #000"
+        <div class="relative">
+          <button
+            class="grid h-[42px] w-[42px] place-items-center overflow-hidden rounded-full border-[3px] border-black bg-white font-black"
+            style="box-shadow:3px 3px 0 #000"
+            aria-label="Open student profile"
+            @click="showProfileMenu = !showProfileMenu"
           >
-            <div :class="['h-[88px] flex items-center justify-center relative', mod.locked ? 'bg-[#f0f0f0]' : 'bg-[#FFE135]']">
-              <span v-if="mod.locked" class="text-3xl opacity-60">🔒</span>
-              <span v-else class="text-4xl">📘</span>
-              <span v-if="mod.locked" class="absolute bottom-1.5 right-1.5 bg-[#1a1a1a] text-white font-mono text-[8px] font-bold px-1.5 py-0.5 tracking-wide">LOCKED</span>
+            <img v-if="profile.image?.file_url" :src="profile.image.file_url" alt="" class="h-full w-full object-cover" />
+            <span v-else>{{ profile.initial }}</span>
+          </button>
+
+          <div v-if="showProfileMenu" class="absolute right-0 top-12 z-40 w-72 border-[3px] border-black bg-white p-4 text-left" style="box-shadow:5px 5px 0 #000">
+            <div class="flex items-center gap-3 border-b-[3px] border-black pb-3">
+              <img v-if="profile.image?.file_url" :src="profile.image.file_url" alt="" class="h-12 w-12 rounded-full border-[2px] border-black object-cover" />
+              <div v-else class="grid h-12 w-12 place-items-center rounded-full border-[2px] border-black bg-[#1565FF] font-black text-white">{{ profile.initial }}</div>
+              <div class="min-w-0">
+                <div class="truncate font-black">{{ profile.displayName }}</div>
+                <div class="truncate font-mono text-[10px] text-gray-500">{{ auth.accountIdentity || 'Student account' }}</div>
+              </div>
             </div>
-            <div class="p-2.5 bg-white border-t-[3px] border-black">
-              <div class="font-display font-black text-[11px] uppercase tracking-wide">{{ mod.title }}</div>
-              <div class="font-mono text-[9px] text-gray-500 mt-0.5">{{ mod.status }}</div>
+            <dl class="mt-3 grid gap-2 text-xs">
+              <div class="flex justify-between gap-3"><dt class="font-black text-gray-500">Role</dt><dd class="font-bold">Student</dd></div>
+              <div class="flex justify-between gap-3"><dt class="font-black text-gray-500">Email</dt><dd class="truncate font-bold">{{ studentEmail }}</dd></div>
+              <div class="flex justify-between gap-3"><dt class="font-black text-gray-500">Type</dt><dd class="truncate font-bold">{{ studentType }}</dd></div>
+            </dl>
+            <div class="mt-4 grid grid-cols-2 gap-2">
+              <button class="border-[2px] border-black bg-[#FFE135] px-3 py-2 text-xs font-black" @click="router.push('/profile/setup')">Profile</button>
+              <button class="border-[2px] border-black bg-white px-3 py-2 text-xs font-black" @click="logout">Logout</button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Progress + Right column -->
-      <div class="grid grid-cols-[1fr_280px] gap-5 items-start">
+      <section>
+        <div class="mb-4 flex items-center gap-3">
+          <h2 class="font-display text-sm font-black uppercase tracking-widest">Modules</h2>
+          <div class="h-[2.5px] flex-1 bg-black" />
+        </div>
+        <div v-if="content.loading" class="border-[3px] border-black bg-white p-6 text-sm font-black" style="box-shadow:4px 4px 0 #000">Loading modules...</div>
+        <div v-else-if="filteredModules.length === 0" class="border-[3px] border-black bg-white p-8 text-center" style="box-shadow:4px 4px 0 #000">
+          <h3 class="font-display text-lg font-black">No learning materials are available yet.</h3>
+          <p class="mt-2 text-sm text-gray-500">Published teacher uploads will appear here automatically.</p>
+        </div>
+        <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <article
+            v-for="module in filteredModules"
+            :key="module.id"
+            class="cursor-pointer overflow-hidden border-[3px] border-black transition-all hover:-translate-x-[3px] hover:-translate-y-[3px]"
+            style="box-shadow:5px 5px 0 #000"
+            @click="router.push(`/student/modules/${module.id}`)"
+          >
+            <div class="flex h-[88px] items-center justify-center bg-[#FFE135] text-4xl">📘</div>
+            <div class="border-t-[3px] border-black bg-white p-2.5">
+              <div class="font-display text-[11px] font-black uppercase tracking-wide">{{ module.title }}</div>
+              <div class="mt-0.5 truncate font-mono text-[9px] text-gray-500">{{ module.topics.length }} topics · {{ module.file_name || 'Learning material' }}</div>
+            </div>
+          </article>
+        </div>
+      </section>
 
-        <!-- Continue Progress -->
-        <div>
-          <div class="flex items-center gap-3 mb-4">
-            <h2 class="font-display font-black text-sm uppercase tracking-widest">Continue Progress</h2>
-            <div class="flex-1 h-[2.5px] bg-black" />
-          </div>
-          <div class="space-y-4">
-            <div v-for="item in store.progressItems" :key="item.title"
-              class="flex items-center gap-4 p-4 border-[3px] border-black bg-white"
-              style="box-shadow: 5px 5px 0 #000"
-            >
-              <div :class="['w-11 h-11 border-[3px] border-black flex items-center justify-center text-lg flex-shrink-0', item.type === 'video' ? 'bg-[#FFE135]' : 'bg-[#D6E4FF]']">
-                {{ item.type === 'video' ? '▶' : '📖' }}
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="font-black text-[15px]">{{ item.title }}</div>
-                <div class="font-mono text-[10px] text-gray-500 mt-0.5">{{ item.subtitle }}</div>
-                <div class="flex items-center gap-2.5 mt-2">
-                  <div class="flex-1 h-[11px] bg-[#e8e8e8] border-[2px] border-black overflow-hidden">
-                    <div :class="['h-full transition-all', item.type === 'video' ? 'bg-[#FFE135]' : 'bg-[#1565FF]']" :style="{ width: item.percent + '%' }" />
-                  </div>
-                  <span class="font-mono text-[10px] font-bold whitespace-nowrap text-gray-700">{{ item.lesson }}</span>
+      <section>
+        <div class="mb-4 flex items-center gap-3">
+          <h2 class="font-display text-sm font-black uppercase tracking-widest">Continue Progress</h2>
+          <div class="h-[2.5px] flex-1 bg-black" />
+        </div>
+        <div v-if="content.modules.length === 0" class="border-[3px] border-black bg-white p-6 text-sm font-black" style="box-shadow:4px 4px 0 #000">Start a module to track your progress here.</div>
+        <div v-else class="space-y-4">
+          <article v-for="module in content.modules.slice(0, 3)" :key="module.id" class="flex items-center gap-4 border-[3px] border-black bg-white p-4" style="box-shadow:5px 5px 0 #000">
+            <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center border-[3px] border-black bg-[#D6E4FF] text-lg">📖</div>
+            <div class="min-w-0 flex-1">
+              <div class="text-[15px] font-black">{{ module.title }}</div>
+              <div class="mt-0.5 truncate font-mono text-[10px] text-gray-500">{{ module.description }}</div>
+              <div class="mt-2 flex items-center gap-2.5">
+                <div class="h-[11px] flex-1 overflow-hidden border-[2px] border-black bg-[#e8e8e8]">
+                  <div class="h-full bg-[#1565FF]" :style="{ width: `${content.progressByModule[module.id]?.percent ?? 0}%` }" />
                 </div>
+                <span class="whitespace-nowrap font-mono text-[10px] font-bold text-gray-700">{{ content.progressByModule[module.id]?.percent ?? 0 }}%</span>
               </div>
-              <button @click="router.push('/student/topic')"
-                class="border-[3px] border-black bg-[#1565FF] text-white font-black text-[12px] px-4 py-2.5 hover:-translate-x-[2px] hover:-translate-y-[2px] transition-all flex-shrink-0"
-                style="box-shadow: 3px 3px 0 #000">
-                RESUME
-              </button>
             </div>
-          </div>
+            <button class="flex-shrink-0 border-[3px] border-black bg-[#1565FF] px-4 py-2.5 text-[12px] font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px]" style="box-shadow:3px 3px 0 #000" @click="router.push(`/student/modules/${module.id}`)">RESUME</button>
+          </article>
         </div>
-
-        <!-- Calendar + Deadlines -->
-        <div class="space-y-4">
-          <!-- Mini Calendar -->
-          <div class="border-[3px] border-black bg-white" style="box-shadow: 5px 5px 0 #000">
-            <div class="px-3.5 py-2.5 border-b-[3px] border-black flex items-center justify-between">
-              <span class="font-display font-black text-[13px]">Sep 2025</span>
-              <div class="flex gap-1">
-                <button class="w-[20px] h-[20px] border-[2px] border-black font-bold text-[10px] hover:bg-[#FFE135] transition-colors">‹</button>
-                <button class="w-[20px] h-[20px] border-[2px] border-black font-bold text-[10px] hover:bg-[#FFE135] transition-colors">›</button>
-              </div>
-            </div>
-            <div class="p-2.5">
-              <div class="grid grid-cols-7 gap-0.5 text-center mb-1">
-                <div v-for="d in ['M','T','W','T','F','S','S']" :key="d" class="font-mono text-[9px] font-bold text-gray-500 py-1">{{ d }}</div>
-              </div>
-              <div class="grid grid-cols-7 gap-0.5 text-center">
-                <div v-for="day in 30" :key="day"
-                  :class="['font-mono text-[11px] py-1.5 cursor-pointer transition-colors',
-                    day === 10 ? 'bg-[#1565FF] text-white font-bold' :
-                    [11,12].includes(day) ? 'bg-[#D6E4FF] text-[#1565FF] font-bold' :
-                    'hover:bg-gray-100'
-                  ]"
-                >{{ day }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Deadlines -->
-          <div class="border-[3px] border-black bg-white" style="box-shadow: 5px 5px 0 #000">
-            <div class="px-3.5 py-2.5 border-b-[3px] border-black font-display font-black text-[11px] uppercase tracking-wide">Upcoming Deadlines</div>
-            <div class="p-2.5 space-y-2">
-              <div v-for="dl in store.deadlines" :key="dl.title"
-                class="p-2.5 bg-[#FFE135] border-[2px] border-black hover:-translate-x-[1px] hover:-translate-y-[1px] transition-all cursor-pointer"
-                style="box-shadow: 2px 2px 0 #000"
-              >
-                <div class="font-black text-[12px]">{{ dl.title }}</div>
-                <div class="font-mono text-[10px] text-gray-700 mt-0.5">📅 {{ dl.date }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
+import { useProfileStore } from '@/stores/profile'
+import { useStudentContentStore } from '@/stores/studentContent'
 
 const router = useRouter()
-const store  = useAppStore()
+const store = useAppStore()
+const auth = useAuthStore()
+const profile = useProfileStore()
+const content = useStudentContentStore()
+const showProfileMenu = ref(false)
+const search = ref('')
+
+const studentEmail = computed(() => auth.accountIdentity.includes('@') ? auth.accountIdentity : 'Not provided')
+const studentType = computed(() => {
+  const data = profile.profile
+  return data && 'student_type' in data ? data.student_type : 'Not provided'
+})
+const filteredModules = computed(() => content.modules.filter(module =>
+  !search.value || module.title.toLowerCase().includes(search.value.toLowerCase())
+))
+
+onMounted(() => {
+  content.fetchModules()
+})
+
+function logout() {
+  auth.logout()
+  profile.clear()
+  router.push('/')
+}
 </script>

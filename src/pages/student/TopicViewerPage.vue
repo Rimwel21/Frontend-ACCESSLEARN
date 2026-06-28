@@ -1,420 +1,262 @@
 <template>
-  <div class="flex h-screen overflow-hidden bg-white">
-
-    <!-- Sidebar -->
-    <aside class="w-[200px] min-w-[200px] border-r-[3px] border-black flex flex-col bg-white">
-
-      <!-- Go Back -->
-      <RouterLink to="/student/dashboard"
-        class="flex items-center gap-2 mx-3 mt-3 mb-2 px-3 py-2 border-[3px] border-black font-black text-xs hover:bg-[#FFE135] transition-colors no-underline text-black"
-        style="box-shadow:3px 3px 0 #000">
-        ← Go Back
+  <div class="flex min-h-screen bg-white">
+    <aside class="flex w-[220px] min-w-[220px] flex-col border-r-[3px] border-black bg-white">
+      <RouterLink to="/student/dashboard" class="mx-3 mb-2 mt-3 flex items-center gap-2 border-[3px] border-black px-3 py-2 text-xs font-black text-black no-underline transition-colors hover:bg-[#FFE135]" style="box-shadow:3px 3px 0 #000">
+        Go Back
       </RouterLink>
 
-      <!-- Module info -->
       <div class="px-3.5 py-2">
-        <div class="font-mono text-[10px] uppercase tracking-widest text-gray-500">Module 1</div>
-        <div class="font-display font-black text-[13px] mt-0.5 leading-tight">Title ng module</div>
+        <div class="font-mono text-[10px] uppercase tracking-widest text-gray-500">Module {{ moduleId }}</div>
+        <div class="mt-0.5 font-display text-[13px] font-black leading-tight">{{ moduleData?.title || 'Learning module' }}</div>
       </div>
 
-      <!-- Progress -->
       <div class="px-3.5 py-2">
-        <div class="h-[8px] bg-gray-200 border-[2px] border-black overflow-hidden">
-          <div class="h-full bg-green-500 transition-all" :style="{ width: progressPercent + '%' }" />
+        <div class="h-[8px] overflow-hidden border-[2px] border-black bg-gray-200">
+          <div class="h-full bg-green-500 transition-all" :style="{ width: progress.percent + '%' }" />
         </div>
-        <div class="font-mono text-[10px] text-gray-500 mt-1">Progress</div>
+        <div class="mt-1 font-mono text-[10px] text-gray-500">{{ progress.percent }}% Progress</div>
       </div>
 
-      <!-- Introduction button -->
-      <button @click="loadIntro"
-        :class="['mx-3 my-2 px-3 py-2.5 border-[3px] border-black font-black text-xs transition-all text-center',
-          currentView === 'intro' ? 'bg-[#1565FF] text-white' : 'bg-[#D6E4FF] text-black hover:bg-[#1565FF] hover:text-white']"
-        style="box-shadow:3px 3px 0 #000">
-        Introduction
-      </button>
+      <div class="flex-1 space-y-2 overflow-y-auto px-3 py-2">
+        <button
+          :class="[
+            'flex w-full items-center gap-2.5 border-[2px] border-black px-3 py-2.5 text-left text-[13px] font-bold transition-all',
+            isIntroActive ? 'bg-[#1565FF] text-white' : 'bg-white hover:bg-[#D6E4FF]'
+          ]"
+          style="box-shadow:2px 2px 0 #000"
+          @click="selectIntro"
+        >
+          <span class="grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-current bg-white" />
+          <span class="truncate">Introduction</span>
+        </button>
 
-      <!-- Topic / Quiz list -->
-      <div class="flex-1 overflow-y-auto px-3 py-1 space-y-2 scrollbar-thin">
-        <template v-for="(entry, idx) in sidebarEntries" :key="idx">
+        <button
+          v-for="(topic, index) in topics"
+          :key="topic.id"
+          :class="[
+            'flex w-full items-center gap-2.5 border-[2px] border-black px-3 py-2.5 text-left text-[13px] font-bold transition-all',
+            activeTopic?.id === topic.id ? 'bg-[#1565FF] text-white' : 'bg-white hover:bg-[#D6E4FF]'
+          ]"
+          style="box-shadow:2px 2px 0 #000"
+          @click="selectTopic(topic.id)"
+        >
+          <span :class="['grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-black text-[10px] font-black', completedIds.has(topic.id) ? 'bg-green-500 text-white' : 'bg-white text-black']">
+            {{ completedIds.has(topic.id) ? 'OK' : '' }}
+          </span>
+          <span class="truncate">Topic {{ index + 1 }}</span>
+        </button>
 
-          <!-- Topic row -->
-          <div v-if="entry.kind === 'topic'"
-            @click="canAccessTopic(entry.topic.id) ? loadTopic(entry.topic.id) : null"
-            :class="['flex items-center gap-2.5 px-3 py-2.5 border-[2px] border-black font-bold text-[13px] transition-all',
-              currentView === entry.topic.id ? 'bg-[#D6E4FF] border-[#1565FF]' :
-              completedTopics.has(entry.topic.id) ? 'bg-white' : 'bg-white',
-              !canAccessTopic(entry.topic.id) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:-translate-x-[1px] hover:-translate-y-[1px]'
-            ]"
-            :style="canAccessTopic(entry.topic.id) ? 'box-shadow:2px 2px 0 #000' : ''"
-          >
-            <div :class="['w-[20px] h-[20px] rounded-full border-[2px] border-black flex items-center justify-center text-[10px] font-black flex-shrink-0',
-              completedTopics.has(entry.topic.id) ? 'bg-green-500 text-white border-green-500' : 'bg-white']">
-              {{ completedTopics.has(entry.topic.id) ? '✓' : '' }}
-            </div>
-            {{ entry.topic.title }}
-          </div>
-
-          <!-- Quiz row -->
-          <div v-else
-            @click="canAccessQuiz(entry.quizId) ? loadQuiz(entry.quizId) : null"
-            :class="['flex items-center gap-2.5 px-3 py-2.5 border-[2px] border-black font-bold text-[12px] font-mono uppercase tracking-wide transition-all',
-              currentView === entry.quizId ? 'bg-[#FFE135] border-black' :
-              passedQuizzes.has(entry.quizId) ? 'bg-green-100 border-green-400' : 'bg-gray-50',
-              !canAccessQuiz(entry.quizId) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:-translate-x-[1px] hover:-translate-y-[1px]'
-            ]"
-            :style="canAccessQuiz(entry.quizId) ? 'box-shadow:2px 2px 0 #000' : ''"
-          >
-            <span class="text-sm">{{ passedQuizzes.has(entry.quizId) ? '✅' : '📝' }}</span>
-            {{ quizBanks[entry.quizId].shortLabel }}
-          </div>
-
-        </template>
+        <button
+          v-for="quiz in quizzes"
+          :key="`quiz-${quiz.id}`"
+          :disabled="!quizUnlocked"
+          :class="[
+            'flex w-full items-center gap-2.5 border-[2px] border-black px-3 py-2.5 text-left text-[12px] font-bold uppercase tracking-wide transition-all',
+            activeQuiz?.id === quiz.id ? 'bg-[#FFE135] text-black' : 'bg-white hover:bg-[#FFE135]',
+            !quizUnlocked ? 'cursor-not-allowed opacity-45' : ''
+          ]"
+          :style="quizUnlocked ? 'box-shadow:2px 2px 0 #000' : ''"
+          @click="selectQuiz(quiz.id)"
+        >
+          <span :class="['grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-black text-[10px] font-black', completedQuizIds.has(quiz.id) ? 'bg-green-500 text-white' : 'bg-white text-black']">
+            {{ completedQuizIds.has(quiz.id) ? 'OK' : 'Q' }}
+          </span>
+          <span class="truncate">{{ quiz.title }}</span>
+        </button>
       </div>
     </aside>
 
-    <!-- Main content -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-
-      <!-- Header -->
-      <div class="bg-[#7B8FF0] border-b-[3px] border-black px-8 py-6 flex items-center justify-between flex-shrink-0 relative overflow-hidden"
-        style="background: linear-gradient(135deg, #6C7FF2, #8B9EF5);">
-        <div class="relative z-10">
-          <h1 class="font-display font-black text-[32px] text-white leading-tight">{{ headerTitle }}</h1>
-          <p class="font-display font-bold text-[13px] text-white/80 mt-1.5">{{ headerDesc }}</p>
+    <main class="flex min-w-0 flex-1 flex-col">
+      <header class="flex items-center justify-between border-b-[3px] border-black bg-[#7B8FF0] px-8 py-6">
+        <div>
+          <h1 class="font-display text-[32px] font-black leading-tight text-white">{{ headerTitle }}</h1>
+          <p class="mt-1.5 font-display text-[13px] font-bold text-white/85">{{ headerDescription }}</p>
         </div>
-        <div class="text-5xl relative z-10 flex items-center gap-2" style="animation:float 3s ease-in-out infinite">
-          {{ headerEmoji }}
+        <div class="text-5xl">LMS</div>
+      </header>
+
+      <section class="flex-1 overflow-y-auto bg-white p-7">
+        <div v-if="content.loading" class="border-[3px] border-black bg-white p-8 text-center font-black" style="box-shadow:4px 4px 0 #000">Loading learning content...</div>
+        <div v-else-if="content.error" class="border-[3px] border-black bg-red-50 p-8 text-center font-black text-red-700" style="box-shadow:4px 4px 0 #000">{{ content.error }}</div>
+        <div v-else-if="topics.length === 0 && !isIntroActive" class="border-[3px] border-black bg-white p-10 text-center" style="box-shadow:5px 5px 0 #000">
+          <h2 class="font-display text-xl font-black">No learning materials are available for this module yet.</h2>
+          <p class="mt-2 text-sm text-gray-500">Please check again after your teacher publishes content.</p>
         </div>
-      </div>
 
-      <!-- Content area -->
-      <div class="flex-1 overflow-y-auto p-7 bg-white scrollbar-thin">
-
-        <!-- ── INTRO / TOPIC VIEW ── -->
-        <template v-if="currentView === 'intro' || typeof currentView === 'number'">
-          <p class="text-[14px] leading-relaxed text-gray-700 mb-6">{{ activeContent.text }}</p>
-
-          <div class="flex gap-5 mb-6">
-            <img :src="activeContent.image" class="w-[280px] h-[280px] object-cover border-[3px] border-[#FF9F40] flex-shrink-0" />
-            <div class="flex-1 p-5 border-[2px] border-gray-200 rounded-lg bg-white text-[14px] leading-relaxed text-gray-700">
-              {{ activeContent.extra }}
-            </div>
+        <article v-else-if="isIntroActive" class="space-y-6">
+          <div class="rounded-lg border-[2px] border-gray-200 bg-white p-6 text-sm leading-7 text-gray-700">
+            {{ moduleData?.description || 'Introduction content will be available here.' }}
           </div>
-
-          <div class="flex items-center justify-between">
-            <button v-if="typeof currentView === 'number' && currentView > 1" @click="goBack"
-              class="border-[3px] border-black bg-white font-black text-sm px-5 py-2.5 hover:-translate-x-[1px] hover:-translate-y-[1px] transition-all"
-              style="box-shadow:3px 3px 0 #000">
-              ← Previous
-            </button>
-            <span v-else class="font-mono text-xs text-gray-400">{{ currentView === 'intro' ? 'Introduction' : `Topic ${currentView} of ${topics.length}` }}</span>
-
-            <button @click="goNext"
-              :class="['border-[3px] border-black font-black text-sm px-5 py-2.5 hover:-translate-x-[2px] hover:-translate-y-[2px] transition-all',
-                shouldGateNext ? 'bg-[#FFE135] text-black' : 'bg-[#1565FF] text-white']"
-              style="box-shadow:4px 4px 0 #000">
-              {{ nextBtnLabel }}
+          <div class="flex justify-end pt-4">
+            <button
+              class="border-[3px] border-black bg-[#1565FF] px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px] disabled:opacity-50"
+              style="box-shadow:4px 4px 0 #000"
+              :disabled="topics.length === 0"
+              @click="goNext"
+            >
+              Start Topic 1
             </button>
           </div>
-        </template>
+        </article>
 
-        <!-- ── QUIZ VIEW ── -->
-        <template v-else-if="typeof currentView === 'string' && currentView.startsWith('quiz')">
-          <div class="border-[3px] border-black mb-5 overflow-hidden" style="box-shadow:5px 5px 0 #000">
-            <div class="bg-[#FFE135] border-b-[3px] border-black px-5 py-4 flex items-center gap-3">
-              <span class="bg-black text-[#FFE135] font-mono text-[10px] font-black px-2 py-1 tracking-widest">QUIZ</span>
-              <span class="font-display font-black text-base">{{ activeQuiz?.label }}</span>
-              <span class="ml-auto font-mono text-xs text-gray-600">3 Questions</span>
-            </div>
-            <div class="px-5 py-4 bg-white text-sm text-gray-600" v-html="activeQuiz?.intro" />
+        <article v-else-if="activeQuiz" class="space-y-5">
+          <div class="border-[3px] border-black bg-[#FFE135] p-5" style="box-shadow:5px 5px 0 #000">
+            <div class="font-mono text-[10px] font-black uppercase tracking-widest">Quiz</div>
+            <h2 class="mt-1 font-display text-2xl font-black">{{ activeQuiz.title }}</h2>
+            <p class="mt-2 text-sm text-gray-700">{{ activeQuiz.description }}</p>
           </div>
 
-          <div v-for="(q, qi) in activeQuiz?.questions" :key="q.id"
-            class="border-[3px] border-black mb-4 overflow-hidden" style="box-shadow:4px 4px 0 #000">
-            <div class="bg-[#1565FF] border-b-[3px] border-black px-5 py-3 flex items-center gap-3">
-              <span class="bg-[#FFE135] text-black font-mono text-[10px] font-black px-2.5 py-1 border-[2px] border-black">Q{{ qi+1 }}</span>
-              <span class="font-black text-white text-sm">{{ q.text }}</span>
-            </div>
-            <div class="p-5 space-y-2.5 bg-white">
-              <button v-for="(opt, oi) in q.options" :key="oi"
-                :disabled="!!quizSubmitted[qi]"
-                @click="selectOpt(qi, oi)"
-                :class="['w-full flex items-center gap-3 px-4 py-3 border-[3px] border-black text-left text-sm font-bold transition-all',
-                  quizSubmitted[qi]
-                    ? oi === q.correctIndex ? 'bg-green-200 border-green-600'
-                    : oi === (quizAnswers[qi] ?? -1) ? 'bg-red-200 border-red-500'
-                    : 'bg-gray-50 opacity-50 border-gray-200'
-                  : quizAnswers[qi] === oi
-                    ? 'bg-[#FFE135] border-black'
-                    : 'bg-white hover:bg-[#D6E4FF] hover:-translate-x-[1px] hover:-translate-y-[1px]'
-                ]"
-                :style="!quizSubmitted[qi] && quizAnswers[qi] !== oi ? 'box-shadow:2px 2px 0 #000' : ''"
-              >
-                <div class="w-7 h-7 border-[2px] border-black flex items-center justify-center font-black text-xs flex-shrink-0 bg-white">
-                  {{ String.fromCharCode(65+oi) }}
-                </div>
-                {{ opt }}
-              </button>
-            </div>
-            <div class="px-5 pb-4 bg-white flex items-center justify-between">
-              <div v-if="quizSubmitted[qi]"
-                :class="['font-mono text-xs font-bold px-3 py-2 border-[2px] border-black',
-                  quizAnswers[qi] === q.correctIndex ? 'bg-green-200' : 'bg-red-200']">
-                {{ quizAnswers[qi] === q.correctIndex ? '✅ Correct!' : '❌ Incorrect — correct answer highlighted' }}
-              </div>
-              <button v-if="!quizSubmitted[qi]"
-                :disabled="quizAnswers[qi] === undefined"
-                @click="submitQ(qi)"
-                class="ml-auto border-[3px] border-black bg-[#1565FF] text-white font-black text-xs px-4 py-2 hover:-translate-x-[1px] hover:-translate-y-[1px] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                style="box-shadow:3px 3px 0 #000">
-                Submit Answer
-              </button>
+          <div v-if="quizResult" class="border-[3px] border-black bg-green-50 p-4 font-black text-green-800" style="box-shadow:4px 4px 0 #000">
+            Score: {{ quizResult.score }} / {{ quizResult.total }}
+          </div>
+
+          <div v-for="(question, index) in activeQuiz.questions" :key="index" class="border-[3px] border-black bg-white p-5" style="box-shadow:4px 4px 0 #000">
+            <label class="block text-sm font-black">Question {{ index + 1 }}</label>
+            <p class="mt-1 text-sm text-gray-700">{{ question.prompt }}</p>
+            <input v-model="quizAnswers[String(index)]" class="mt-3 w-full border-[2px] border-black px-3 py-2 text-sm outline-none focus:bg-[#D6E4FF]" placeholder="Your answer" />
+          </div>
+
+          <div class="flex justify-end">
+            <button class="border-[3px] border-black bg-[#1565FF] px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px]" style="box-shadow:4px 4px 0 #000" @click="submitActiveQuiz">
+              Submit Quiz
+            </button>
+          </div>
+        </article>
+
+        <article v-else-if="activeTopic" class="space-y-6">
+          <div v-if="activeTopic.page_image_urls?.length" class="mx-auto grid max-w-4xl gap-6">
+            <img
+              v-for="(pageUrl, index) in activeTopic.page_image_urls"
+              :key="`${activeTopic.id}-${index}`"
+              :src="assetUrl(pageUrl)"
+              alt=""
+              class="w-full rounded border border-gray-200 bg-white shadow-sm"
+            />
+          </div>
+          <div v-else class="prose max-w-none whitespace-pre-line text-[14px] leading-relaxed text-gray-700">{{ activeTopic.content }}</div>
+
+          <div v-if="activeTopic.image_url" class="flex flex-col gap-5 lg:flex-row">
+            <img :src="assetUrl(activeTopic.image_url)" alt="" class="h-[280px] w-full border-[3px] border-[#FF9F40] object-cover lg:w-[280px]" />
+            <div class="flex-1 rounded-lg border-[2px] border-gray-200 bg-white p-5 text-[14px] leading-relaxed text-gray-700">
+              {{ activeTopic.description }}
             </div>
           </div>
 
-          <!-- Score card -->
-          <div v-if="quizAllAnswered"
-            class="border-[3px] border-black overflow-hidden mt-4" style="box-shadow:6px 6px 0 #000">
-            <div :class="['px-6 py-5 border-b-[3px] border-black flex items-center gap-4', quizPassed ? 'bg-green-200' : 'bg-[#FFE135]']">
-              <span class="text-4xl">{{ quizPassed ? '🏆' : '📚' }}</span>
-              <div>
-                <div class="font-display font-black text-xl">You scored {{ quizScore }} / {{ activeQuiz?.questions.length }}</div>
-                <div class="font-mono text-xs text-gray-600 mt-1">{{ quizPassed ? 'Quiz passed! You can now continue.' : 'You need at least 2/3 to pass. Try again!' }}</div>
-              </div>
-            </div>
-            <div class="px-6 py-4 bg-white flex justify-center gap-3">
-              <button v-if="quizPassed" @click="onQuizPass"
-                class="border-[3px] border-black bg-[#1565FF] text-white font-black text-sm px-6 py-2.5 hover:-translate-x-[2px] hover:-translate-y-[2px] transition-all"
-                style="box-shadow:4px 4px 0 #000">
-                {{ activeQuiz?.nextLabel }} →
-              </button>
-              <button v-else @click="retryQuiz"
-                class="border-[3px] border-black bg-[#FFE135] text-black font-black text-sm px-6 py-2.5 hover:-translate-x-[2px] hover:-translate-y-[2px] transition-all"
-                style="box-shadow:4px 4px 0 #000">
-                ↺ Retry Quiz
-              </button>
-            </div>
+          <div class="flex items-center justify-between pt-4">
+            <button
+              class="border-[3px] border-black bg-white px-5 py-2.5 text-sm font-black transition-all hover:-translate-x-[1px] hover:-translate-y-[1px]"
+              style="box-shadow:3px 3px 0 #000"
+              @click="goPrevious"
+            >
+              Previous
+            </button>
+            <span class="font-mono text-xs text-gray-400">Topic {{ activeIndex + 1 }} of {{ topics.length }}</span>
+            <button
+              class="border-[3px] border-black bg-[#1565FF] px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px]"
+              style="box-shadow:4px 4px 0 #000"
+              @click="goNext"
+            >
+              {{ activeIndex === topics.length - 1 ? 'Finish Module' : 'Next Topic' }}
+            </button>
           </div>
-        </template>
-
-        <!-- ── MODULE COMPLETE ── -->
-        <template v-else-if="currentView === 'done'">
-          <div class="text-center py-16">
-            <div class="text-6xl mb-4" style="animation:float 3s ease-in-out infinite">🎉</div>
-            <h2 class="font-display font-black text-3xl mb-2">Module Complete!</h2>
-            <p class="font-mono text-sm text-gray-500 mb-6">You've finished all topics and quizzes.</p>
-            <RouterLink to="/student/dashboard"
-              class="inline-block border-[3px] border-black bg-[#1565FF] text-white font-black text-sm px-6 py-3 hover:-translate-x-[2px] hover:-translate-y-[2px] transition-all no-underline"
-              style="box-shadow:4px 4px 0 #000">
-              ← Back to Dashboard
-            </RouterLink>
-          </div>
-        </template>
-
-      </div>
-    </div>
+        </article>
+      </section>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
+import { API_BASE_URL } from '@/lib/api'
+import { useStudentContentStore } from '@/stores/studentContent'
 
-const SCIENCE_IMG = 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=400&fit=crop'
+const route = useRoute()
+const content = useStudentContentStore()
+const activeTopicId = ref<number | null>(null)
+const activeQuizId = ref<number | null>(null)
+const quizAnswers = ref<Record<string, string>>({})
+const quizResult = ref<{ score: number; total: number } | null>(null)
 
-const introText = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
-const introExtra = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+const moduleId = computed(() => String(route.params.moduleId))
+const moduleData = computed(() => content.currentModule)
+const topics = computed(() => content.sortedTopics.filter(topic => topic.title.toLowerCase() !== 'introduction'))
+const progress = computed(() => content.progress)
+const completedIds = computed(() => new Set(progress.value.completed_topic_ids))
+const completedQuizIds = computed(() => new Set(progress.value.completed_quiz_ids))
+const activeTopic = computed(() => activeTopicId.value ? topics.value.find(topic => topic.id === activeTopicId.value) ?? null : null)
+const quizzes = computed(() => (moduleData.value?.assessments ?? []).filter(item => item.assessment_type === 'quiz'))
+const activeQuiz = computed(() => quizzes.value.find(quiz => quiz.id === activeQuizId.value) ?? null)
+const activeIndex = computed(() => activeTopic.value ? topics.value.findIndex(topic => topic.id === activeTopic.value?.id) : 0)
+const quizUnlocked = computed(() => topics.value.length > 0 && progress.value.completed_topics >= topics.value.length)
+const isIntroActive = computed(() => !activeTopicId.value && !activeQuizId.value)
+const headerTitle = computed(() => activeQuiz.value?.title || activeTopic.value?.title || moduleData.value?.title || 'Learning Content')
+const headerDescription = computed(() => activeQuiz.value?.description || activeTopic.value?.description || moduleData.value?.description || 'Module description')
 
-interface Topic {
-  id: number
-  title: string
-  desc: string
-  emoji: string
-  text: string
-  extra: string
+onMounted(async () => {
+  await content.fetchModule(moduleId.value)
+  activeTopicId.value = null
+})
+
+watch(topics, value => {
+  if (!isIntroActive.value && !activeTopicId.value && value.length) activeTopicId.value = value[0].id
+})
+
+async function selectTopic(topicId: number) {
+  activeQuizId.value = null
+  quizResult.value = null
+  activeTopicId.value = topicId
+  await content.markTopic(moduleId.value, topicId, 'in_progress')
 }
 
-const topics: Topic[] = [
-  { id: 1, title: 'Topic 1', desc: 'Introduction to the Scientific Method', emoji: '🧪🔬',
-    text: introText, extra: introExtra },
-  { id: 2, title: 'Topic 2', desc: 'Variables & Hypotheses', emoji: '📊🧬',
-    text: 'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.',
-    extra: 'At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident similique sunt in culpa qui officia deserunt mollitia animi.' },
-  { id: 3, title: 'Topic 3', desc: 'Data Collection & Analysis', emoji: '📈🔍',
-    text: 'Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet ut et voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic tenetur a sapiente delectus.',
-    extra: 'Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est, omnis dolor repellendus.' },
-  { id: 4, title: 'Topic 4', desc: 'Conclusions & Reporting', emoji: '📝✅',
-    text: 'Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur. Lorem ipsum dolor sit amet consectetur adipiscing elit.',
-    extra: 'Ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam nisi ut aliquid ex ea commodi consequatur.' },
-]
-
-interface QuizQuestion {
-  id: string
-  text: string
-  options: string[]
-  correctIndex: number
-}
-interface QuizBank {
-  id: string
-  shortLabel: string
-  label: string
-  intro: string
-  nextLabel: string
-  nextTopic: number | null
-  questions: QuizQuestion[]
+function selectIntro() {
+  activeTopicId.value = null
+  activeQuizId.value = null
+  quizResult.value = null
 }
 
-const quizBanks: Record<string, QuizBank> = {
-  quiz1: {
-    id: 'quiz1', shortLabel: 'Quiz 1', label: 'Quiz — Topics 1 & 2',
-    intro: 'You\'ve completed <strong>Topics 1 and 2</strong>. Answer all 3 questions to unlock Topic 3.',
-    nextLabel: 'Continue to Topic 3', nextTopic: 3,
-    questions: [
-      { id: 'q1', text: 'Which best describes a hypothesis?', options: ['A proven fact', 'A testable prediction', 'A random guess', 'A conclusion'], correctIndex: 1 },
-      { id: 'q2', text: 'What is the control group?', options: ['Changed variable', 'Baseline group', 'Test group', 'Random group'], correctIndex: 1 },
-      { id: 'q3', text: 'Which variable does the researcher change?', options: ['Dependent', 'Controlled', 'Independent', 'Responding'], correctIndex: 2 },
-    ],
-  },
-  quiz2: {
-    id: 'quiz2', shortLabel: 'Quiz 2', label: 'Quiz — Topics 3 & 4',
-    intro: 'You\'ve completed <strong>Topics 3 and 4</strong>. Answer all 3 questions to finish the module.',
-    nextLabel: 'Finish Module', nextTopic: null,
-    questions: [
-      { id: 'q4', text: 'What is quantitative data?', options: ['Word descriptions', 'Numerical measurements', 'Personal opinions', 'Visual only'], correctIndex: 1 },
-      { id: 'q5', text: 'Which graph shows change over time?', options: ['Pie chart', 'Bar graph', 'Line graph', 'Scatter plot'], correctIndex: 2 },
-      { id: 'q6', text: 'A valid conclusion is based on:', options: ['Opinion', 'Evidence', 'Single trial', 'Textbooks only'], correctIndex: 1 },
-    ],
-  },
+function selectQuiz(quizId: number) {
+  if (!quizUnlocked.value) return
+  activeQuizId.value = quizId
+  activeTopicId.value = null
+  quizAnswers.value = {}
+  quizResult.value = null
 }
 
-// Sidebar list: Topic1, Topic2, Quiz1, Topic3, Topic4, Quiz2
-type SidebarEntry =
-  | { kind: 'topic'; topic: Topic }
-  | { kind: 'quiz'; quizId: string }
-
-const sidebarEntries: SidebarEntry[] = [
-  { kind: 'topic', topic: topics[0] },
-  { kind: 'topic', topic: topics[1] },
-  { kind: 'quiz',  quizId: 'quiz1' },
-  { kind: 'topic', topic: topics[2] },
-  { kind: 'topic', topic: topics[3] },
-  { kind: 'quiz',  quizId: 'quiz2' },
-]
-
-// ── STATE ──
-const currentView     = ref<number | string>('intro')
-const completedTopics = ref(new Set<number>())
-const passedQuizzes   = ref(new Set<string>())
-const quizAnswers     = ref<Record<number, number>>({})
-const quizSubmitted   = ref<Record<number, boolean>>({})
-
-const currentTopic = computed(() => typeof currentView.value === 'number' ? topics[currentView.value - 1] : null)
-const activeQuiz    = computed(() => typeof currentView.value === 'string' && currentView.value.startsWith('quiz') ? quizBanks[currentView.value] : null)
-
-const activeContent = computed(() => {
-  if (currentView.value === 'intro') {
-    return { text: introText, extra: introExtra, image: SCIENCE_IMG }
+async function goPrevious() {
+  if (activeIndex.value <= 0) {
+    selectIntro()
+    return
   }
-  const t = currentTopic.value
-  return { text: t?.text ?? '', extra: t?.extra ?? '', image: SCIENCE_IMG }
-})
-
-const headerTitle = computed(() => {
-  if (currentView.value === 'intro' || currentView.value === 'done') return 'Title of topic'
-  if (typeof currentView.value === 'string') return 'Test Your Knowledge'
-  return currentTopic.value?.title ?? ''
-})
-const headerDesc = computed(() => {
-  if (currentView.value === 'intro') return 'Description'
-  if (typeof currentView.value === 'string' && currentView.value.startsWith('quiz')) return activeQuiz.value?.label ?? ''
-  return currentTopic.value?.desc ?? ''
-})
-const headerEmoji = computed(() => {
-  if (typeof currentView.value === 'number') return currentTopic.value?.emoji ?? '🔬'
-  if (typeof currentView.value === 'string' && currentView.value.startsWith('quiz')) return '📝✏️'
-  return '🔬🧫'
-})
-
-const progressPercent = computed(() => Math.round((completedTopics.value.size / topics.length) * 100))
-
-const shouldGateNext = computed(() => {
-  const v = currentView.value
-  return v === 2 || v === 4
-})
-const nextBtnLabel = computed(() => {
-  const v = currentView.value
-  if (v === 'intro') return 'Start Topic 1 →'
-  if (v === 2 || v === 4) return 'Test Your Knowledge 📝'
-  if (v === topics.length) return 'Finish Module ✓'
-  return 'Next Topic →'
-})
-
-function canAccessTopic(id: number) {
-  if (id <= 2) return true
-  return passedQuizzes.value.has('quiz1')
-}
-function canAccessQuiz(quizId: string) {
-  if (quizId === 'quiz1') return completedTopics.value.has(2)
-  if (quizId === 'quiz2') return completedTopics.value.has(4)
-  return false
+  const previous = topics.value[activeIndex.value - 1]
+  await selectTopic(previous.id)
 }
 
-function loadIntro() {
-  currentView.value = 'intro'
+async function goNext() {
+  if (isIntroActive.value) {
+    const first = topics.value[0]
+    if (first) await selectTopic(first.id)
+    return
+  }
+  if (!activeTopic.value) return
+  await content.markTopic(moduleId.value, activeTopic.value.id, 'completed')
+  if (activeIndex.value >= topics.value.length - 1) {
+    if (quizzes.value.length) selectQuiz(quizzes.value[0].id)
+    return
+  }
+  const next = topics.value[activeIndex.value + 1]
+  await selectTopic(next.id)
 }
-function loadTopic(id: number) {
-  currentView.value = id
-  quizAnswers.value = {}
-  quizSubmitted.value = {}
+
+async function submitActiveQuiz() {
+  if (!activeQuiz.value) return
+  const result = await content.submitQuiz(moduleId.value, activeQuiz.value.id, quizAnswers.value)
+  if (result) quizResult.value = { score: result.score, total: result.total }
 }
-function goBack() {
-  const v = currentView.value as number
-  if (v === 3) loadQuiz('quiz1')
-  else loadTopic(v - 1)
+
+function assetUrl(url?: string | null) {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return `${API_BASE_URL}${url}`
 }
-function goNext() {
-  const v = currentView.value
-  if (v === 'intro') { loadTopic(1); return }
-  const idx = v as number
-  if (idx === 2) { completedTopics.value.add(2); loadQuiz('quiz1') }
-  else if (idx === 4) { completedTopics.value.add(4); loadQuiz('quiz2') }
-  else if (idx === topics.length) { completedTopics.value.add(idx); currentView.value = 'done' }
-  else { completedTopics.value.add(idx); loadTopic(idx + 1) }
-}
-function loadQuiz(id: string) {
-  currentView.value = id
-  quizAnswers.value = {}
-  quizSubmitted.value = {}
-}
-function selectOpt(qi: number, oi: number) {
-  if (quizSubmitted.value[qi]) return
-  quizAnswers.value[qi] = oi
-}
-function submitQ(qi: number) {
-  if (quizAnswers.value[qi] === undefined) return
-  quizSubmitted.value[qi] = true
-}
-const quizAllAnswered = computed(() => {
-  if (!activeQuiz.value) return false
-  return activeQuiz.value.questions.every((_, i) => quizSubmitted.value[i])
-})
-const quizScore = computed(() => {
-  if (!activeQuiz.value) return 0
-  return activeQuiz.value.questions.filter((q, i) => quizAnswers.value[i] === q.correctIndex).length
-})
-const quizPassed = computed(() => quizScore.value >= 2)
-function onQuizPass() {
-  passedQuizzes.value.add(currentView.value as string)
-  const next = activeQuiz.value?.nextTopic
-  if (next) loadTopic(next)
-  else currentView.value = 'done'
-}
-function retryQuiz() { loadQuiz(currentView.value as string) }
 </script>
-
-<style>
-@keyframes float {
-  0%,100% { transform: translateY(0) rotate(-4deg); }
-  50%      { transform: translateY(-8px) rotate(4deg); }
-}
-</style>
