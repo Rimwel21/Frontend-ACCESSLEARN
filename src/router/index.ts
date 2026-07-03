@@ -34,10 +34,11 @@ const routes: RouteRecordRaw[] = [
       { path: 'dashboard',  name: 'StudentDashboard', component: () => import('@/pages/student/DashboardPage.vue') },
       { path: 'quiz',       name: 'StudentQuiz',      component: () => import('@/pages/student/QuizPage.vue') },
       { path: 'activities', name: 'Activities',       component: () => import('@/pages/student/ActivitiesPage.vue') },
+      { path: 'activities/handsign', name: 'HandSignLanguage', component: () => import('@/pages/student/HandSignLanguagePage.vue') },
     ],
   },
 
-  // Topic viewer renders full-screen, no sidebar — only its own Go Back button
+  // Topic viewer renders full-screen, no sidebar; only its own Go Back button.
   {
     path: '/student/modules/:moduleId',
     name: 'TopicViewer',

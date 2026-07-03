@@ -29,10 +29,11 @@
             <div v-for="act in activities" :key="act.id"
               class="flex items-center gap-4 p-4 border-[3px] border-black bg-white cursor-pointer hover:-translate-x-[2px] hover:-translate-y-[2px] transition-all"
               style="box-shadow:4px 4px 0 #000"
+              @click="act.to ? router.push(act.to) : null"
             >
               <!-- Checkbox/icon -->
               <div class="w-10 h-10 border-[3px] border-black bg-[#D6E4FF] flex items-center justify-center flex-shrink-0 text-base">
-                📄
+                A-Z
               </div>
 
               <!-- Title + desc -->
@@ -53,7 +54,7 @@
               </span>
 
               <!-- Arrow -->
-              <span class="text-lg font-black flex-shrink-0">›</span>
+              <span class="text-lg font-black flex-shrink-0">&gt;</span>
             </div>
           </div>
         </div>
@@ -83,6 +84,8 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
+
 interface Activity {
   id: number
   title: string
@@ -90,14 +93,18 @@ interface Activity {
   dueDate: string
   dueTime: string
   status: 'Overdue' | 'In Progress' | 'Not Started' | 'Finished'
+  to?: string
 }
 
 const activities: Activity[] = [
+  { id: 0, title: 'Hand Sign Language', description: 'Practice A-Z alphabet answers with optional camera-based sign detection', dueDate: 'Anytime', dueTime: 'Self-paced', status: 'Not Started', to: '/student/activities/handsign' },
   { id: 1, title: 'Title Of Activity', description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor', dueDate: 'May 10, 2025', dueTime: '1:00PM', status: 'Overdue' },
   { id: 2, title: 'Title Of Activity', description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor', dueDate: 'May 20, 2025', dueTime: '1:59PM', status: 'In Progress' },
   { id: 3, title: 'Title Of Activity', description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor', dueDate: 'May 20, 2025', dueTime: '1:59PM', status: 'Not Started' },
   { id: 4, title: 'Title Of Activity', description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor', dueDate: 'May 20, 2025', dueTime: '1:59PM', status: 'Finished' },
 ]
+
+const router = useRouter()
 
 function statusStyle(status: Activity['status']) {
   switch (status) {
