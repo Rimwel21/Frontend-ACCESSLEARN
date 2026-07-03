@@ -31,6 +31,7 @@
         </div>
 
         <p v-if="message" class="status-success" role="status">{{ message }}</p>
+        <p v-if="validationError" class="status-error" role="alert">{{ validationError }}</p>
         <p v-if="auth.error" class="status-error" role="alert">{{ auth.error }}</p>
 
         <button type="submit" class="btn-primary w-full justify-center rounded-lg" :disabled="auth.loading">
@@ -63,11 +64,26 @@ const username = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const message = ref('')
+const validationError = ref('')
 
 const roleLabel = computed(() => role.value === 'student' ? 'Student' : 'Teacher')
 
 async function submitRegister() {
   const isTeacher = role.value === 'teacher'
+  validationError.value = ''
+  message.value = ''
+
+  if (!isTeacher) {
+    if (!/^[A-Z]/.test(username.value)) {
+      validationError.value = 'Username must start with an uppercase letter.'
+      return
+    }
+
+    if (password.value.toLowerCase() === username.value.toLowerCase()) {
+      validationError.value = 'Password must not be the same as username.'
+      return
+    }
+  }
 
   await auth.register({
     role: role.value,

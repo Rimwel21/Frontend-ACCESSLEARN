@@ -11,7 +11,30 @@
           <template v-if="auth.role === 'student'">
             <div>
               <label class="field-label" for="name">Name</label>
-              <input id="name" v-model.trim="studentForm.name" class="input-field" required />
+              <input id="name" v-model.trim="studentForm.name" class="input-field" minlength="5" maxlength="100" required />
+            </div>
+            <div>
+              <label class="field-label" for="age">Age</label>
+              <input id="age" v-model.number="studentForm.age" class="input-field" type="number" min="1" max="120" required />
+            </div>
+            <div>
+              <label class="field-label" for="sex">Sex</label>
+              <select id="sex" v-model="studentForm.sex" class="input-field" required>
+                <option value="">Select sex</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="grade-level">Grade Level</label>
+              <select id="grade-level" v-model="studentForm.grade_level" class="input-field" required>
+                <option value="">Select grade</option>
+                <option v-for="grade in gradeOptions" :key="grade.value" :value="grade.value">{{ grade.label }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="section">Section</label>
+              <input id="section" v-model.trim="studentForm.section" class="input-field" maxlength="250" required />
             </div>
             <div>
               <label class="field-label" for="student-type">Student Type</label>
@@ -38,15 +61,36 @@
           <template v-else>
             <div>
               <label class="field-label" for="teacher-name">Name</label>
-              <input id="teacher-name" v-model.trim="teacherForm.name" class="input-field" required />
+              <input id="teacher-name" v-model.trim="teacherForm.name" class="input-field" minlength="5" maxlength="50" required />
+            </div>
+            <div>
+              <label class="field-label" for="teacher-age">Age</label>
+              <input id="teacher-age" v-model.number="teacherForm.age" class="input-field" type="number" min="18" max="100" required />
+            </div>
+            <div>
+              <label class="field-label" for="teacher-sex">Sex</label>
+              <select id="teacher-sex" v-model="teacherForm.sex" class="input-field" required>
+                <option value="">Select sex</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
             </div>
             <div>
               <label class="field-label" for="teacher-contact">Contact Number</label>
-              <input id="teacher-contact" v-model.trim="teacherForm.contact_no" class="input-field" required />
+              <input id="teacher-contact" v-model.trim="teacherForm.contact_no" class="input-field" minlength="11" maxlength="11" required />
             </div>
+            <fieldset class="md:col-span-2 rounded-lg border border-gray-200 bg-white p-3">
+              <legend class="field-label px-1">Grade Levels Handled</legend>
+              <div class="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+                <label v-for="grade in gradeOptions" :key="grade.value" class="flex items-center gap-2 text-sm font-semibold text-ink">
+                  <input v-model="teacherForm.grade_level_handles" type="checkbox" :value="grade.value" />
+                  {{ grade.label }}
+                </label>
+              </div>
+            </fieldset>
             <div class="md:col-span-2">
               <label class="field-label" for="teacher-address">Address</label>
-              <textarea id="teacher-address" v-model.trim="teacherForm.address" class="input-field min-h-24 resize-y" required />
+              <textarea id="teacher-address" v-model.trim="teacherForm.address" class="input-field min-h-24 resize-y" minlength="5" maxlength="150" required />
             </div>
           </template>
         </div>
@@ -89,8 +133,21 @@ const imageFile = ref<File | null>(null)
 const previewUrl = ref('')
 const message = ref('')
 
+const gradeOptions = [
+  { value: 'grade_1', label: 'Grade 1' },
+  { value: 'grade_2', label: 'Grade 2' },
+  { value: 'grade_3', label: 'Grade 3' },
+  { value: 'grade_4', label: 'Grade 4' },
+  { value: 'grade_5', label: 'Grade 5' },
+  { value: 'grade_6', label: 'Grade 6' },
+] as const
+
 const studentForm = ref({
   name: '',
+  age: null as number | null,
+  sex: '',
+  grade_level: '',
+  section: '',
   student_type: '',
   guardians_name: '',
   guardians_contact_no: '',
@@ -99,7 +156,10 @@ const studentForm = ref({
 
 const teacherForm = ref({
   name: '',
+  age: null as number | null,
+  sex: '',
   contact_no: '',
+  grade_level_handles: [] as string[],
   address: '',
 })
 
@@ -112,6 +172,10 @@ onMounted(async () => {
   if (auth.role === 'student' && 'student_type' in existing) {
     studentForm.value = {
       name: existing.name ?? '',
+      age: existing.age ?? null,
+      sex: existing.sex ?? '',
+      grade_level: existing.grade_level ?? '',
+      section: existing.section ?? '',
       student_type: existing.student_type ?? '',
       guardians_name: existing.guardians_name ?? '',
       guardians_contact_no: existing.guardians_contact_no ?? '',
@@ -122,7 +186,10 @@ onMounted(async () => {
   if (auth.role === 'teacher' && 'contact_no' in existing) {
     teacherForm.value = {
       name: existing.name ?? '',
+      age: existing.age ?? null,
+      sex: existing.sex ?? '',
       contact_no: existing.contact_no ?? '',
+      grade_level_handles: existing.handle_grade_levels?.map(grade => grade.grade_level_handles) ?? [],
       address: existing.address ?? '',
     }
   }
@@ -143,6 +210,11 @@ function previewImage(event: Event) {
 }
 
 async function submitProfile() {
+  if (auth.role === 'teacher' && teacherForm.value.grade_level_handles.length === 0) {
+    profile.error = 'Select at least one grade level handled.'
+    return
+  }
+
   const payload = auth.role === 'student'
     ? normalizeStudentPayload()
     : teacherForm.value
