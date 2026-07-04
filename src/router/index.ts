@@ -46,6 +46,25 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, role: 'student' },
   },
 
+  {
+    path: '/admin',
+    component: () => import('@/components/layout/AdminLayout.vue'),
+    meta: { requiresAuth: true, role: 'admin' },
+    children: [
+      { path: '',            redirect: '/admin/dashboard' },
+      { path: 'dashboard',   name: 'AdminDashboard',   component: () => import('@/pages/admin/DashboardPage.vue') },
+      { path: 'accounts',    name: 'AccountManagement', component: () => import('@/pages/admin/AccountManagementPage.vue') },
+      { path: 'teachers',    name: 'TeacherManagement', component: () => import('@/pages/admin/TeacherManagementPage.vue') },
+      { path: 'students',    name: 'StudentManagement', component: () => import('@/pages/admin/StudentManagementPage.vue') },
+      { path: 'sections',    name: 'SectionManagement', component: () => import('@/pages/admin/SectionManagementPage.vue') },
+      { path: 'archive',     name: 'AdminArchive',     component: () => import('@/pages/admin/ArchivePage.vue') },
+      { path: 'audit-logs',  name: 'AuditLogs',        component: () => import('@/pages/admin/AuditLogPage.vue') },
+      { path: 'reports',     name: 'AdminReports',     component: () => import('@/pages/admin/ReportPage.vue') },
+      { path: 'notifications', name: 'AdminNotifications', component: () => import('@/pages/admin/NotificationPage.vue') },
+      { path: 'monitoring',  name: 'SystemMonitoring',  component: () => import('@/pages/admin/SystemMonitoringPage.vue') },
+    ],
+  },
+
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
@@ -55,6 +74,12 @@ export const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 })
 
+const roleRedirects: Record<string, string> = {
+  admin: '/admin/dashboard',
+  teacher: '/teacher/dashboard',
+  student: '/student/dashboard'
+}
+
 router.beforeEach((to) => {
   const auth = useAuthStore()
 
@@ -63,11 +88,11 @@ router.beforeEach((to) => {
   }
 
   if (to.meta.role && auth.role && to.meta.role !== auth.role) {
-    return auth.role === 'teacher' ? { path: '/teacher/class' } : { path: '/student/dashboard' }
+    return { path: roleRedirects[auth.role] || '/' }
   }
 
   if ((to.name === 'Login' || to.name === 'Register') && auth.isAuthenticated) {
-    return auth.role === 'teacher' ? { path: '/teacher/class' } : { path: '/student/dashboard' }
+    return { path: roleRedirects[auth.role || ''] || '/' }
   }
 
   return true
