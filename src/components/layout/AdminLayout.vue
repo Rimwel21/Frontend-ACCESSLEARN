@@ -195,7 +195,6 @@ const breadcrumbs = computed(() => {
 })
 
 onMounted(() => {
-  profile.fetchProfile().catch(() => null)
   timer = setInterval(() => {
     sessionTime.value = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }, 1000)

@@ -76,8 +76,8 @@
                 {{ formatDate(user.created_at) }}
               </td>
               <td class="px-4 py-4 text-right">
-                <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button class="rounded-md border border-gray-200 bg-white p-1.5 transition-all hover:border-brand-blue hover:text-brand-blue" title="Edit Status" @click="openStatusModal(user)">
+                <div class="flex items-center justify-end gap-2 transition-opacity">
+                  <button class="rounded-md border border-gray-200 bg-white p-1.5 transition-all hover:border-brand-blue hover:text-brand-blue" title="Edit Account Status" @click="openStatusModal(user)">
                     ✏️
                   </button>
                   <button class="rounded-md border border-gray-200 bg-white p-1.5 transition-all hover:border-brand-rose hover:text-brand-rose" title="Delete Account" @click="confirmDelete(user)">
@@ -198,7 +198,8 @@ const showStatusModal = ref(false)
 const activeUser = ref<any>(null)
 const statusPayload = ref({ status: '', reason: '' })
 
-// Delete Modal
+// Bulk action / Delete
+const showBulkAction = ref(false)
 const showDeleteModal = ref(false)
 const deleteConfirmString = ref('')
 const isDeleting = ref(false)

@@ -81,7 +81,7 @@
     </div>
 
     <!-- Purge Confirmation (Premium Toast) -->
-    <div v-if=" purging" class="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 backdrop-blur-sm">
+    <div v-if="purging" class="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 backdrop-blur-sm">
         <div class="h-10 w-10 animate-spin rounded-full border-4 border-brand-rose border-t-transparent shadow-2xl"></div>
     </div>
   </div>

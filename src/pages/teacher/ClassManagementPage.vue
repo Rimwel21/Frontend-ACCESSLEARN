@@ -180,7 +180,7 @@ import { useTeacherStore } from '@/stores/teacher'
 const router = useRouter()
 const store  = useTeacherStore()
 
-const gradeOptions = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12']
+const gradeOptions = ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']
 
 const showAddClass = ref(false)
 const newClass = ref({ gradeLevel: '', section: '' })

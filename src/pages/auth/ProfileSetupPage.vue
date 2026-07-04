@@ -42,11 +42,32 @@
             </div>
             <div>
               <label class="field-label" for="teacher-contact">Contact Number</label>
-              <input id="teacher-contact" v-model.trim="teacherForm.contact_no" class="input-field" required />
+              <input id="teacher-contact" v-model.trim="teacherForm.contact_no" class="input-field" placeholder="09xxxxxxxxx" required />
+            </div>
+            <div>
+              <label class="field-label" for="teacher-age">Age</label>
+              <input id="teacher-age" v-model.number="teacherForm.age" type="number" min="18" max="100" class="input-field" required />
+            </div>
+            <div>
+              <label class="field-label" for="teacher-sex">Sex</label>
+              <select id="teacher-sex" v-model="teacherForm.sex" class="input-field" required>
+                <option value="">Select sex</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="field-label">Grade Levels You Handle</label>
+              <div class="grid grid-cols-2 gap-2 mt-2 sm:grid-cols-4">
+                <label v-for="level in gradeLevels" :key="level.value" class="flex items-center gap-2 p-2 rounded-md border border-gray-100 hover:bg-surface cursor-pointer">
+                  <input type="checkbox" :value="level.value" v-model="teacherForm.grade_level_handles" class="h-4 w-4 rounded border-gray-300 text-brand-blue" />
+                  <span class="text-xs font-semibold">{{ level.label }}</span>
+                </label>
+              </div>
             </div>
             <div class="md:col-span-2">
               <label class="field-label" for="teacher-address">Address</label>
-              <textarea id="teacher-address" v-model.trim="teacherForm.address" class="input-field min-h-24 resize-y" required />
+              <textarea id="teacher-address" v-model.trim="teacherForm.address" class="input-field min-h-24 resize-y" placeholder="Home address..." required />
             </div>
           </template>
         </div>
@@ -100,8 +121,21 @@ const studentForm = ref({
 const teacherForm = ref({
   name: '',
   contact_no: '',
+  age: 25,
+  sex: '',
+  grade_level_handles: [] as string[],
   address: '',
 })
+
+const gradeLevels = [
+  { label: 'Kindergarten', value: 'kindergarten' },
+  { label: 'Grade 1', value: 'grade_1' },
+  { label: 'Grade 2', value: 'grade_2' },
+  { label: 'Grade 3', value: 'grade_3' },
+  { label: 'Grade 4', value: 'grade_4' },
+  { label: 'Grade 5', value: 'grade_5' },
+  { label: 'Grade 6', value: 'grade_6' },
+]
 
 const roleLabel = computed(() => auth.role === 'student' ? 'Student' : 'Teacher')
 
@@ -120,10 +154,14 @@ onMounted(async () => {
   }
 
   if (auth.role === 'teacher' && 'contact_no' in existing) {
+    const t = existing as any
     teacherForm.value = {
-      name: existing.name ?? '',
-      contact_no: existing.contact_no ?? '',
-      address: existing.address ?? '',
+      name: t.name ?? '',
+      contact_no: t.contact_no ?? '',
+      age: t.age ?? 25,
+      sex: t.sex ?? '',
+      grade_level_handles: t.grade_level_handles ?? [],
+      address: t.address ?? '',
     }
   }
 

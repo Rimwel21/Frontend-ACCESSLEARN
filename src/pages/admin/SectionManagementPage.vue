@@ -22,7 +22,7 @@
     <div class="flex items-center gap-4">
         <select v-model="filters.grade" class="input-field !w-auto" @change="fetchSections">
             <option value="">All Grade Levels</option>
-            <option v-for="g in 10" :key="g" :value="g">Grade {{ g }}</option>
+            <option v-for="g in ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']" :key="g" :value="g">{{ g }}</option>
         </select>
         <div class="flex-1 max-w-sm">
             <input v-model="filters.search" placeholder="Search by section name..." class="input-field" @input="debouncedFetch" />
@@ -63,11 +63,11 @@
                 </div>
             </div>
             
-            <div class="border-t border-gray-50 bg-surface/30 p-4 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="border-t border-gray-50 bg-surface/30 p-4 flex justify-between items-center transition-opacity">
                 <button class="text-xs font-bold text-brand-blue hover:underline">Manage Students</button>
                 <div class="flex gap-2">
-                    <button class="p-1 hover:bg-white rounded transition-colors" title="Edit">✏️</button>
-                    <button class="p-1 hover:bg-white rounded transition-colors text-brand-rose" title="Archive">📦</button>
+                    <button class="p-1 hover:bg-white rounded transition-colors" title="Edit Properties">✏️</button>
+                    <button class="p-1 hover:bg-white rounded transition-colors text-brand-rose" title="Archive Section">📦</button>
                 </div>
             </div>
         </div>
@@ -82,11 +82,11 @@
                     <label class="field-label">Section Name</label>
                     <input v-model="newSection.name" type="text" class="input-field mt-1" placeholder="e.g. Diamond, Apollo" />
                 </div>
-                <div>
-                   <label class="field-label">Grade Level</label>
+                 <div>
+                   <label class="field-label">Registry Level</label>
                    <select v-model="newSection.grade" class="input-field mt-1">
                        <option value="">Select Level</option>
-                       <option v-for="g in 10" :key="g" :value="'Grade ' + g">Grade {{ g }}</option>
+                       <option v-for="g in ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']" :key="g" :value="g">{{ g }}</option>
                    </select>
                 </div>
             </div>

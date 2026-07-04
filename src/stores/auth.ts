@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { apiFetch } from '@/lib/api'
 
-type Role = 'student' | 'teacher'
+type Role = 'student' | 'teacher' | 'admin'
 
 interface RegisterPayload {
   username?: string | null
@@ -98,6 +98,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  function setAdminSession(email: string) {
+    token.value = 'mock-admin-token'
+    tokenType.value = 'bearer'
+    role.value = 'admin'
+    accountIdentity.value = email
+    profileCompleted.value = true
+
+    localStorage.setItem('access_token', 'mock-admin-token')
+    localStorage.setItem('token_type', 'bearer')
+    localStorage.setItem('role', 'admin')
+    localStorage.setItem('selectedRole', 'admin')
+    localStorage.setItem('account_identity', email)
+    localStorage.setItem('profile_completed', 'true')
+  }
+
   function logout() {
     token.value = null
     tokenType.value = 'bearer'
@@ -131,6 +146,7 @@ export const useAuthStore = defineStore('auth', () => {
     authorizationHeader,
     register,
     login,
+    setAdminSession,
     logout,
     setProfileCompleted,
   }

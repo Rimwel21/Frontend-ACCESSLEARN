@@ -23,7 +23,7 @@
                     <span class="text-[10px] font-bold uppercase tracking-widest text-ink-soft">Grade</span>
                     <select v-model="filters.grade" class="bg-transparent border-0 text-sm font-bold text-ink outline-none" @change="fetchStudents">
                         <option value="">All</option>
-                        <option v-for="g in 10" :key="g" :value="'Grade ' + g">Grade {{ g }}</option>
+                        <option v-for="g in ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']" :key="g" :value="g">{{ g }}</option>
                     </select>
                 </div>
                 <div class="flex items-center gap-2">
@@ -85,9 +85,9 @@
                              <span :class="['badge', getStatusClass(std.account_status)]">{{ std.account_status }}</span>
                         </td>
                         <td class="px-4 py-4 text-right">
-                             <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                 <button class="btn-secondary !py-1 !px-3 !text-[10px] hover:!text-brand-blue" @click="reassign(std)">Change Section</button>
-                                 <button class="p-1 hover:bg-gray-100 rounded" title="View Grades">📊</button>
+                             <div class="flex items-center justify-end gap-2 transition-opacity">
+                                  <button class="btn-secondary !py-1 !px-3 !text-[10px] hover:!text-brand-blue" @click="reassign(std)">Change Section</button>
+                                  <button class="p-1 hover:bg-gray-100 rounded" title="View Progress Data">📊</button>
                              </div>
                         </td>
                     </tr>
@@ -106,9 +106,9 @@
                 <div class="p-4 bg-surface rounded-xl border border-gray-100 mb-4">
                     <div class="text-[10px] font-bold text-ink-soft uppercase tracking-widest mb-1">Target Registry</div>
                     <div class="grid grid-cols-2 gap-4">
-                        <select v-model="transferDest.grade" class="input-field !text-xs font-bold shadow-sm bg-white">
+                         <select v-model="transferDest.grade" class="input-field !text-xs font-bold shadow-sm bg-white">
                             <option value="">Target Grade</option>
-                            <option v-for="g in 10" :key="g" :value="'Grade ' + g">Grade {{ g }}</option>
+                            <option v-for="g in ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']" :key="g" :value="g">{{ g }}</option>
                         </select>
                         <select v-model="transferDest.section" class="input-field !text-xs font-bold shadow-sm bg-white">
                             <option value="">Target Section</option>
@@ -133,7 +133,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const filters = ref({ grade: '', section: '', page: 1 })
 const sections = ref(['Diamond', 'Sapphire', 'Emerald', 'Ruby', 'Pearl'])
 const students = ref<any[]>([])
