@@ -2,8 +2,8 @@
   <div class="flex h-screen overflow-hidden bg-surface">
     <aside class="z-10 flex w-[200px] min-w-[200px] flex-col border-r border-gray-100 bg-white shadow-sm">
       <div class="border-b border-gray-100 bg-brand-blue-soft px-5 py-5">
-        <div class="font-display text-2xl font-bold tracking-tight text-brand-blue">Learnify</div>
-        <div class="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-ink-soft">LMS</div>
+        <div class="font-display text-2xl font-bold tracking-tight text-brand-blue">ACCESSLearn</div>
+        <div class="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-ink-soft">Educator portal</div>
       </div>
 
       <button class="mx-3 my-3 flex items-center gap-2.5 rounded-xl bg-brand-blue-soft p-3 text-left" @click="router.push('/profile/setup')">
@@ -79,8 +79,11 @@ const auth = useAuthStore()
 const profile = useProfileStore()
 
 const navItems = [
-  { to: '/teacher/dashboard', label: 'Home', iconClass: 'rounded-full' },
-  { to: '/teacher/class', label: 'Class Management', iconClass: 'rounded-sm' },
+  { to: '/teacher/dashboard', label: 'Home', iconClass: 'nav-icon-home' },
+  { to: '/teacher/class', label: 'Classroom', iconClass: 'nav-icon-class' },
+  { to: '/teacher/modules', label: 'Modules', iconClass: 'nav-icon-modules' },
+  { to: '/teacher/activities', label: 'Activities', iconClass: 'nav-icon-activities' },
+  { to: '/teacher/quizzes', label: 'Quizzes', iconClass: 'nav-icon-quizzes' },
 ]
 
 const titleMap: Record<string, string> = {

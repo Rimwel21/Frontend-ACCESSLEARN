@@ -3,9 +3,10 @@ import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', name: 'Portal', component: () => import('@/pages/auth/PortalPage.vue') },
-  { path: '/login',    name: 'Login',    component: () => import('@/pages/auth/LoginPage.vue') },
-  { path: '/register', name: 'Register', component: () => import('@/pages/auth/RegisterPage.vue') },
+  { path: '/', name: 'Landing', component: () => import('@/pages/LandingPage.vue') },
+  { path: '/portal', name: 'Portal', component: () => import('@/pages/auth/PortalPage.vue') },
+  { path: '/login',    name: 'Login',    component: () => import('@/pages/auth/AuthPage.vue') },
+  { path: '/register', name: 'Register', component: () => import('@/pages/auth/AuthPage.vue') },
   { path: '/profile/setup', name: 'ProfileSetup', component: () => import('@/pages/auth/ProfileSetupPage.vue'), meta: { requiresAuth: true } },
   { path: '/forbidden', name: 'Forbidden', component: () => import('@/pages/auth/ForbiddenPage.vue') },
 
@@ -92,8 +93,13 @@ router.beforeEach((to) => {
     return { path: roleRedirects[auth.role] || '/' }
   }
 
-  if ((to.name === 'Login' || to.name === 'Register') && auth.isAuthenticated) {
-    return { path: roleRedirects[auth.role || ''] || '/' }
+  if ((to.name === 'Login' || to.name === 'Register' || to.name === 'Landing') && auth.isAuthenticated) {
+    // If user is already authenticated and visits Landing/Login/Register, 
+    // we DON'T auto-redirect them away from Landing.
+    // However, if they are on Login/Register, we might want to let them stay there 
+    // or redirect them to dashboard. The user says "Never authenticate automatically".
+    // So we just allow them to stay on these pages.
+    return true
   }
 
   return true

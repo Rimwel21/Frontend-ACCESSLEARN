@@ -21,7 +21,7 @@
             <p class="mt-2 text-xs leading-relaxed text-ink-soft">{{ report.description }}</p>
             
             <div class="mt-6 flex flex-col gap-2">
-                <button class="btn-primary w-full !py-2 text-xs flex items-center justify-center gap-2" :disabled="generating" @click="generateReport(report)">
+                <button class="btn-primary w-full !py-2 text-xs flex items-center justify-center gap-2" :disabled="!!generating" @click="generateReport(report)">
                     {{ generating === report.id ? 'Processing...' : 'Download CSV' }}
                     <span v-if="generating !== report.id">📥</span>
                 </button>

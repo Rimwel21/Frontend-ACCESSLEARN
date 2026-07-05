@@ -12,8 +12,8 @@
     >
       <div class="flex items-center justify-between border-b border-gray-100 bg-brand-blue-soft px-6 py-5">
         <div>
-          <div class="font-display text-2xl font-bold tracking-tight text-brand-blue">Omni Admin</div>
-          <div class="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-ink-soft">Control Center</div>
+          <div class="font-display text-2xl font-bold tracking-tight text-brand-blue">ACCESSLearn</div>
+          <div class="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-ink-soft">Management Console</div>
         </div>
         <button class="lg:hidden text-ink-soft" @click="isSidebarOpen = false">×</button>
       </div>
@@ -217,16 +217,24 @@ function logout() {
 .page-leave-to { opacity: 0; transform: translateY(-8px); }
 
 .nav-icon-box {
-  @apply flex items-center justify-center border-0 bg-transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-width: 0;
+  background-color: transparent;
 }
 
 ::-webkit-scrollbar {
   width: 5px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background-color: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-200 rounded-full hover:bg-gray-300;
+  background-color: #e2e8f0;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #cbd5e1;
 }
 </style>

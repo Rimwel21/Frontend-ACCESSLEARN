@@ -141,28 +141,43 @@ const roleLabel = computed(() => auth.role === 'student' ? 'Student' : 'Teacher'
 
 onMounted(async () => {
   const existing = await profile.fetchProfile()
-  if (!existing) return
+  
+  // Try to load pending info from registration if no existing profile
+  const pendingStr = localStorage.getItem('pending_profile')
+  const pending = pendingStr ? JSON.parse(pendingStr) : null
 
-  if (auth.role === 'student' && 'student_type' in existing) {
-    studentForm.value = {
-      name: existing.name ?? '',
-      student_type: existing.student_type ?? '',
-      guardians_name: existing.guardians_name ?? '',
-      guardians_contact_no: existing.guardians_contact_no ?? '',
-      address: existing.address ?? '',
+  if (existing) {
+    if (auth.role === 'student' && 'student_type' in existing) {
+      studentForm.value = {
+        name: existing.name ?? '',
+        student_type: existing.student_type ?? '',
+        guardians_name: existing.guardians_name ?? '',
+        guardians_contact_no: existing.guardians_contact_no ?? '',
+        address: existing.address ?? '',
+      }
     }
-  }
 
-  if (auth.role === 'teacher' && 'contact_no' in existing) {
-    const t = existing as any
-    teacherForm.value = {
-      name: t.name ?? '',
-      contact_no: t.contact_no ?? '',
-      age: t.age ?? 25,
-      sex: t.sex ?? '',
-      grade_level_handles: t.grade_level_handles ?? [],
-      address: t.address ?? '',
+    if (auth.role === 'teacher' && 'contact_no' in existing) {
+      const t = existing as any
+      teacherForm.value = {
+        name: t.name ?? '',
+        contact_no: t.contact_no ?? '',
+        age: t.age ?? 25,
+        sex: t.sex ?? '',
+        grade_level_handles: t.grade_level_handles ?? [],
+        address: t.address ?? '',
+      }
     }
+  } else if (pending) {
+    // Bootstrap from registration data
+    if (auth.role === 'student') {
+      studentForm.value.name = pending.fullName || ''
+    } else {
+      teacherForm.value.name = pending.fullName || ''
+      teacherForm.value.contact_no = pending.contactNo || ''
+    }
+    // Clear pending after use
+    localStorage.removeItem('pending_profile')
   }
 
   previewUrl.value = profile.image?.file_url ?? ''

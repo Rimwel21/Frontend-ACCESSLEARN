@@ -14,6 +14,7 @@ export interface AccountListOut {
     role: string;
     account_status: string;
     created_at: string;
+    section_count?: number;
 }
 
 export interface TeacherInviteOut {
