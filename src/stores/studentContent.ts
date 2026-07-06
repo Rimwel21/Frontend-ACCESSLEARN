@@ -30,6 +30,7 @@ export interface StudentModule {
 
 export interface StudentAssessment {
   id: number
+  class_id?: number | null
   module_id?: number | null
   topic_id?: number | null
   assessment_type: 'quiz' | 'activity'
@@ -52,6 +53,8 @@ interface ProgressResponse {
 
 export const useStudentContentStore = defineStore('studentContent', () => {
   const modules = ref<StudentModule[]>([])
+  const activities = ref<StudentAssessment[]>([])
+  const currentActivity = ref<StudentAssessment | null>(null)
   const currentModule = ref<StudentModule | null>(null)
   const progressByModule = ref<Record<number, ProgressResponse>>({})
   const progress = ref<ProgressResponse>({
@@ -73,6 +76,8 @@ export const useStudentContentStore = defineStore('studentContent', () => {
     if (!auth.token) return
     loading.value = true
     error.value = ''
+    modules.value = []
+    progressByModule.value = {}
     try {
       modules.value = await apiFetch<StudentModule[]>('/student/modules/', { token: auth.token })
       await fetchAllProgress()
@@ -88,6 +93,7 @@ export const useStudentContentStore = defineStore('studentContent', () => {
     if (!auth.token) return
     loading.value = true
     error.value = ''
+    currentModule.value = null
     try {
       currentModule.value = await apiFetch<StudentModule>(`/student/modules/${id}`, { token: auth.token })
       await fetchProgress(id)
@@ -137,5 +143,61 @@ export const useStudentContentStore = defineStore('studentContent', () => {
     return result
   }
 
-  return { modules, currentModule, progress, progressByModule, sortedTopics, loading, error, fetchModules, fetchModule, fetchProgress, fetchAllProgress, markTopic, submitQuiz }
+  async function fetchActivities() {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    loading.value = true
+    error.value = ''
+    activities.value = []
+    try {
+      activities.value = await apiFetch<StudentAssessment[]>('/student/activities/', { token: auth.token })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unable to load activities'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchActivity(id: string | number) {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    loading.value = true
+    error.value = ''
+    currentActivity.value = null
+    try {
+      currentActivity.value = await apiFetch<StudentAssessment>(`/student/activities/${id}`, { token: auth.token })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unable to load activity'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function submitAssessment(moduleId: string | number, assessmentId: number, answers: Record<string, string>) {
+    const auth = useAuthStore()
+    if (!auth.token) return null
+    const result = await apiFetch<{ score: number; total: number; progress: ProgressResponse }>(`/student/modules/${moduleId}/assessments/${assessmentId}/submit`, {
+      method: 'POST',
+      token: auth.token,
+      body: JSON.stringify({ answers }),
+    })
+    progress.value = result.progress
+    return result
+  }
+
+  async function submitActivity(activityId: string | number, answers: Record<string, string>) {
+    const auth = useAuthStore()
+    if (!auth.token) return null
+    return await apiFetch<{ score: number; total: number }>(`/student/activities/${activityId}/submit`, {
+      method: 'POST',
+      token: auth.token,
+      body: JSON.stringify({ answers }),
+    })
+  }
+
+  return {
+    modules, activities, currentActivity, currentModule, progress, progressByModule, sortedTopics, loading, error,
+    fetchModules, fetchModule, fetchActivities, fetchActivity, fetchProgress, fetchAllProgress,
+    markTopic, submitQuiz, submitAssessment, submitActivity,
+  }
 })

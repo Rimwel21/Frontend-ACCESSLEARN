@@ -57,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
@@ -67,25 +67,12 @@ const router = useRouter()
 const auth = useAuthStore()
 const profile = useProfileStore()
 
-const isHearingImpaired = computed(() => {
-  const data = profile.profile
-  return Boolean(data && 'student_type' in data && data.student_type === 'hearing impaired')
-})
-
-const navItems = computed(() => {
-  const items = [
-    { to: '/student/dashboard', label: 'Home', iconClass: 'rounded-full' },
-    { to: '/student/dashboard', label: 'Learning Content', iconClass: 'rounded-sm' },
-    { to: '/student/quiz', label: 'Quizzes', iconClass: 'rounded' },
-    { to: '/student/activities', label: 'Activities', iconClass: 'rounded-sm' },
-  ]
-
-  if (isHearingImpaired.value) {
-    items.push({ to: '/student/activities/handsign', label: 'Hand Sign Language', iconClass: 'rounded-sm' })
-  }
-
-  return items
-})
+const navItems = [
+  { to: '/student/dashboard', label: 'Home', iconClass: 'rounded-full' },
+  { to: '/student/dashboard', label: 'Learning Content', iconClass: 'rounded-sm' },
+  { to: '/student/quiz', label: 'Quizzes', iconClass: 'rounded' },
+  { to: '/student/activities', label: 'Activities', iconClass: 'rounded-sm' },
+]
 
 onMounted(() => {
   profile.fetchProfile().catch(() => null)

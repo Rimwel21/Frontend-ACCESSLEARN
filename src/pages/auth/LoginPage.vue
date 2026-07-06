@@ -6,12 +6,6 @@
       <h1 class="auth-title">{{ roleLabel }} Login</h1>
 
       <form class="form-stack" @submit.prevent="submitLogin">
-        <label class="field-label" for="role">Login as</label>
-        <select id="role" v-model="role" class="input-field">
-          <option value="teacher">Teacher</option>
-          <option value="student">Student</option>
-        </select>
-
         <template v-if="role === 'teacher'">
           <label class="field-label" for="email">Email</label>
           <input id="email" v-model.trim="email" class="input-field" type="email" autocomplete="email" minlength="5" maxlength="50" required />

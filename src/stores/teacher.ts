@@ -70,6 +70,7 @@ interface Activity {
   title: string
   description: string
   module: string
+  classId?: number | null
   moduleId?: number | null
   topicId?: number | null
   dueDate: string
@@ -85,10 +86,48 @@ interface AssessmentQuestion {
 
 interface ClassInfo {
   id: string
+  className: string
+  subject: string
   gradeLevel: string
   section: string
+  schoolYear?: string | null
   studentCount: number
   createdAt: string
+}
+
+interface ClassStudent {
+  id: number
+  accountId: number
+  name: string
+  username?: string | null
+  email?: string | null
+  gradeLevel: string
+  section: string
+  createdAt?: string | null
+}
+
+interface TeacherClassResponse {
+  id: number
+  teacher_id: number
+  class_name: string
+  subject: string
+  grade_level: string
+  section: string
+  school_year: string | null
+  student_count: number
+  created_at: string
+  updated_at: string
+}
+
+interface ClassStudentResponse {
+  id: number
+  account_id: number
+  name: string
+  username?: string | null
+  email?: string | null
+  grade_level: string
+  section: string
+  created_at?: string | null
 }
 
 interface TeacherModuleResponse {
@@ -112,6 +151,7 @@ interface TeacherModuleResponse {
 interface TeacherAssessmentResponse {
   id: number
   teacher_id: number
+  class_id: number | null
   module_id: number | null
   topic_id: number | null
   assessment_type: 'quiz' | 'activity'
@@ -141,6 +181,11 @@ export const useTeacherStore = defineStore('teacher', () => {
   const quizError = ref('')
   const activitySaving = ref(false)
   const activityError = ref('')
+  const classesLoading = ref(false)
+  const classSaving = ref(false)
+  const classError = ref('')
+  const classStudents = ref<ClassStudent[]>([])
+  const classStudentsLoading = ref(false)
 
   const performers = ref<Performer[]>([
     { name: 'Penagrin, Aguiluz Emmanuelle O.', initials: 'FE', gradient: 'from-brand-blue to-brand-violet', assignments: 80, quiz: 183, activities: 80, total: 343, avg: '95%' },
@@ -168,26 +213,106 @@ export const useTeacherStore = defineStore('teacher', () => {
   const unpublishedModules = computed(() => modules.value.filter(m => m.status === 'Unpublished'))
   const atRiskStudents = computed(() => students.value.filter(s => s.status === 'Needs Help'))
 
-  function addClass(gradeLevel: string, section: string) {
-    const newClass: ClassInfo = {
-      id: `c${Date.now()}`,
-      gradeLevel,
-      section,
-      studentCount: 0,
-      createdAt: new Date().toLocaleDateString(),
+  async function fetchClasses() {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    classesLoading.value = true
+    classError.value = ''
+
+    try {
+      const data = await apiFetch<TeacherClassResponse[]>('/teacher/classes/', { token: auth.token })
+      classes.value = data.map(mapClassResponse)
+      if (!selectedClassId.value && classes.value.length) {
+        selectedClassId.value = classes.value[0].id
+        await fetchClassStudents(selectedClassId.value)
+      } else if (selectedClassId.value && !classes.value.some(c => c.id === selectedClassId.value)) {
+        selectedClassId.value = classes.value[0]?.id ?? null
+        classStudents.value = []
+      }
+    } catch (err) {
+      classError.value = err instanceof Error ? err.message : 'Unable to load classes'
+    } finally {
+      classesLoading.value = false
     }
-    classes.value.push(newClass)
-    selectedClassId.value = newClass.id
-    return newClass
   }
 
-  function selectClass(id: string) {
+  async function addClass(payload: {
+    className: string
+    subject: string
+    gradeLevel: string
+    section: string
+    schoolYear?: string | null
+  }) {
+    const auth = useAuthStore()
+    if (!auth.token) throw new Error('Please login first')
+    classSaving.value = true
+    classError.value = ''
+
+    try {
+      const saved = await apiFetch<TeacherClassResponse>('/teacher/classes/', {
+        method: 'POST',
+        token: auth.token,
+        body: JSON.stringify({
+          class_name: payload.className,
+          subject: payload.subject,
+          grade_level: payload.gradeLevel,
+          section: payload.section,
+          school_year: payload.schoolYear || null,
+        }),
+      })
+      const mapped = mapClassResponse(saved)
+      classes.value.unshift(mapped)
+      selectedClassId.value = mapped.id
+      await fetchClassStudents(mapped.id)
+      return mapped
+    } catch (err) {
+      classError.value = err instanceof Error ? err.message : 'Unable to create class'
+      throw err
+    } finally {
+      classSaving.value = false
+    }
+  }
+
+  async function selectClass(id: string) {
     selectedClassId.value = id
+    await fetchClassStudents(id)
   }
 
-  function deleteClass(id: string) {
+  async function deleteClass(id: string) {
+    const auth = useAuthStore()
+    const original = classes.value
     classes.value = classes.value.filter(c => c.id !== id)
-    if (selectedClassId.value === id) selectedClassId.value = null
+    if (selectedClassId.value === id) {
+      selectedClassId.value = classes.value[0]?.id ?? null
+      classStudents.value = []
+    }
+    if (!auth.token) return
+
+    try {
+      await apiFetch(`/teacher/classes/${id}`, { method: 'DELETE', token: auth.token })
+      if (selectedClassId.value) await fetchClassStudents(selectedClassId.value)
+    } catch (err) {
+      classes.value = original
+      classError.value = err instanceof Error ? err.message : 'Unable to delete class'
+    }
+  }
+
+  async function fetchClassStudents(id: string) {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    classStudentsLoading.value = true
+    classError.value = ''
+
+    try {
+      const data = await apiFetch<ClassStudentResponse[]>(`/teacher/classes/${id}/students`, { token: auth.token })
+      classStudents.value = data.map(mapClassStudentResponse)
+      const target = classes.value.find(cls => cls.id === id)
+      if (target) target.studentCount = classStudents.value.length
+    } catch (err) {
+      classError.value = err instanceof Error ? err.message : 'Unable to load students'
+    } finally {
+      classStudentsLoading.value = false
+    }
   }
 
   async function fetchModules() {
@@ -363,6 +488,7 @@ export const useTeacherStore = defineStore('teacher', () => {
   }
 
   async function addActivity(payload: {
+    classId?: number | null
     moduleId?: number | null
     topicId?: number | null
     title: string
@@ -387,6 +513,7 @@ export const useTeacherStore = defineStore('teacher', () => {
       }
 
       const formPayload = payload as {
+        classId?: number | null
         moduleId?: number | null
         topicId?: number | null
         title: string
@@ -405,8 +532,9 @@ export const useTeacherStore = defineStore('teacher', () => {
         token: auth.token,
         body: JSON.stringify({
           assessment_type: 'activity',
-          module_id: formPayload.moduleId ?? null,
-          topic_id: formPayload.topicId ?? null,
+          class_id: formPayload.classId ?? null,
+          module_id: null,
+          topic_id: null,
           title: formPayload.title,
           description: formPayload.description,
           category: formPayload.activityType ?? 'Activity',
@@ -440,11 +568,38 @@ export const useTeacherStore = defineStore('teacher', () => {
     teacherName, modules, performers, recentActivities, students, quizzes, activities,
     classes, selectedClassId, selectedClass, hasClasses,
     modulesLoading, moduleSaving, moduleError, quizSaving, quizError, activitySaving, activityError,
+    classesLoading, classSaving, classError, classStudents, classStudentsLoading,
     publishedModules, unpublishedModules, atRiskStudents,
     fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchAssessments, addQuiz, addActivity, updateActivity, deleteActivity,
-    addClass, selectClass, deleteClass,
+    fetchClasses, addClass, selectClass, deleteClass, fetchClassStudents,
   }
 })
+
+function mapClassResponse(cls: TeacherClassResponse): ClassInfo {
+  return {
+    id: String(cls.id),
+    className: cls.class_name,
+    subject: cls.subject,
+    gradeLevel: cls.grade_level,
+    section: cls.section,
+    schoolYear: cls.school_year,
+    studentCount: cls.student_count,
+    createdAt: new Date(cls.created_at).toLocaleDateString(),
+  }
+}
+
+function mapClassStudentResponse(student: ClassStudentResponse): ClassStudent {
+  return {
+    id: student.id,
+    accountId: student.account_id,
+    name: student.name,
+    username: student.username,
+    email: student.email,
+    gradeLevel: student.grade_level,
+    section: student.section,
+    createdAt: student.created_at ? new Date(student.created_at).toLocaleDateString() : null,
+  }
+}
 
 function mapModuleResponse(module: TeacherModuleResponse): Module {
   return {
@@ -473,6 +628,7 @@ function uploadModule(module: Omit<Module, 'id' | 'lastUpdated'> & { file?: File
   formData.append('status_value', module.status)
   formData.append('behavior_required', String(module.behaviorRequired ?? true))
   formData.append('estimated_time', module.estimatedTime ?? '')
+  if (module.classId) formData.append('class_id', String(module.classId))
   if (module.file) formData.append('material_file', module.file)
 
   return apiFetch<TeacherModuleResponse>('/teacher/modules/upload', {
@@ -503,6 +659,7 @@ function mapActivityResponse(assessment: TeacherAssessmentResponse): Activity {
     title: assessment.title,
     description: assessment.description,
     module: assessment.category ?? 'Activity',
+    classId: assessment.class_id,
     moduleId: assessment.module_id,
     topicId: assessment.topic_id,
     dueDate: assessment.week ?? '',

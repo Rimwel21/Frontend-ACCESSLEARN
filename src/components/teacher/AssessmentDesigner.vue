@@ -24,15 +24,24 @@
               <input id="assessment-week" v-model.trim="form.week" class="figma-input" />
             </div>
             <div>
-              <label class="figma-label" for="assessment-module">Learning Material</label>
-              <select id="assessment-module" v-model.number="form.moduleId" class="figma-input" @change="loadTopics">
-                <option :value="null">Select a material</option>
-                <option v-for="module in store.modules" :key="module.id" :value="Number(module.id)">
-                  {{ module.title }}
+              <label class="figma-label" for="assessment-class">Target Class</label>
+              <select id="assessment-class" v-model="form.classId" class="figma-input" @change="selectClass">
+                <option value="">Select grade and section</option>
+                <option v-for="cls in store.classes" :key="cls.id" :value="cls.id">
+                  {{ cls.className }} - {{ gradeLabel(cls.gradeLevel) }} Section {{ cls.section }}
                 </option>
               </select>
             </div>
-            <div>
+            <div v-if="props.kind === 'quiz'">
+              <label class="figma-label" for="assessment-module">Learning Material</label>
+              <select id="assessment-module" v-model.number="form.moduleId" class="figma-input" :disabled="!form.classId" @change="loadTopics">
+                <option :value="null">Select a material</option>
+                <option v-for="module in availableModules" :key="module.id" :value="Number(module.id)">
+                  {{ module.title }} - {{ classNameFor(module.classId) }}
+                </option>
+              </select>
+            </div>
+            <div v-if="props.kind === 'quiz'">
               <label class="figma-label" for="assessment-topic">Topic</label>
               <select id="assessment-topic" v-model.number="form.topicId" class="figma-input" :disabled="topics.length === 0">
                 <option :value="null">Whole module</option>
@@ -111,6 +120,7 @@ const store = useTeacherStore()
 const error = ref('')
 const success = ref('')
 const form = ref({
+  classId: '',
   moduleId: null as number | null,
   topicId: null as number | null,
   title: '',
@@ -130,8 +140,11 @@ const topics = ref<Array<{ id: number; title: string }>>([])
 const saving = computed(() => props.kind === 'quiz' ? store.quizSaving : store.activitySaving)
 
 onMounted(() => {
+  store.fetchClasses()
   store.fetchModules()
 })
+
+const availableModules = computed(() => store.modules.filter(module => form.value.classId && module.classId === Number(form.value.classId)))
 
 function addQuestion() {
   form.value.questions.push({ prompt: '', answer: '' })
@@ -145,11 +158,18 @@ async function loadTopics() {
   topics.value = detail.topics
 }
 
+function selectClass() {
+  store.selectedClassId = form.value.classId || null
+  form.value.moduleId = null
+  form.value.topicId = null
+  topics.value = []
+}
+
 async function saveAssessment() {
   error.value = ''
   success.value = ''
 
-  if (!form.value.title || !form.value.description || !form.value.category || !form.value.week) {
+  if (!form.value.title || !form.value.description || !form.value.category || !form.value.week || !form.value.classId || (props.kind === 'quiz' && !form.value.moduleId)) {
     error.value = `Please complete the ${props.title.toLowerCase()} information.`
     return
   }
@@ -178,8 +198,9 @@ async function saveAssessment() {
   } else {
     await store.addActivity({
       title: form.value.title,
-      moduleId: form.value.moduleId,
-      topicId: form.value.topicId,
+      classId: Number(form.value.classId),
+      moduleId: null,
+      topicId: null,
       description: form.value.description,
       activityType: form.value.category,
       week: form.value.week,
@@ -193,5 +214,23 @@ async function saveAssessment() {
 
   success.value = `${props.title} saved successfully.`
   emit('saved')
+}
+
+function classNameFor(classId?: number | null) {
+  if (!classId) return 'No class'
+  const cls = store.classes.find(item => item.id === String(classId))
+  return cls ? cls.className : `Class #${classId}`
+}
+
+function gradeLabel(value: string) {
+  const grades: Record<string, string> = {
+    grade_1: 'Grade 1',
+    grade_2: 'Grade 2',
+    grade_3: 'Grade 3',
+    grade_4: 'Grade 4',
+    grade_5: 'Grade 5',
+    grade_6: 'Grade 6',
+  }
+  return grades[value] ?? value
 }
 </script>
