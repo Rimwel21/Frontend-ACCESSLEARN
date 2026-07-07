@@ -69,7 +69,6 @@ const profile = useProfileStore()
 
 const navItems = [
   { to: '/student/dashboard', label: 'Home', iconClass: 'rounded-full' },
-  { to: '/student/dashboard', label: 'Learning Content', iconClass: 'rounded-sm' },
   { to: '/student/quiz', label: 'Quizzes', iconClass: 'rounded' },
   { to: '/student/activities', label: 'Activities', iconClass: 'rounded-sm' },
 ]
