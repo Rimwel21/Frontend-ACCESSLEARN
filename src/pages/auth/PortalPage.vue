@@ -3,7 +3,7 @@
     <section class="mx-auto grid min-h-[calc(100vh-5rem)] max-w-6xl content-center gap-8">
       <div class="max-w-3xl">
         <p class="eyebrow">ACCESS Learn Portal</p>
-        <h1 class="font-display text-5xl font-bold leading-none sm:text-6xl">Choose your account flow</h1>
+        <h1 class="font-display text-5xl font-bold leading-none sm:text-6xl">Choose your account</h1>
         <p class="mt-5 max-w-2xl text-base leading-8 text-ink-soft">
           Register or login as a student or teacher, complete your profile, then continue into the learning dashboard.
         </p>
