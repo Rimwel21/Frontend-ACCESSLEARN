@@ -6,10 +6,16 @@ import { useAuthStore } from '@/stores/auth'
 type Role = 'student' | 'teacher' | 'admin'
 
 type StudentType = 'regular' | 'hearing impaired'
+type UserSex = 'Male' | 'Female'
+type GradeLevel = 'grade_1' | 'grade_2' | 'grade_3' | 'grade_4' | 'grade_5' | 'grade_6'
 
 export interface StudentProfile {
   id: number
   name: string
+  age: number | null
+  sex: UserSex | null
+  grade_level: GradeLevel | null
+  section: string | null
   student_type: StudentType
   account_id: number
   profile_image_id: number | null
@@ -25,6 +31,9 @@ export interface TeacherProfile {
   account_id: number
   profile_image_id: number | null
   name: string
+  age: number | null
+  sex: UserSex | null
+  handle_grade_levels: Array<{ grade_level_handles: GradeLevel }>
   contact_no: string
   email_address: string
   address: string
@@ -39,8 +48,8 @@ export interface FileProfile {
   file_url: string
   file_category: string
   is_default?: boolean
-  created_at: string
-  updated_at: string
+  created_at: string | null
+  updated_at: string | null
 }
 
 type Profile = StudentProfile | TeacherProfile

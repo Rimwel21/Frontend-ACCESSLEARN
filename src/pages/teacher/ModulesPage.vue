@@ -31,6 +31,7 @@
           <span :class="material.status === 'Published' ? 'badge-green' : 'badge-amber'" class="badge">{{ material.status }}</span>
         </div>
         <dl class="mt-4 grid gap-2 text-xs text-ink-soft">
+          <div class="flex justify-between gap-3"><dt class="font-bold">Class</dt><dd>{{ classNameFor(material.classId) }}</dd></div>
           <div class="flex justify-between gap-3"><dt class="font-bold">Type</dt><dd>{{ material.contentType || 'Material' }}</dd></div>
           <div class="flex justify-between gap-3"><dt class="font-bold">Week</dt><dd>{{ material.week || 'Not set' }}</dd></div>
           <div class="flex justify-between gap-3"><dt class="font-bold">File</dt><dd class="truncate">{{ material.fileName || 'No file' }}</dd></div>
@@ -68,6 +69,15 @@
                 <div class="grid gap-3">
                   <div><label class="figma-label">Title</label><input v-model.trim="form.title" class="figma-input" /></div>
                   <div><label class="figma-label">Description</label><input v-model.trim="form.description" class="figma-input" /></div>
+                  <div>
+                    <label class="figma-label">Class</label>
+                    <select v-model="form.classId" class="figma-input">
+                      <option value="">Select class...</option>
+                      <option v-for="cls in store.classes" :key="cls.id" :value="cls.id">
+                        {{ cls.className }} - {{ cls.subject }}
+                      </option>
+                    </select>
+                  </div>
                   <div><label class="figma-label">Content Type</label><input v-model.trim="form.contentType" class="figma-input" /></div>
                   <div><label class="figma-label">Week</label><input v-model.trim="form.week" class="figma-input" /></div>
                 </div>
@@ -133,6 +143,7 @@ const filteredMaterials = computed(() => store.modules.filter(material =>
 ))
 
 onMounted(() => {
+  store.fetchClasses()
   store.fetchModules()
 })
 
@@ -140,6 +151,7 @@ function defaultForm() {
   return {
     title: '',
     description: '',
+    classId: store.selectedClassId ?? '',
     contentType: '',
     week: '',
     status: 'Unpublished' as 'Published' | 'Unpublished',
@@ -186,7 +198,7 @@ async function submitMaterial() {
   formError.value = ''
   successMessage.value = ''
 
-  if (!form.value.title || !form.value.description || !form.value.contentType || !form.value.week) {
+  if (!form.value.title || !form.value.description || !form.value.classId || !form.value.contentType || !form.value.week) {
     formError.value = 'Please complete the material details.'
     return
   }
@@ -200,6 +212,7 @@ async function submitMaterial() {
     await store.addModule({
       title: form.value.title,
       description: form.value.description,
+      classId: Number(form.value.classId),
       contentType: form.value.contentType,
       week: form.value.week,
       status: form.value.status,
@@ -220,6 +233,12 @@ function formatFileSize(size?: number | null) {
   if (size < 1024) return `${size} B`
   if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`
   return `${(size / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function classNameFor(classId?: number | null) {
+  if (!classId) return 'Not assigned'
+  const cls = store.classes.find(item => item.id === String(classId))
+  return cls ? `${cls.className} - ${cls.subject}` : `Class #${classId}`
 }
 
 async function downloadMaterial(material: { id: string; fileName?: string | null }) {
