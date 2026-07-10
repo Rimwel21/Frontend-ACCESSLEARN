@@ -38,6 +38,16 @@ const routes: RouteRecordRaw[] = [
     ],
   },
 
+  {
+    path: '/admin',
+    component: () => import('@/components/layout/AdminLayout.vue'),
+    meta: { requiresAuth: true, role: 'admin' },
+    children: [
+      { path: '', redirect: '/admin/dashboard' },
+      { path: 'dashboard', name: 'AdminDashboard', component: () => import('@/pages/admin/DashboardPage.vue') },
+    ],
+  },
+
   // Topic viewer renders full-screen, no sidebar; only its own Go Back button.
   {
     path: '/student/modules/:moduleId',
@@ -63,11 +73,19 @@ router.beforeEach((to) => {
   }
 
   if (to.meta.role && auth.role && to.meta.role !== auth.role) {
-    return auth.role === 'teacher' ? { path: '/teacher/class' } : { path: '/student/dashboard' }
+    return auth.role === 'teacher'
+      ? { path: '/teacher/class' }
+      : auth.role === 'admin'
+        ? { path: '/admin/dashboard' }
+        : { path: '/student/dashboard' }
   }
 
   if ((to.name === 'Login' || to.name === 'Register') && auth.isAuthenticated) {
-    return auth.role === 'teacher' ? { path: '/teacher/class' } : { path: '/student/dashboard' }
+    return auth.role === 'teacher'
+      ? { path: '/teacher/class' }
+      : auth.role === 'admin'
+        ? { path: '/admin/dashboard' }
+        : { path: '/student/dashboard' }
   }
 
   return true
