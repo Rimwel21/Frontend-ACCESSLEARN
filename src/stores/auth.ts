@@ -54,7 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const data = await apiFetch<{ message: string }>('/otp/teacher/request', {
         method: 'POST',
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, role: 'teacher' }),
       })
       return data
     } catch (err) {
@@ -72,7 +72,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const data = await apiFetch<{ message: string }>('/otp/teacher/verify', {
         method: 'POST',
-        body: JSON.stringify({ email, otp }),
+        body: JSON.stringify({ email, otp, role: 'teacher' }),
       })
       otpVerified.value = true
       return data
@@ -152,6 +152,10 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('profile_completed')
     localStorage.removeItem('profile_data')
     localStorage.removeItem('profile_image')
+    localStorage.removeItem('teacher_pending_email')
+    localStorage.removeItem('teacher_otp_expires_at')
+    localStorage.removeItem('teacher_verified_email')
+    localStorage.removeItem('teacher_register_step')
   }
 
   function setProfileCompleted(completed: boolean) {

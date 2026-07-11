@@ -101,17 +101,36 @@
                 <span class="badge bg-amber-100 text-amber-700 animate-pulse">Pending Review</span>
               </td>
               <td class="table-td text-right">
-                <div class="inline-flex gap-2">
-                  <button 
-                    @click="approveAccount(teacher.id)" 
+                <div v-if="confirmingId === teacher.id" class="inline-flex items-center gap-2">
+                  <span class="text-xs font-semibold text-ink-soft mr-1">
+                    Confirm {{ confirmingAction === 'approve' ? 'verify' : 'block' }}?
+                  </span>
+                  <button
+                    @click="confirmAction"
                     :disabled="submittingId === teacher.id"
+                    class="px-3.5 py-1.5 text-xs font-bold text-white bg-brand-green rounded-lg hover:bg-emerald-600 active:scale-95 transition-all disabled:opacity-60"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    @click="cancelConfirmation"
+                    :disabled="submittingId === teacher.id"
+                    class="px-3.5 py-1.5 text-xs font-bold text-ink bg-surface-2 rounded-lg hover:bg-gray-300 active:scale-95 transition-all disabled:opacity-60"
+                  >
+                    No
+                  </button>
+                </div>
+                <div v-else class="inline-flex gap-2">
+                  <button 
+                    @click="initiateAction(teacher.id, 'approve')" 
+                    :disabled="submittingId !== null"
                     class="px-4 py-2 text-xs font-bold text-white bg-brand-green rounded-lg hover:bg-emerald-600 active:scale-95 transition-all disabled:opacity-60"
                   >
                     Verify
                   </button>
                   <button 
-                    @click="blockAccount(teacher.id)" 
-                    :disabled="submittingId === teacher.id"
+                    @click="initiateAction(teacher.id, 'block')" 
+                    :disabled="submittingId !== null"
                     class="px-4 py-2 text-xs font-bold text-white bg-brand-rose rounded-lg hover:bg-rose-600 active:scale-95 transition-all disabled:opacity-60"
                   >
                     Block
@@ -147,12 +166,39 @@ const submittingId = ref<number | null>(null)
 const successMsg = ref('')
 const errorMsg = ref('')
 
+const confirmingId = ref<number | null>(null)
+const confirmingAction = ref<'approve' | 'block' | null>(null)
+
 const actionCounts = ref({
   approved: 0,
   blocked: 0,
 })
 
+function initiateAction(teacherId: number, action: 'approve' | 'block') {
+  confirmingId.value = teacherId
+  confirmingAction.value = action
+}
+
+function cancelConfirmation() {
+  confirmingId.value = null
+  confirmingAction.value = null
+}
+
+async function confirmAction() {
+  if (confirmingId.value === null || confirmingAction.value === null) return
+  const id = confirmingId.value
+  const act = confirmingAction.value
+  cancelConfirmation()
+  if (act === 'approve') {
+    await approveAccount(id)
+  } else if (act === 'block') {
+    await blockAccount(id)
+  }
+}
+
 async function loadPendingAccounts() {
+  confirmingId.value = null
+  confirmingAction.value = null
   loading.value = true
   errorMsg.value = ''
   try {
