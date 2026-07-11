@@ -3,45 +3,56 @@
 
     <!-- ===================== NAVIGATION ===================== -->
     <nav
-      class="sticky top-0 z-[100] w-full border-b bg-white/80 backdrop-blur-xl transition-all duration-300"
-      :class="scrolled ? 'border-brand-blue/10 shadow-lg shadow-brand-blue/5' : 'border-gray-100/50'"
+      class="sticky top-0 z-[100] w-full border-b bg-white/85 backdrop-blur-xl transition-all duration-300"
+      :class="scrolled ? 'border-gray-100 shadow-md shadow-brand-blue/5' : 'border-gray-100/50'"
       role="navigation"
       aria-label="Main Navigation"
     >
-      <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
+      <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <!-- Logo -->
-        <div class="flex items-center gap-3 cursor-pointer select-none group" @click="scrollToTop">
-          <div class="flex h-11 w-11 items-center justify-center rounded-[14px] bg-brand-blue font-black text-white text-sm shadow-xl shadow-brand-blue/25 transition-transform group-hover:scale-105 active:scale-95">AL</div>
-          <div class="flex flex-col">
-            <span class="font-display text-xl font-black tracking-tighter text-ink leading-none">ACCESSLearn</span>
-            <span class="text-[9px] font-bold text-brand-blue uppercase tracking-widest mt-0.5">Inclusive E-Learning</span>
+        <div class="flex items-center gap-2 cursor-pointer select-none group" @click="scrollToTop">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1565FF] font-sans font-black text-white text-base shadow-sm">
+            AL
           </div>
+          <span class="font-display text-2xl font-bold tracking-tight text-ink">ACCESSLearn</span>
         </div>
 
         <!-- Desktop Nav -->
         <div class="hidden items-center gap-8 lg:flex">
-          <div class="flex items-center gap-7">
+          <div class="flex items-center gap-8">
             <a
-              v-for="link in navLinks"
-              :key="link.id"
-              :href="link.href"
-              class="text-sm font-bold text-ink-soft hover:text-brand-blue transition-colors relative group"
-              @click.prevent="link.action ? link.action() : scrollTo(link.href)"
+              href="#home"
+              @click.prevent="scrollToTop"
+              class="text-sm font-bold text-ink hover:text-[#1565FF] transition-colors"
             >
-              {{ link.label }}
-              <span class="absolute -bottom-0.5 left-0 h-0.5 w-0 bg-brand-blue transition-all duration-300 group-hover:w-full rounded-full"></span>
+              Home
+            </a>
+            <a
+              href="#about"
+              @click.prevent="scrollTo('#about')"
+              class="text-sm font-bold text-ink-soft hover:text-[#1565FF] transition-colors"
+            >
+              About
+            </a>
+            <a
+              href="#features"
+              @click.prevent="scrollTo('#features')"
+              class="text-sm font-bold text-ink-soft hover:text-[#1565FF] transition-colors"
+            >
+              Features
             </a>
           </div>
-          <div class="h-5 w-px bg-gray-200"></div>
-          <div class="flex items-center gap-3">
-            <RouterLink to="/login" class="text-sm font-bold text-ink hover:text-brand-blue transition-colors px-3 py-2">Sign In</RouterLink>
-            <RouterLink to="/register" class="btn-primary !px-6 !py-2.5 !text-xs !font-black !uppercase !tracking-wider">Get Started</RouterLink>
-          </div>
+          <RouterLink
+            to="/login"
+            class="rounded-full bg-[#1565FF] px-6 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-sm shadow-blue-500/10 cursor-pointer border-0"
+          >
+            Login
+          </RouterLink>
         </div>
 
         <!-- Mobile Toggle -->
         <button
-          class="lg:hidden h-10 w-10 flex items-center justify-center rounded-xl bg-surface-2 text-ink active:scale-90 transition-transform"
+          class="lg:hidden h-10 w-10 flex items-center justify-center rounded-xl bg-surface-2 text-ink active:scale-90 transition-transform border-none cursor-pointer"
           @click="isMenuOpen = !isMenuOpen"
           aria-label="Toggle navigation menu"
           :aria-expanded="isMenuOpen"
@@ -55,16 +66,23 @@
         <div v-if="isMenuOpen" class="absolute top-full left-0 w-full border-t border-gray-100 bg-white p-6 shadow-2xl lg:hidden" role="menu">
           <div class="flex flex-col gap-5">
             <a
-              v-for="link in navLinks"
-              :key="link.id"
-              :href="link.href"
-              class="text-base font-bold text-ink hover:text-brand-blue transition-colors"
-              @click.prevent="link.action ? link.action() : scrollTo(link.href); isMenuOpen = false"
-            >{{ link.label }}</a>
+              href="#home"
+              class="text-base font-bold text-ink"
+              @click.prevent="scrollToTop(); isMenuOpen = false"
+            >Home</a>
+            <a
+              href="#about"
+              class="text-base font-bold text-ink"
+              @click.prevent="scrollTo('#about'); isMenuOpen = false"
+            >About</a>
+            <a
+              href="#features"
+              class="text-base font-bold text-ink"
+              @click.prevent="scrollTo('#features'); isMenuOpen = false"
+            >Features</a>
             <hr class="border-gray-100" />
             <div class="grid gap-3">
-              <RouterLink to="/login" class="btn-secondary !py-3.5 text-center font-bold" @click="isMenuOpen = false">Sign In</RouterLink>
-              <RouterLink to="/register" class="btn-primary !py-3.5 text-center font-bold" @click="isMenuOpen = false">Get Started →</RouterLink>
+              <RouterLink to="/login" class="btn-primary !bg-[#1565FF] !py-3.5 text-center font-bold" @click="isMenuOpen = false">Login</RouterLink>
             </div>
           </div>
         </div>
@@ -72,102 +90,59 @@
     </nav>
 
     <!-- ===================== HERO SECTION ===================== -->
-    <section id="hero" class="relative overflow-hidden bg-gradient-to-br from-surface via-white to-brand-blue-soft/20 pt-16 pb-24 lg:pt-20 lg:pb-32">
-      <!-- Background decorations -->
-      <div class="pointer-events-none absolute inset-0 overflow-hidden">
-        <div class="absolute -top-20 -right-20 h-96 w-96 rounded-full bg-brand-blue/5 blur-3xl"></div>
-        <div class="absolute top-1/2 -left-20 h-64 w-64 rounded-full bg-brand-violet/5 blur-3xl"></div>
-        <div class="absolute bottom-0 right-1/3 h-48 w-48 rounded-full bg-brand-teal/5 blur-2xl"></div>
-      </div>
+    <section id="hero" class="relative overflow-hidden bg-white pt-16 pb-24 lg:pt-20 lg:pb-32">
+      <!-- Glow decoration behind the classroom card -->
+      <div class="pointer-events-none absolute right-10 top-1/4 h-[500px] w-[500px] rounded-full bg-gradient-to-tr from-amber-200/40 via-yellow-100/20 to-transparent blur-3xl -z-10"></div>
 
       <div class="relative mx-auto max-w-7xl px-6">
         <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
 
           <!-- Left: Content -->
           <div class="space-y-8 animate-fade-in-up">
-            <!-- Badge -->
-            <div class="inline-flex items-center gap-2.5 rounded-full border border-brand-blue/20 bg-brand-blue-soft/40 px-4 py-2 backdrop-blur-sm">
-              <span class="flex h-2 w-2 rounded-full bg-brand-blue animate-pulse"></span>
-              <span class="text-[10px] font-black text-brand-blue uppercase tracking-widest">Accessible • Inclusive • Interactive</span>
-            </div>
-
             <!-- Heading -->
-            <h1 class="font-display text-5xl font-bold leading-tight text-ink sm:text-6xl xl:text-7xl tracking-tighter">
-              Learning
-              <span class="text-brand-blue relative inline-block">
-                Without Barriers.
-                <svg class="absolute -bottom-3 left-0 w-full" viewBox="0 0 300 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path d="M2 12 Q75 2 150 10 T298 6" stroke="#FFE135" stroke-width="4" stroke-linecap="round" fill="none"/>
-                </svg>
-              </span>
-              <br class="hidden sm:block" />
-              Growing Together.
+            <h1 class="font-display text-[46px] sm:text-[54px] lg:text-[62px] font-bold leading-[1.1] text-ink tracking-tight">
+              Learning Made<br />
+              Accessible for <span class="text-[#1565FF]">Every<br />Classroom</span>
             </h1>
 
             <!-- Description -->
-            <p class="max-w-lg text-lg font-medium leading-relaxed text-ink-soft">
-              ACCESSLearn is an accessible e-learning platform that helps teachers deliver engaging lessons while providing students with interactive learning experiences and accessibility features that support diverse learning needs, including learners with hearing impairment.
+            <p class="max-w-lg text-base font-medium leading-relaxed text-ink-soft">
+              ACCESSLearn helps students learn through interactive lessons, engaging activities, quizzes, and accessibility-focused learning tools while giving teachers an organized platform to manage learning materials and monitor student progress.
             </p>
 
             <!-- CTA Buttons -->
             <div class="flex flex-wrap gap-4">
               <RouterLink
-                to="/register"
-                class="btn-primary !px-8 !py-4 !text-base !font-bold shadow-2xl shadow-brand-blue/30 hover:shadow-brand-blue/40"
+                to="/login"
+                class="rounded-full bg-[#1565FF] px-8 py-3.5 text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/10 cursor-pointer border-0"
               >
-                Get Started →
+                Login Now
               </RouterLink>
               <a
                 href="#features"
                 @click.prevent="scrollTo('#features')"
-                class="btn-secondary !px-8 !py-4 !text-base !font-bold border border-gray-200 hover:border-brand-blue/30"
+                class="rounded-full bg-[#F0F2F6] px-8 py-3.5 text-sm font-bold text-ink hover:bg-gray-200 transition-all cursor-pointer border-0"
               >
                 Explore Features
               </a>
             </div>
-
-            <!-- Trust indicators -->
-            <div class="flex flex-wrap items-center gap-8 pt-2">
-              <div v-for="stat in heroStats" :key="stat.label" class="flex flex-col">
-                <span class="text-2xl font-black text-ink leading-none">{{ stat.value }}</span>
-                <span class="text-[10px] font-black text-ink-soft uppercase tracking-widest mt-1">{{ stat.label }}</span>
-              </div>
-            </div>
           </div>
 
-          <!-- Right: Illustration -->
+          <!-- Right: Classroom Image with heavy border and shadow -->
           <div class="relative flex items-center justify-center lg:justify-end">
             <div class="relative w-full max-w-lg">
-              <!-- Floating background cards -->
-              <div class="absolute -top-6 -left-6 rounded-2xl bg-brand-amber/10 p-3 shadow-lg backdrop-blur-sm border border-brand-amber/20 animate-float-slow z-10">
-                <div class="flex items-center gap-2">
-                  <span class="text-2xl">🏆</span>
-                  <div>
-                    <div class="text-xs font-black text-ink">Achievement!</div>
-                    <div class="text-[10px] text-ink-soft font-bold">Lesson complete</div>
-                  </div>
-                </div>
-              </div>
-              <div class="absolute -bottom-4 -right-4 rounded-2xl bg-brand-green/10 p-3 shadow-lg backdrop-blur-sm border border-brand-green/20 animate-float z-10">
-                <div class="flex items-center gap-2">
-                  <span class="text-2xl">📈</span>
-                  <div>
-                    <div class="text-xs font-black text-ink">Progress</div>
-                    <div class="text-[10px] text-ink-soft font-bold">+12% this week</div>
-                  </div>
-                </div>
-              </div>
-              <!-- Main illustration container -->
-              <div class="relative overflow-hidden rounded-3xl border-4 border-white shadow-2xl shadow-brand-blue/15 bg-gradient-to-br from-brand-blue-soft/60 to-white">
+              <!-- Rounded photo Card -->
+              <div class="relative overflow-hidden rounded-[32px] border-[12px] border-white shadow-[0_20px_50px_rgba(0,0,0,0.12)]">
                 <img
                   src="@/assets/hero_classroom.png"
-                  alt="Diverse intermediate learners using ACCESSLearn on tablets and laptops in an inclusive classroom"
-                  class="w-full h-full object-cover"
+                  alt="ACCESSLearn classroom group work"
+                  class="w-full h-auto object-cover"
                   loading="eager"
                 />
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </section>
