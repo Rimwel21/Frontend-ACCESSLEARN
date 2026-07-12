@@ -68,18 +68,6 @@
     <!-- Main Content -->
     <main class="flex-1 flex flex-col relative grid-bg h-full lg:overflow-y-auto overflow-x-hidden">
       
-      <!-- Top Bar -->
-      <header class="hidden lg:flex h-20 items-center justify-between px-8 shrink-0">
-        <div class="flex-1 max-w-xl mx-auto pl-24">
-           <div class="relative bg-white border border-gray-200 rounded-full h-10 w-full shadow-sm flex items-center overflow-hidden">
-             <input type="text" placeholder="Search" disabled class="w-full h-full pl-6 pr-12 outline-none text-sm bg-transparent placeholder:text-gray-400 cursor-not-allowed"/>
-             <div class="absolute right-0 top-0 h-full w-12 bg-brand-blue flex items-center justify-center text-white cursor-not-allowed">
-               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-             </div>
-           </div>
-        </div>
-      </header>
-
       <!-- Content Area -->
       <div class="p-6 lg:px-8 lg:pb-12 w-full max-w-[1300px] mx-auto space-y-6 flex-1 flex flex-col justify-center relative">
         
