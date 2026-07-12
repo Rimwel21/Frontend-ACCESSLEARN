@@ -67,7 +67,6 @@
 
       </div>
     </section>
-    </section>
 
   </main>
 </template>
