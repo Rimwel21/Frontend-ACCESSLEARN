@@ -5,8 +5,8 @@ import { useAuthStore } from '@/stores/auth'
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'Landing', component: () => import('@/pages/LandingPage.vue') },
   { path: '/portal', name: 'Portal', component: () => import('@/pages/auth/PortalPage.vue') },
-  { path: '/login', name: 'Login', component: () => import('@/pages/auth/AuthPage.vue') },
-  { path: '/register', name: 'Register', component: () => import('@/pages/auth/AuthPage.vue') },
+  { path: '/login', name: 'Login', component: () => import('@/pages/auth/LoginPage.vue') },
+  { path: '/register', name: 'Register', component: () => import('@/pages/auth/RegisterPage.vue') },
   { path: '/profile/setup', name: 'ProfileSetup', component: () => import('@/pages/auth/ProfileSetupPage.vue'), meta: { requiresAuth: true } },
   { path: '/forbidden', name: 'Forbidden', component: () => import('@/pages/auth/ForbiddenPage.vue') },
 
