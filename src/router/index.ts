@@ -7,6 +7,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/portal', name: 'Portal', component: () => import('@/pages/auth/PortalPage.vue') },
   { path: '/login', name: 'Login', component: () => import('@/pages/auth/LoginPage.vue') },
   { path: '/register', name: 'Register', component: () => import('@/pages/auth/RegisterPage.vue') },
+  { path: '/admin-login', redirect: '/admin/login' },
   { path: '/profile/setup', name: 'ProfileSetup', component: () => import('@/pages/auth/ProfileSetupPage.vue'), meta: { requiresAuth: true } },
   { path: '/forbidden', name: 'Forbidden', component: () => import('@/pages/auth/ForbiddenPage.vue') },
 
