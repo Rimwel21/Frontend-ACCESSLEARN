@@ -5,7 +5,6 @@
       <p class="eyebrow">{{ role }}</p>
       <h1 class="auth-title">{{ roleLabel }} Register</h1>
 
-      <!-- ─── Student Registration (single step, unchanged) ─── -->
       <template v-if="role === 'student'">
         <form class="form-stack" @submit.prevent="submitStudentRegister">
           <label class="field-label" for="username">Username</label>
@@ -29,9 +28,7 @@
         </form>
       </template>
 
-      <!-- ─── Teacher Registration (3-step OTP Wizard) ─── -->
       <template v-else>
-        <!-- Step indicators (Design preserved, made interactive) -->
         <div class="mb-6 flex items-center gap-2">
           <div v-for="s in 3" :key="s" class="flex items-center gap-2">
             <button
@@ -57,7 +54,6 @@
           <span class="ml-2 text-xs font-semibold text-ink-soft">{{ stepLabel }}</span>
         </div>
 
-        <!-- Step 1: Request OTP -->
         <form v-if="step === 1" class="form-stack" @submit.prevent="handleRequestOtp">
           <div>
             <label class="field-label" for="email">Email</label>
@@ -82,13 +78,11 @@
           </button>
         </form>
 
-        <!-- Step 2: Verify OTP -->
         <form v-else-if="step === 2" class="form-stack" @submit.prevent="handleVerifyOtp">
           <div class="status-success" role="status">
             <p>OTP sent to <strong>{{ email }}</strong></p>
           </div>
 
-          <!-- OTP Timer and Expiration Alert -->
           <p
             v-if="timerText"
             :class="[
@@ -100,7 +94,6 @@
             {{ timerText }}
           </p>
 
-          <!-- OTP Input digit fields -->
           <div>
             <label class="field-label">Verification Code</label>
             <div class="grid grid-cols-6 gap-2 mt-1" aria-label="6 digit otp code">
@@ -126,7 +119,6 @@
             {{ verifyStatus.message }}
           </p>
 
-          <!-- Verify button (disabled when OTP is expired) -->
           <button
             v-if="!isExpired"
             type="submit"
@@ -136,7 +128,6 @@
             {{ verifyLoading ? 'Verifying...' : 'Verify Code' }}
           </button>
 
-          <!-- Resend button (rendered only when expiration hits) -->
           <button
             v-else
             type="button"
@@ -152,7 +143,6 @@
           </button>
         </form>
 
-        <!-- Step 3: Create Account -->
         <form v-else class="form-stack" @submit.prevent="submitTeacherRegister">
           <div class="status-success" role="status">
             Email verified successfully! Now create your password.
@@ -218,10 +208,7 @@ const auth = useAuthStore()
 const requestedRole = route.query.role === 'student' ? 'student' : 'teacher'
 const role = ref<Role>(requestedRole)
 
-// Wizard Step (1 = Request, 2 = Verify, 3 = Create)
 const step = ref(1)
-
-// Form fields
 const email = ref('')
 const username = ref('')
 const password = ref('')
@@ -230,26 +217,17 @@ const message = ref('')
 const validationError = ref('')
 const verifiedEmailRef = ref(localStorage.getItem('teacher_verified_email') || '')
 
-// Verification states
 const isOtpInputsEnabled = ref(false)
 const isRequestButtonEnabled = ref(true)
 const isExpired = ref(false)
-
-// OTP digits
 const otpDigits = ref(['', '', '', '', '', ''])
 const otpInputRefs = ref<(HTMLInputElement | null)[]>([null, null, null, null, null, null])
-
-// Status & timers
 const requestStatus = ref({ message: '', type: '' })
 const verifyStatus = ref({ message: '', type: '' })
 const formStatus = ref({ message: '', type: '' })
 const timerText = ref('')
 const timerTextType = ref('')
-
-// Countdown
 const countdownInterval = ref<any>(null)
-
-// Loading status
 const requestLoading = ref(false)
 const verifyLoading = ref(false)
 const submitLoading = ref(false)
@@ -269,7 +247,6 @@ function statusClass(type: string) {
   return ''
 }
 
-// Countdown methods
 function stopCountdown() {
   if (countdownInterval.value) {
     clearInterval(countdownInterval.value)
@@ -418,7 +395,6 @@ function goBackToStep1() {
   step.value = 1
 }
 
-// Restore active registration steps & details on mount/refresh
 function restoreOtpSession() {
   const savedStep = localStorage.getItem('teacher_register_step')
   const savedExpiry = Number(localStorage.getItem('teacher_otp_expires_at'))
@@ -449,14 +425,12 @@ function restoreOtpSession() {
     return
   }
 
-  // Fallback to step 1
   clearTeacherRegistrationState()
   step.value = 1
 }
 
-// Listen to email changes to clear active registration sessions
 watch(email, (newValue) => {
-  if (step.value !== 1) return // Watcher applies only on email step modification
+  if (step.value !== 1) return
 
   const currentEmail = newValue.trim()
   const pendingEmail = localStorage.getItem('teacher_pending_email')
@@ -472,7 +446,6 @@ watch(email, (newValue) => {
   }
 })
 
-// ─── Student Registration ───
 async function submitStudentRegister() {
   validationError.value = ''
   message.value = ''
@@ -503,7 +476,6 @@ async function submitStudentRegister() {
   }
 }
 
-// ─── Teacher: Step 1 (Request OTP) / Step 2 (Resend OTP) ───
 async function handleRequestOtp() {
   const currentEmail = email.value.trim()
   requestStatus.value = { message: '', type: '' }
@@ -569,7 +541,6 @@ async function handleRequestOtp() {
   }
 }
 
-// ─── Teacher: Step 2 (Verify OTP) ───
 async function handleVerifyOtp() {
   const currentEmail = email.value.trim()
   const otpVal = otpDigits.value.join("").trim()
@@ -655,7 +626,6 @@ async function handleVerifyOtp() {
   }
 }
 
-// ─── Teacher: Step 3 (Submit Registration) ───
 async function submitTeacherRegister() {
   const currentEmail = email.value.trim()
   const currentPassword = password.value.trim()

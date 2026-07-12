@@ -24,19 +24,16 @@
           </button>
         </div>
 
-        <!-- Pending admin approval (amber warning) -->
         <div v-if="isPendingApproval" class="status-warning" role="status">
           <p class="font-bold">⏳ Account Pending Approval</p>
           <p class="mt-1 text-xs font-normal opacity-80">Your account is waiting for admin verification. You'll be able to login once an administrator approves your account.</p>
         </div>
 
-        <!-- Blocked account (red error) -->
         <div v-else-if="isBlocked" class="status-error" role="alert">
           <p class="font-bold">🚫 Account Blocked</p>
           <p class="mt-1 text-xs font-normal opacity-80">Your account has been blocked by the system administrator. Please contact support if you believe this is a mistake.</p>
         </div>
 
-        <!-- Generic errors -->
         <p v-else-if="auth.error" class="status-error" role="alert">{{ auth.error }}</p>
 
         <button type="submit" class="btn-primary w-full justify-center rounded-lg" :disabled="auth.loading">
@@ -82,7 +79,6 @@ const roleLabel = computed(() => {
 async function submitLogin() {
   const isEmailAuth = role.value === 'teacher' || role.value === 'admin'
 
-  // Reset status flags on each attempt
   isPendingApproval.value = false
   isBlocked.value = false
   auth.error = ''
@@ -106,20 +102,18 @@ async function submitLogin() {
 
     router.push(role.value === 'teacher' ? '/teacher/class' : '/student/dashboard')
   } catch (err) {
-    // Detect specific 403 statuses from the backend
     if (err instanceof ApiError && err.status === 403) {
       if (err.message.toLowerCase().includes('admin approval') || err.message.toLowerCase().includes('wait for admin')) {
         isPendingApproval.value = true
-        auth.error = '' // Clear generic error so only the warning banner shows
+        auth.error = ''
         return
       }
       if (err.message.toLowerCase().includes('blocked')) {
         isBlocked.value = true
-        auth.error = '' // Clear generic error so only the blocked banner shows
+        auth.error = ''
         return
       }
     }
-    // For other errors, the auth store owns the visible error message.
   }
 }
 </script>

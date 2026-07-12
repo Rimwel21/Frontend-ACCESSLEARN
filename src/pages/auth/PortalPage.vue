@@ -4,13 +4,15 @@
     <!-- Sticky Header -->
     <nav class="sticky top-0 z-50 w-full border-b border-gray-100/50 bg-white/80 backdrop-blur-xl shadow-sm" aria-label="Portal Navigation">
       <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
-        <RouterLink to="/" class="flex items-center gap-3 group">
-          <div class="flex h-10 w-10 items-center justify-center rounded-[13px] bg-brand-blue font-black text-white text-sm shadow-lg shadow-brand-blue/20 group-hover:scale-105 transition-transform">AL</div>
-          <div>
+        <div class="flex items-center gap-3">
+          <button type="button" @click="handleAdminTrigger" class="flex h-10 w-10 items-center justify-center rounded-[13px] bg-brand-blue font-black text-white text-sm shadow-lg shadow-brand-blue/20 transition-transform hover:scale-105" aria-label="Hidden admin login">
+            AL
+          </button>
+          <RouterLink to="/" class="flex flex-col text-left">
             <span class="font-display text-lg font-black tracking-tighter text-ink leading-none block">ACCESSLearn</span>
             <span class="text-[9px] font-bold text-brand-blue uppercase tracking-widest">Inclusive E-Learning</span>
-          </div>
-        </RouterLink>
+          </RouterLink>
+        </div>
         <RouterLink to="/" class="text-sm font-bold text-ink-soft hover:text-brand-blue transition-colors flex items-center gap-1.5">
           ← Back to Home
         </RouterLink>
@@ -25,86 +27,44 @@
         <div class="text-center space-y-5">
           <div class="inline-flex items-center gap-2 rounded-full bg-brand-blue-soft/50 px-4 py-1.5 text-[11px] font-black text-brand-blue uppercase tracking-widest border border-brand-blue/20">
             <span class="flex h-2 w-2 rounded-full bg-brand-blue animate-pulse"></span>
-            ACCESSLearn Portal
+            ACCESSLearn Access
           </div>
           <h1 class="font-display text-5xl font-bold tracking-tighter text-ink sm:text-6xl leading-tight">
-            Choose Your<br />
-            <span class="text-brand-blue">Account Type</span>
+            Find the right<br />
+            <span class="text-brand-blue">Student or Teacher flow</span>
           </h1>
           <p class="max-w-xl mx-auto text-base font-medium text-ink-soft leading-relaxed">
-            Register or sign in as a student or teacher. Complete your profile and access your personalized learning dashboard.
+            Choose the right path for your role to register or log in with the correct access options.
           </p>
         </div>
 
-        <!-- Portal Cards -->
+        <!-- Access Cards -->
         <div class="grid gap-6 md:grid-cols-2">
-          <article
-            v-for="option in options"
-            :key="option.role"
-            :class="['group relative overflow-hidden rounded-3xl border-2 bg-white p-8 shadow-card hover:shadow-card-hover hover:-translate-y-1.5 transition-all duration-300 cursor-default', option.borderColor]"
-          >
-            <!-- Top accent line -->
-            <div :class="['absolute top-0 left-0 right-0 h-1 rounded-t-3xl', option.gradient]"></div>
-
-            <!-- Icon -->
-            <div :class="['mb-6 flex h-16 w-16 items-center justify-center rounded-2xl text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300', option.iconBg]">
-              {{ option.icon }}
+          <article class="group relative overflow-hidden rounded-3xl border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-sky-50 p-8 shadow-card hover:shadow-card-hover hover:-translate-y-1.5 transition-all duration-300">
+            <div class="absolute top-0 left-0 right-0 h-1 rounded-t-3xl bg-brand-blue"></div>
+            <div class="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-lg">🎒</div>
+            <p class="text-xs font-bold uppercase tracking-[0.3em] text-brand-blue">Student Access</p>
+            <h2 class="mt-4 font-display text-3xl font-bold text-ink">Join lessons and activities</h2>
+            <p class="mt-3 text-sm leading-6 text-ink-soft">Register or sign in to begin inclusive learning, audio support, and adaptive quizzes.</p>
+            <div class="mt-6 flex flex-wrap gap-3">
+              <RouterLink to="/register?role=student" class="rounded-full bg-brand-blue px-5 py-3 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5">Student Register</RouterLink>
+              <RouterLink to="/login?role=student" class="rounded-full border border-brand-blue/20 bg-white px-5 py-3 text-sm font-bold text-brand-blue transition-transform hover:-translate-y-0.5">Student Login</RouterLink>
             </div>
+          </article>
 
-            <!-- Badge -->
-            <span :class="['badge mb-3', option.badgeClass]">{{ option.label }}</span>
-
-            <!-- Content -->
-            <h2 class="font-display text-2xl font-bold text-ink mt-1">{{ option.label }} Account</h2>
-            <p class="mt-3 text-sm font-medium text-ink-soft leading-relaxed">{{ option.description }}</p>
-
-            <!-- Features list -->
-            <ul class="mt-5 space-y-2">
-              <li v-for="feat in option.features" :key="feat" class="flex items-center gap-2.5 text-xs font-semibold text-ink-soft">
-                <span :class="['flex h-4 w-4 items-center justify-center rounded-full text-[10px] flex-shrink-0', option.checkBg]">✓</span>
-                {{ feat }}
-              </li>
-            </ul>
-
-            <!-- CTA Buttons -->
-            <div class="mt-8 flex flex-wrap gap-3">
-              <RouterLink
-                :to="`/register?role=${option.role}`"
-                :class="['btn-primary flex-1 text-center !font-bold', option.btnClass]"
-              >
-                Register
-              </RouterLink>
-              <RouterLink
-                :to="`/login?role=${option.role}`"
-                class="btn-secondary flex-1 text-center !font-bold border border-gray-200 hover:border-gray-300"
-              >
-                Sign In
-              </RouterLink>
+          <article class="group relative overflow-hidden rounded-3xl border-2 border-orange-100 bg-gradient-to-br from-amber-50 to-orange-50 p-8 shadow-card hover:shadow-card-hover hover:-translate-y-1.5 transition-all duration-300">
+            <div class="absolute top-0 left-0 right-0 h-1 rounded-t-3xl bg-amber-400"></div>
+            <div class="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-lg">👩‍🏫</div>
+            <p class="text-xs font-bold uppercase tracking-[0.3em] text-amber-700">Teacher Access</p>
+            <h2 class="mt-4 font-display text-3xl font-bold text-ink">Manage your classroom</h2>
+            <p class="mt-3 text-sm leading-6 text-ink-soft">Create your teacher account or sign in to track lessons, students, and classroom progress.</p>
+            <div class="mt-6 flex flex-wrap gap-3">
+              <RouterLink to="/register?role=teacher" class="rounded-full bg-amber-500 px-5 py-3 text-sm font-bold text-white shadow-sm transition-transform hover:-translate-y-0.5">Teacher Register</RouterLink>
+              <RouterLink to="/login?role=teacher" class="rounded-full border border-amber-200 bg-white px-5 py-3 text-sm font-bold text-amber-700 transition-transform hover:-translate-y-0.5">Teacher Login</RouterLink>
             </div>
           </article>
         </div>
 
-        <!-- Hidden Admin trigger area -->
-        <div class="text-center">
-          <p class="text-xs text-ink-soft/40 font-medium">
-            Are you an administrator?
-            <span
-              class="cursor-pointer hover:text-ink-soft transition-colors"
-              @click="handleAdminTrigger"
-              aria-label="Hidden admin access"
-            >
-              Contact your system administrator.
-            </span>
-          </p>
-        </div>
-
-      </div>
-
-      <div class="mt-4 text-center">
-        <p class="text-xs text-ink-soft">
-          System Administration? 
-          <RouterLink to="/login?role=admin" class="font-bold text-brand-blue hover:underline">Log in as Admin</RouterLink>
-        </p>
       </div>
     </section>
 
