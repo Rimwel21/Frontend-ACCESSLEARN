@@ -8,7 +8,7 @@ interface RegisterPayload {
   username?: string | null
   email?: string | null
   password: string
-  role: Role
+  role: Exclude<Role, 'admin'>
 }
 
 export interface LoginPayload {
@@ -40,11 +40,49 @@ export const useAuthStore = defineStore('auth', () => {
   const profileCompleted = ref(localStorage.getItem('profile_completed') === 'true')
   const loading = ref(false)
   const error = ref('')
+  const otpVerified = ref(false)
 
   const isAuthenticated = computed(() => Boolean(token.value))
   const authorizationHeader = computed(() =>
     token.value ? `${tokenType.value} ${token.value}` : ''
   )
+
+  async function requestTeacherOtp(email: string) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      const data = await apiFetch<{ message: string }>('/otp/teacher/request', {
+        method: 'POST',
+        body: JSON.stringify({ email, role: 'teacher' }),
+      })
+      return data
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to send OTP'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function verifyTeacherOtp(email: string, otp: string) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      const data = await apiFetch<{ message: string }>('/otp/teacher/verify', {
+        method: 'POST',
+        body: JSON.stringify({ email, otp, role: 'teacher' }),
+      })
+      otpVerified.value = true
+      return data
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'OTP verification failed'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
 
   async function register(payload: RegisterPayload) {
     loading.value = true
@@ -80,14 +118,15 @@ export const useAuthStore = defineStore('auth', () => {
       tokenType.value = data.token_type
       role.value = selectedRole
       accountIdentity.value = selectedRole === 'student' ? payload.username ?? '' : payload.email ?? ''
-      profileCompleted.value = data.profile_completed
+      const isCompleted = selectedRole === 'admin' ? true : data.profile_completed
+      profileCompleted.value = isCompleted
 
       localStorage.setItem('access_token', data.access_token)
       localStorage.setItem('token_type', data.token_type)
       localStorage.setItem('role', selectedRole)
       localStorage.setItem('selectedRole', selectedRole)
       localStorage.setItem('account_identity', accountIdentity.value)
-      localStorage.setItem('profile_completed', String(data.profile_completed))
+      localStorage.setItem('profile_completed', String(isCompleted))
 
       return data
     } catch (err) {
@@ -119,6 +158,7 @@ export const useAuthStore = defineStore('auth', () => {
     role.value = null
     accountIdentity.value = ''
     profileCompleted.value = false
+    otpVerified.value = false
     localStorage.removeItem('access_token')
     localStorage.removeItem('token_type')
     localStorage.removeItem('role')
@@ -127,6 +167,10 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('profile_completed')
     localStorage.removeItem('profile_data')
     localStorage.removeItem('profile_image')
+    localStorage.removeItem('teacher_pending_email')
+    localStorage.removeItem('teacher_otp_expires_at')
+    localStorage.removeItem('teacher_verified_email')
+    localStorage.removeItem('teacher_register_step')
   }
 
   function setProfileCompleted(completed: boolean) {
@@ -142,8 +186,11 @@ export const useAuthStore = defineStore('auth', () => {
     profileCompleted,
     loading,
     error,
+    otpVerified,
     isAuthenticated,
     authorizationHeader,
+    requestTeacherOtp,
+    verifyTeacherOtp,
     register,
     login,
     setAdminSession,
@@ -151,3 +198,4 @@ export const useAuthStore = defineStore('auth', () => {
     setProfileCompleted,
   }
 })
+

@@ -99,6 +99,13 @@
         </div>
 
       </div>
+
+      <div class="mt-4 text-center">
+        <p class="text-xs text-ink-soft">
+          System Administration? 
+          <RouterLink to="/login?role=admin" class="font-bold text-brand-blue hover:underline">Log in as Admin</RouterLink>
+        </p>
+      </div>
     </section>
 
   </main>
