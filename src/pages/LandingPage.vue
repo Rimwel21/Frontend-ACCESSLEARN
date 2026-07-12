@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col lg:flex-row h-screen bg-white font-body overflow-hidden w-full">
+  <div class="flex flex-col lg:flex-row min-h-screen bg-white font-body w-full">
     
     <!-- Mobile Header (Visible only on small screens) -->
     <header class="lg:hidden flex items-center justify-between p-4 border-b border-gray-100 bg-white z-50">
@@ -15,9 +15,10 @@
     <!-- Mobile Menu Overlay -->
     <div v-if="isMobileMenuOpen" class="fixed inset-0 bg-white z-40 pt-20 px-6 lg:hidden flex flex-col space-y-3">
        <RouterLink to="/" @click="isMobileMenuOpen=false" class="flex items-center gap-3 px-4 py-3 bg-gray-100 rounded-xl text-ink font-bold">Home</RouterLink>
-       <RouterLink to="/portal" @click="isMobileMenuOpen=false" class="flex items-center gap-3 px-4 py-3 rounded-xl text-ink-soft font-bold">Registration</RouterLink>
-       <RouterLink to="/portal" @click="isMobileMenuOpen=false" class="flex items-center gap-3 px-4 py-3 rounded-xl text-ink-soft font-bold">Login</RouterLink>
+       <RouterLink to="/portal" @click="isMobileMenuOpen=false" class="flex items-center gap-3 px-4 py-3 rounded-xl text-ink-soft font-bold">Register</RouterLink>
+       <RouterLink to="/portal" @click="isMobileMenuOpen=false" class="flex items-center gap-3 px-4 py-3 rounded-xl text-ink-soft font-bold">Log in</RouterLink>
     </div>
+
     <!-- Sidebar (Desktop) -->
     <aside class="hidden lg:flex w-[260px] bg-white border-r border-gray-100 flex-col justify-between shrink-0 relative z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
       <div>
@@ -42,12 +43,12 @@
             Home
           </a>
           <RouterLink to="/portal" class="flex items-center gap-3 px-4 py-3 rounded-xl text-ink-soft font-bold hover:bg-gray-50 hover:text-ink transition-colors">
-            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-            Registration
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+            Register
           </RouterLink>
           <RouterLink to="/portal" class="flex items-center gap-3 px-4 py-3 rounded-xl text-ink-soft font-bold hover:bg-gray-50 hover:text-ink transition-colors">
-            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c2.485 0 4.5-2.015 4.5-4.5S14.485 2 12 2 7.5 4.015 7.5 6.5 9.515 11 12 11zm0 2c-3.866 0-7 2.239-7 5v1h14v-1c0-2.761-3.134-5-7-5z"></path></svg>
-            Login
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            Log in
           </RouterLink>
         </nav>
       </div>
@@ -90,16 +91,8 @@
             </p>
             <div class="flex flex-wrap items-center gap-4">
               <RouterLink to="/portal" class="bg-[#00E676] hover:bg-[#00c853] text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg transition-transform hover:scale-105 text-center flex-1 sm:flex-none">Get Started</RouterLink>
-              <RouterLink to="/#features" class="bg-white hover:bg-gray-50 text-brand-blue px-8 py-3 rounded-full font-bold text-sm shadow-lg transition-transform hover:scale-105 text-center flex-1 sm:flex-none border-0">See Features</RouterLink>
+              <a href="#features" class="bg-white hover:bg-gray-50 text-brand-blue px-8 py-3 rounded-full font-bold text-sm shadow-lg transition-transform hover:scale-105 text-center flex-1 sm:flex-none border-0">See Features</a>
             </div>
-          </div>
-        </div>
-
-        <!-- Access Cards -->
-        <div class="space-y-4">
-          <div class="max-w-2xl">
-            <p class="text-xs font-bold uppercase tracking-[0.25em] text-brand-blue">Features Section (Improved)</p>
-            <h2 class="mt-2 text-3xl font-display font-bold text-ink">Designed for accessible, adaptive learning and classroom success.</h2>
           </div>
         </div>
 
@@ -109,42 +102,40 @@
           <div class="bg-white rounded-2xl p-4 lg:p-5 flex flex-col items-center text-center shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100/50 hover:-translate-y-1 transition-transform group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">🧏💬</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Sign & Captions</h3>
-            <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">For hearing support learners. Each module includes sign‑language videos, subtitles, and transcript toggles.</p>
+            <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">For hearing support learners.<br/> Each module includes sign‑language videos, subtitles, and transcript toggles.</p>
           </div>
           <!-- Card 2 -->
           <div class="bg-white rounded-2xl p-4 lg:p-5 flex flex-col items-center text-center shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100/50 hover:-translate-y-1 transition-transform group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">🎯📚</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Adaptive Activities</h3>
-            <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Personalized interactive tasks that adjust to each learner’s progress, ensuring engagement and mastery of skills.</p>
+            <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Personalized interactive tasks.<br/> Adjust to each learner’s progress, ensuring engagement and mastery of skills.</p>
           </div>
           <!-- Card 3 -->
           <div class="bg-white rounded-2xl p-4 lg:p-5 flex flex-col items-center text-center shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100/50 hover:-translate-y-1 transition-transform group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">✅⚙️</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Adaptive Quizzes</h3>
-            <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Smart assessments that adapt difficulty based on performance, guiding learners toward review or advancement.</p>
+            <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Smart assessments.<br/> Adapt difficulty based on performance, guiding learners toward review or advancement.</p>
           </div>
           <!-- Card 4 -->
           <div class="bg-white rounded-2xl p-4 lg:p-5 flex flex-col items-center text-center shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100/50 hover:-translate-y-1 transition-transform group">
-            <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">👩‍🏫📊</div>
+            <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">👩🏫📊</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Teacher Dashboard</h3>
-            <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Class insights. Track progress, scores, and upload new inclusive lessons.</p>
+            <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Class insights.<br/> Track progress, scores, and upload new inclusive lessons.</p>
           </div>
           <!-- Card 5 -->
           <div class="col-span-2 lg:col-span-1 bg-white rounded-2xl p-4 lg:p-5 flex flex-col items-center text-center shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100/50 hover:-translate-y-1 transition-transform group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">☁️💾</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Offline‑Ready</h3>
-            <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Low bandwidth support. Download lesson briefs for classrooms with limited connectivity.</p>
+            <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Low bandwidth support.<br/> Download lesson briefs for classrooms with limited connectivity.</p>
           </div>
         </div>
 
-        <!-- Big Actions -->
-        <div class="pt-8 pb-4 text-center">
-          <p class="text-sm font-semibold text-ink-soft">Choose your portal to get started</p>
-        </div>
 
         <!-- Footer -->
-        <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 mt-auto pt-6 pb-2">
-          © {{ new Date().getFullYear() }} ACCESSLearn Inc. | Philippine Schools Initiative | WCAG 2.2 Compliant
+        <div class="mt-auto pt-8 pb-4">
+          <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400">
+            © {{ new Date().getFullYear() }} ACCESSLearn Inc. | Philippine Schools Initiative | WCAG 2.2 Compliant
+          </div>
         </div>
       </div>
     </main>
@@ -153,6 +144,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { RouterLink } from 'vue-router'
 
 const isMobileMenuOpen = ref(false)
 </script>

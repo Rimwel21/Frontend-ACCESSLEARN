@@ -77,7 +77,7 @@
             </div>
             <div>
               <label class="field-label" for="teacher-contact">Contact Number</label>
-              <input id="teacher-contact" v-model.trim="teacherForm.contact_no" class="input-field" placeholder="09xxxxxxxxx" minlength="11" maxlength="11" required />
+              <input id="teacher-contact" v-model.trim="teacherForm.contact_no" class="input-field" minlength="11" maxlength="11" required />
             </div>
             <fieldset class="md:col-span-2 rounded-lg border border-gray-200 bg-white p-3">
               <legend class="field-label px-1">Grade Levels Handled</legend>
@@ -90,7 +90,7 @@
             </fieldset>
             <div class="md:col-span-2">
               <label class="field-label" for="teacher-address">Address</label>
-              <textarea id="teacher-address" v-model.trim="teacherForm.address" class="input-field min-h-24 resize-y" placeholder="Home address..." minlength="5" maxlength="150" required />
+              <textarea id="teacher-address" v-model.trim="teacherForm.address" class="input-field min-h-24 resize-y" minlength="5" maxlength="150" required />
             </div>
           </template>
         </div>
@@ -167,47 +167,31 @@ const roleLabel = computed(() => auth.role === 'student' ? 'Student' : 'Teacher'
 
 onMounted(async () => {
   const existing = await profile.fetchProfile()
+  if (!existing) return
 
-  // Try to load pending info from registration if no existing profile
-  const pendingStr = localStorage.getItem('pending_profile')
-  const pending = pendingStr ? JSON.parse(pendingStr) : null
+  if (auth.role === 'student' && 'student_type' in existing) {
+    studentForm.value = {
+      name: existing.name ?? '',
+      age: existing.age ?? null,
+      sex: existing.sex ?? '',
+      grade_level: existing.grade_level ?? '',
+      section: existing.section ?? '',
+      student_type: existing.student_type ?? '',
+      guardians_name: existing.guardians_name ?? '',
+      guardians_contact_no: existing.guardians_contact_no ?? '',
+      address: existing.address ?? '',
+    }
+  }
 
-  if (existing) {
-    if (auth.role === 'student' && 'student_type' in existing) {
-      studentForm.value = {
-        name: existing.name ?? '',
-        age: existing.age ?? null,
-        sex: existing.sex ?? '',
-        grade_level: existing.grade_level ?? '',
-        section: existing.section ?? '',
-        student_type: existing.student_type ?? '',
-        guardians_name: existing.guardians_name ?? '',
-        guardians_contact_no: existing.guardians_contact_no ?? '',
-        address: existing.address ?? '',
-      }
+  if (auth.role === 'teacher' && 'contact_no' in existing) {
+    teacherForm.value = {
+      name: existing.name ?? '',
+      age: existing.age ?? null,
+      sex: existing.sex ?? '',
+      contact_no: existing.contact_no ?? '',
+      grade_level_handles: existing.handle_grade_levels?.map(grade => grade.grade_level_handles) ?? [],
+      address: existing.address ?? '',
     }
-
-    if (auth.role === 'teacher' && 'contact_no' in existing) {
-      const t = existing as any
-      teacherForm.value = {
-        name: t.name ?? '',
-        age: t.age ?? null,
-        sex: t.sex ?? '',
-        contact_no: t.contact_no ?? '',
-        grade_level_handles: t.grade_level_handles ?? [],
-        address: t.address ?? '',
-      }
-    }
-  } else if (pending) {
-    // Bootstrap from registration data
-    if (auth.role === 'student') {
-      studentForm.value.name = pending.fullName || ''
-    } else {
-      teacherForm.value.name = pending.fullName || ''
-      teacherForm.value.contact_no = pending.contactNo || ''
-    }
-    // Clear pending after use
-    localStorage.removeItem('pending_profile')
   }
 
   previewUrl.value = profile.image?.file_url ?? ''

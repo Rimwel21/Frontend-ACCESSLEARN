@@ -3,8 +3,7 @@ import { computed, ref } from 'vue'
 import { ApiError, apiFetch } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 
-type Role = 'student' | 'teacher' | 'admin'
-
+type Role = 'student' | 'teacher'
 type StudentType = 'regular' | 'hearing impaired'
 type UserSex = 'Male' | 'Female'
 type GradeLevel = 'grade_1' | 'grade_2' | 'grade_3' | 'grade_4' | 'grade_5' | 'grade_6'
@@ -67,7 +66,7 @@ export const useProfileStore = defineStore('profile', () => {
   async function fetchProfile() {
     const auth = useAuthStore()
 
-    if (!auth.token || !auth.role || auth.role === 'admin') return null
+    if (!auth.token || !auth.role) return null
 
     loading.value = true
     error.value = ''

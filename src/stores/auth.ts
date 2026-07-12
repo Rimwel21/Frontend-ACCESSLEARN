@@ -137,21 +137,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function setAdminSession(email: string) {
-    token.value = 'mock-admin-token'
-    tokenType.value = 'bearer'
-    role.value = 'admin'
-    accountIdentity.value = email
-    profileCompleted.value = true
-
-    localStorage.setItem('access_token', 'mock-admin-token')
-    localStorage.setItem('token_type', 'bearer')
-    localStorage.setItem('role', 'admin')
-    localStorage.setItem('selectedRole', 'admin')
-    localStorage.setItem('account_identity', email)
-    localStorage.setItem('profile_completed', 'true')
-  }
-
   function logout() {
     token.value = null
     tokenType.value = 'bearer'
@@ -178,6 +163,19 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('profile_completed', String(completed))
   }
 
+  function setAdminSession(emailVal: string) {
+    token.value = 'mock-admin-token'
+    tokenType.value = 'bearer'
+    role.value = 'admin'
+    accountIdentity.value = emailVal
+    profileCompleted.value = true
+    localStorage.setItem('access_token', 'mock-admin-token')
+    localStorage.setItem('token_type', 'bearer')
+    localStorage.setItem('role', 'admin')
+    localStorage.setItem('account_identity', emailVal)
+    localStorage.setItem('profile_completed', 'true')
+  }
+
   return {
     token,
     tokenType,
@@ -193,9 +191,9 @@ export const useAuthStore = defineStore('auth', () => {
     verifyTeacherOtp,
     register,
     login,
-    setAdminSession,
     logout,
     setProfileCompleted,
+    setAdminSession,
   }
 })
 

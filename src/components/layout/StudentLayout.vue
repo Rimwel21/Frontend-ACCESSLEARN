@@ -2,8 +2,8 @@
   <div class="flex h-screen overflow-hidden bg-white">
     <aside class="flex w-[180px] min-w-[180px] flex-col border-r-[3px] border-black bg-white">
       <div class="border-b-[3px] border-black bg-[#FFE135] px-4 py-3.5">
-        <div class="font-display text-2xl font-black leading-none tracking-tight">ACCESSLearn</div>
-        <div class="mt-0.5 font-mono text-[9px] uppercase tracking-[3px] text-gray-700">Student Hub</div>
+        <div class="font-display text-2xl font-black leading-none tracking-tight">Learnify</div>
+        <div class="mt-0.5 font-mono text-[9px] uppercase tracking-[3px] text-gray-700">LMS</div>
       </div>
 
       <button class="mx-2.5 mt-3 flex items-center gap-2 border-[2px] border-black bg-gray-50 p-2 text-left" @click="router.push('/profile/setup')">

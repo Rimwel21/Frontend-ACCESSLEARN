@@ -1,148 +1,145 @@
 <template>
-  <div class="space-y-8">
-    <!-- Educational Stat Cards -->
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <div v-for="stat in statCards" :key="stat.label" class="card p-6 transition-all hover:shadow-lg">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs font-bold uppercase tracking-wider text-ink-soft">{{ stat.label }}</p>
-            <h3 class="mt-1 text-3xl font-bold text-ink">{{ stat.value }}</h3>
-          </div>
-          <div :class="['flex h-12 w-12 items-center justify-center rounded-xl text-xl shadow-sm', stat.bgClass]">
-            {{ stat.icon }}
-          </div>
-        </div>
-        <div class="mt-4 flex items-center gap-2">
-          <span :class="['text-xs font-bold', stat.trendUp ? 'text-emerald-600' : 'text-rose-600']">
-            {{ stat.trendUp ? '↑' : '↓' }} {{ stat.trend }}
-          </span>
-          <span class="text-xs text-ink-soft">vs last month</span>
-        </div>
+  <div class="space-y-6">
+    <!-- Hero Banner -->
+    <div class="relative gradient-brand rounded-2xl p-8 flex items-center justify-between overflow-hidden shadow-sm">
+      <div class="absolute inset-0 opacity-5" style="background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:28px 28px;" />
+      <div class="relative z-10">
+        <h1 class="font-display text-3xl font-bold text-white leading-tight mb-2">Welcome Back, Admin! 🛡️</h1>
+        <p class="text-white/75 text-sm max-w-md leading-relaxed">
+          Manage teacher registrations, verify qualifications, and maintain system security from your command center.
+        </p>
+      </div>
+      <div class="text-6xl relative z-10" style="animation: float 4s ease-in-out infinite;">⚙️</div>
+    </div>
+
+    <!-- Info Banner / Alert Panel -->
+    <div v-if="successMsg" class="status-success flex items-center justify-between px-4 py-3 shadow-sm border border-emerald-200">
+      <span>{{ successMsg }}</span>
+      <button @click="successMsg = ''" class="text-emerald-700 hover:text-emerald-900 font-bold ml-2">×</button>
+    </div>
+    <div v-if="errorMsg" class="status-error flex items-center justify-between px-4 py-3 shadow-sm border border-red-200">
+      <span>{{ errorMsg }}</span>
+      <button @click="errorMsg = ''" class="text-rose-700 hover:text-rose-900 font-bold ml-2">×</button>
+    </div>
+
+    <!-- Stat Summary -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="card p-5 relative overflow-hidden">
+        <div class="absolute w-20 h-20 rounded-full -top-5 -right-5 opacity-10 bg-brand-yellow" />
+        <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-lg mb-3">⏳</div>
+        <div class="font-display text-3xl font-bold leading-none mb-1">{{ pendingAccounts.length }}</div>
+        <div class="text-[12.5px] text-ink-soft font-medium">Pending Teacher Accounts</div>
+      </div>
+      <div class="card p-5 relative overflow-hidden">
+        <div class="absolute w-20 h-20 rounded-full -top-5 -right-5 opacity-10 bg-brand-green" />
+        <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-lg mb-3">✅</div>
+        <div class="font-display text-3xl font-bold leading-none mb-1">{{ actionCounts.approved }}</div>
+        <div class="text-[12.5px] text-ink-soft font-medium">Approved This Session</div>
+      </div>
+      <div class="card p-5 relative overflow-hidden">
+        <div class="absolute w-20 h-20 rounded-full -top-5 -right-5 opacity-10 bg-brand-rose" />
+        <div class="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-lg mb-3">🚫</div>
+        <div class="font-display text-3xl font-bold leading-none mb-1">{{ actionCounts.blocked }}</div>
+        <div class="text-[12.5px] text-ink-soft font-medium">Blocked This Session</div>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
-      <!-- Main Activity / Status -->
-      <div class="space-y-8 lg:col-span-2">
-        <!-- Enrollment Distribution -->
-        <div class="card overflow-hidden">
-          <div class="border-b border-gray-50 bg-white px-6 py-4 flex items-center justify-between">
-            <h3 class="font-display text-lg font-bold text-ink">Account Status Overview</h3>
-            <span class="text-[10px] font-bold text-brand-blue uppercase tracking-widest px-3 py-1 bg-brand-blue/5 rounded-md">Live Pulse</span>
-          </div>
-          <div class="p-6">
-            <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
-              <div class="space-y-5">
-                <div v-for="item in accountStatus" :key="item.label" class="space-y-2">
-                  <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-ink-soft">{{ item.label }}</span>
-                    <span class="text-sm font-bold text-ink">{{ item.count }}</span>
-                  </div>
-                  <div class="h-2 w-full bg-surface-2 rounded-full overflow-hidden">
-                    <div :style="{ width: item.percent + '%' }" :class="['h-full transition-all duration-1000', item.color]"></div>
-                  </div>
-                </div>
-              </div>
-              <div class="rounded-2xl bg-surface p-6 flex flex-col justify-center items-center text-center">
-                 <div class="relative h-24 w-24 mb-4">
-                    <svg class="h-full w-full rotate-90" viewBox="0 0 36 36">
-                      <circle cx="18" cy="18" r="16" fill="none" class="stroke-gray-100" stroke-width="3"></circle>
-                      <circle cx="18" cy="18" r="16" fill="none" class="stroke-brand-blue" stroke-width="3" stroke-dasharray="85, 100" stroke-linecap="round"></circle>
-                    </svg>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center">
-                       <span class="text-xl font-bold text-ink">85%</span>
-                    </div>
-                 </div>
-                 <div class="text-[11px] font-bold text-ink-soft uppercase tracking-widest">Global Activation Rate</div>
-                 <p class="mt-2 text-xs text-ink-soft leading-relaxed">Percentage of invited staff who completed their profile setup.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Recent Audit Events -->
-        <div class="card">
-          <div class="flex items-center justify-between border-b border-gray-50 px-6 py-4">
-            <h3 class="font-display text-lg font-bold text-ink">System Audit Trail</h3>
-            <button class="text-xs font-bold text-brand-blue hover:underline" @click="router.push('/admin/audit-logs')">View Full Log</button>
-          </div>
-          <div class="divide-y divide-gray-50">
-            <div v-for="log in recentLogs" :key="log.id" class="flex items-center gap-4 px-6 py-4 hover:bg-surface transition-colors">
-              <div :class="['flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-sm', getLogBg(log.action)]">
-                {{ getLogIcon(log.action) }}
-              </div>
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-semibold text-ink">
-                  <span class="text-brand-blue">{{ log.actor }}</span> {{ log.message }}
-                </p>
-                <p class="text-xs text-ink-soft">{{ log.time }} • {{ log.module }}</p>
-              </div>
-              <div class="text-right">
-                <span class="badge-blue">{{ log.status }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+    <!-- Main Content Panel -->
+    <div class="card">
+      <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between bg-white">
+        <span class="font-display font-semibold text-base text-ink">Pending Verification Requests</span>
+        <button @click="loadPendingAccounts" :disabled="loading" class="text-xs font-semibold text-brand-blue bg-brand-blue-soft px-3.5 py-2 rounded-full hover:bg-brand-blue hover:text-white transition-all disabled:opacity-50">
+          {{ loading ? 'Refreshing...' : 'Refresh List' }}
+        </button>
       </div>
 
-      <!-- Sidebar widgets -->
-      <div class="space-y-8">
-        <!-- Quick Stats Breakdown -->
-        <div class="card p-6 bg-gradient-to-br from-brand-blue via-brand-violet to-brand-blue bg-[length:200%_200%] animate-gradient-slow text-white">
-          <h3 class="font-display text-lg font-bold mb-4">Quick Breakdown</h3>
-          <div class="grid grid-cols-2 gap-4">
-             <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-                <div class="text-[10px] font-bold uppercase opacity-60">Active Teachers</div>
-                <div class="text-xl font-bold">38 / 42</div>
-             </div>
-             <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-                <div class="text-[10px] font-bold uppercase opacity-60">Active Students</div>
-                <div class="text-xl font-bold">1.1k / 1.2k</div>
-             </div>
-             <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-                <div class="text-[10px] font-bold uppercase opacity-60">Total Sections</div>
-                <div class="text-xl font-bold">24</div>
-             </div>
-             <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-                <div class="text-[10px] font-bold uppercase opacity-60">Archive Vault</div>
-                <div class="text-xl font-bold">156</div>
-             </div>
-          </div>
-        </div>
+      <!-- Loading State -->
+      <div v-if="loading" class="p-12 text-center text-ink-soft font-medium">
+        <div class="inline-block w-8 h-8 border-4 border-brand-blue border-t-transparent rounded-full animate-spin mb-3"></div>
+        <p class="text-sm">Fetching pending registrations...</p>
+      </div>
 
-        <!-- Pending Invitations -->
-        <div class="card p-6">
-          <h3 class="mb-4 font-display text-lg font-bold text-brand-amber">Pending Invitations</h3>
-          <div class="space-y-4">
-             <div v-for="invite in pendingInvites" :key="invite.email" class="flex items-center justify-between">
-                <div>
-                   <p class="text-sm font-bold text-ink">{{ invite.name }}</p>
-                   <p class="text-[11px] text-ink-soft">{{ invite.email }}</p>
+      <!-- Empty State -->
+      <div v-else-if="pendingAccounts.length === 0" class="p-12 text-center">
+        <div class="text-5xl mb-4">🎉</div>
+        <h3 class="text-lg font-bold text-ink mb-1">All Caught Up!</h3>
+        <p class="text-sm text-ink-soft max-w-sm mx-auto">There are no teacher accounts currently waiting for administrative review.</p>
+      </div>
+
+      <!-- Data Table -->
+      <div v-else class="overflow-x-auto">
+        <table class="w-full border-collapse">
+          <thead>
+            <tr>
+              <th class="table-th">Account Details</th>
+              <th class="table-th">Role</th>
+              <th class="table-th">Joined Date</th>
+              <th class="table-th">Verification Status</th>
+              <th class="table-th text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="teacher in pendingAccounts" :key="teacher.id" class="hover:bg-gray-50/50 transition-colors">
+              <td class="table-td">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-gradient-to-br from-brand-yellow to-brand-amber flex items-center justify-center text-white font-bold text-sm">
+                    {{ teacher.email?.charAt(0).toUpperCase() ?? 'T' }}
+                  </div>
+                  <div>
+                    <div class="text-[13px] font-semibold text-ink">{{ teacher.email }}</div>
+                    <div class="text-[10px] text-ink-soft font-mono">ID: {{ teacher.id }}</div>
+                  </div>
                 </div>
-                <span class="text-[10px] font-bold text-ink-soft">{{ invite.days }}d left</span>
-             </div>
-             <button class="w-full btn-secondary !py-2 !text-xs" @click="router.push('/admin/teachers')">
-                 Manage Invitations
-             </button>
-          </div>
-        </div>
-
-        <!-- System Alerts Summary -->
-        <div class="card">
-           <div class="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
-              <h3 class="font-display text-sm font-bold text-ink">System Alerts</h3>
-              <span class="h-5 w-5 rounded-full bg-brand-rose text-[9px] font-bold text-white flex items-center justify-center">3</span>
-           </div>
-           <div class="p-4 space-y-3">
-              <div v-for="alert in alerts" :key="alert.id" class="p-3 bg-red-50/50 rounded-xl border border-red-100 flex items-start gap-3">
-                 <span class="text-sm">⚠️</span>
-                 <div class="min-w-0 flex-1">
-                    <div class="text-xs font-bold text-red-700 truncate">{{ alert.title }}</div>
-                    <div class="text-[10px] text-red-600/70 mt-0.5">{{ alert.time }}</div>
-                 </div>
-              </div>
-           </div>
-        </div>
+              </td>
+              <td class="table-td">
+                <span class="badge badge-amber">Teacher</span>
+              </td>
+              <td class="table-td font-mono text-xs text-ink-soft">
+                {{ formatDate(teacher.created_at) }}
+              </td>
+              <td class="table-td">
+                <span class="badge bg-amber-100 text-amber-700 animate-pulse">Pending Review</span>
+              </td>
+              <td class="table-td text-right">
+                <div v-if="confirmingId === teacher.id" class="inline-flex items-center gap-2">
+                  <span class="text-xs font-semibold text-ink-soft mr-1">
+                    Confirm {{ confirmingAction === 'approve' ? 'verify' : 'block' }}?
+                  </span>
+                  <button
+                    @click="confirmAction"
+                    :disabled="submittingId === teacher.id"
+                    class="px-3.5 py-1.5 text-xs font-bold text-white bg-brand-green rounded-lg hover:bg-emerald-600 active:scale-95 transition-all disabled:opacity-60"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    @click="cancelConfirmation"
+                    :disabled="submittingId === teacher.id"
+                    class="px-3.5 py-1.5 text-xs font-bold text-ink bg-surface-2 rounded-lg hover:bg-gray-300 active:scale-95 transition-all disabled:opacity-60"
+                  >
+                    No
+                  </button>
+                </div>
+                <div v-else class="inline-flex gap-2">
+                  <button 
+                    @click="initiateAction(teacher.id, 'approve')" 
+                    :disabled="submittingId !== null"
+                    class="px-4 py-2 text-xs font-bold text-white bg-brand-green rounded-lg hover:bg-emerald-600 active:scale-95 transition-all disabled:opacity-60"
+                  >
+                    Verify
+                  </button>
+                  <button 
+                    @click="initiateAction(teacher.id, 'block')" 
+                    :disabled="submittingId !== null"
+                    class="px-4 py-2 text-xs font-bold text-white bg-brand-rose rounded-lg hover:bg-rose-600 active:scale-95 transition-all disabled:opacity-60"
+                  >
+                    Block
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -150,76 +147,136 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAdminStore } from '@/stores/admin'
+import { apiFetch, ApiError } from '@/lib/api'
+import { useAuthStore } from '@/stores/auth'
 
-const router = useRouter()
-const adminStore = useAdminStore()
+interface PendingTeacher {
+  id: number
+  email: string
+  role: string
+  verification_status: string
+  created_at: string
+}
 
-const statCards = [
-  { label: 'Total Teachers', value: '42', icon: '👨‍🏫', bgClass: 'bg-blue-50 text-brand-blue', trend: '12%', trendUp: true },
-  { label: 'Total Students', value: '1,280', icon: '🎓', bgClass: 'bg-emerald-50 text-emerald-600', trend: '5%', trendUp: true },
-  { label: 'Total Sections', value: '24', icon: '📁', bgClass: 'bg-violet-50 text-brand-violet', trend: '0%', trendUp: true },
-  { label: 'Pending Invites', value: '8', icon: '✉️', bgClass: 'bg-amber-50 text-brand-amber', trend: '2', trendUp: false },
-]
+const auth = useAuthStore()
 
-const accountStatus = [
-  { label: 'Active Personnel', count: 38, percent: 85, color: 'bg-brand-blue' },
-  { label: 'Pending Activation', count: 4, percent: 15, color: 'bg-brand-amber' },
-  { label: 'Inactive / Suspended', count: 2, percent: 5, color: 'bg-brand-rose' },
-]
+const pendingAccounts = ref<PendingTeacher[]>([])
+const loading = ref(false)
+const submittingId = ref<number | null>(null)
+const successMsg = ref('')
+const errorMsg = ref('')
 
-const recentLogs = [
-  { id: 1, actor: 'Admin (System)', message: 'Archived Section: Kinder-B (2025)', action: 'archived', time: '2 mins ago', module: 'SectionRegistry', status: 'Success' },
-  { id: 2, actor: 'SuperAdmin', message: 'Invited Teacher: Maria Clara', action: 'invited', time: '15 mins ago', module: 'TeacherConsole', status: 'Success' },
-  { id: 3, actor: 'System', message: 'Backup generated successfully', action: 'backup', time: '1 hour ago', module: 'Maintenance', status: 'Success' },
-  { id: 4, actor: 'Admin (System)', message: 'Suspended Account: stud_932', action: 'suspended', time: '3 hours ago', module: 'AccountMgmt', status: 'Success' },
-]
+const confirmingId = ref<number | null>(null)
+const confirmingAction = ref<'approve' | 'block' | null>(null)
 
-const pendingInvites = [
-  { name: 'Jose Rizal', email: 'j.rizal@school.edu', days: 2 },
-  { name: 'Juan Luna', email: 'juan.luna@art.org', days: 1 },
-]
+const actionCounts = ref({
+  approved: 0,
+  blocked: 0,
+})
 
-const alerts = [
-  { id: 1, title: 'Failed Login Peak detected', time: '4 mins ago' },
-  { id: 2, title: 'Database connection delay', time: '12 mins ago' },
-  { id: 3, title: 'Report generation failure', time: '1 hour ago' },
-]
+function initiateAction(teacherId: number, action: 'approve' | 'block') {
+  confirmingId.value = teacherId
+  confirmingAction.value = action
+}
 
-function getLogIcon(action: string) {
-  switch (action) {
-    case 'archived': return '📦'
-    case 'invited': return '✉️'
-    case 'suspended': return '⛔'
-    default: return '⚙️'
+function cancelConfirmation() {
+  confirmingId.value = null
+  confirmingAction.value = null
+}
+
+async function confirmAction() {
+  if (confirmingId.value === null || confirmingAction.value === null) return
+  const id = confirmingId.value
+  const act = confirmingAction.value
+  cancelConfirmation()
+  if (act === 'approve') {
+    await approveAccount(id)
+  } else if (act === 'block') {
+    await blockAccount(id)
   }
 }
 
-function getLogBg(action: string) {
-  switch (action) {
-    case 'archived': return 'bg-rose-50 text-brand-rose'
-    case 'invited': return 'bg-blue-50 text-brand-blue'
-    case 'suspended': return 'bg-amber-50 text-brand-amber'
-    default: return 'bg-gray-50 text-ink-soft'
+async function loadPendingAccounts() {
+  confirmingId.value = null
+  confirmingAction.value = null
+  loading.value = true
+  errorMsg.value = ''
+  try {
+    const data = await apiFetch<PendingTeacher[]>('/admin/teachers/pendings', {
+      token: auth.token,
+    })
+    pendingAccounts.value = data
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to fetch pending teacher accounts.'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function approveAccount(teacherId: number) {
+  submittingId.value = teacherId
+  errorMsg.value = ''
+  successMsg.value = ''
+  try {
+    const res = await apiFetch<{ message: string }>(`/admin/teachers/${teacherId}/approve`, {
+      method: 'PATCH',
+      token: auth.token,
+    })
+    successMsg.value = res.message || 'Teacher verified successfully!'
+    actionCounts.value.approved++
+    // Remove from the list immediately
+    pendingAccounts.value = pendingAccounts.value.filter(a => a.id !== teacherId)
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to verify account.'
+  } finally {
+    submittingId.value = null
+  }
+}
+
+async function blockAccount(teacherId: number) {
+  submittingId.value = teacherId
+  errorMsg.value = ''
+  successMsg.value = ''
+  try {
+    const res = await apiFetch<{ message: string }>(`/admin/teachers/${teacherId}/block`, {
+      method: 'PATCH',
+      token: auth.token,
+    })
+    successMsg.value = res.message || 'Teacher blocked successfully!'
+    actionCounts.value.blocked++
+    // Remove from the list immediately
+    pendingAccounts.value = pendingAccounts.value.filter(a => a.id !== teacherId)
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to block account.'
+  } finally {
+    submittingId.value = null
+  }
+}
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return '-'
+  try {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return dateStr
   }
 }
 
 onMounted(() => {
-  adminStore.fetchDashboardStats()
+  loadPendingAccounts()
 })
 </script>
 
 <style scoped>
-@keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-.animate-gradient-slow {
-  animation: gradient 8s ease infinite;
-}
-.shadow-card {
-  box-shadow: 0 4px 20px rgba(67, 97, 238, 0.08);
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-10px) rotate(3deg); }
 }
 </style>
