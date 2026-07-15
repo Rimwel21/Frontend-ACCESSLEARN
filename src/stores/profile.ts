@@ -8,13 +8,21 @@ type StudentType = 'regular' | 'hearing impaired'
 type UserSex = 'Male' | 'Female'
 type GradeLevel = 'grade_1' | 'grade_2' | 'grade_3' | 'grade_4' | 'grade_5' | 'grade_6'
 
+interface GradeLevelRef {
+  name: string
+}
+
+interface SectionRef {
+  name: string
+}
+
 export interface StudentProfile {
   id: number
   name: string
   age: number | null
   sex: UserSex | null
-  grade_level: GradeLevel | null
-  section: string | null
+  grade_level: GradeLevelRef | null
+  section: SectionRef | null
   student_type: StudentType
   account_id: number
   profile_image_id: number | null

@@ -27,14 +27,23 @@
             </div>
             <div>
               <label class="field-label" for="grade-level">Grade Level</label>
-              <select id="grade-level" v-model="studentForm.grade_level" class="input-field" required>
-                <option value="">Select grade</option>
-                <option v-for="grade in gradeOptions" :key="grade.value" :value="grade.value">{{ grade.label }}</option>
+              <select
+                id="grade-level"
+                v-model="studentForm.grade_level_id"
+                class="input-field"
+                required
+                @change="handleStudentGradeChange"
+              >
+                <option :value="null">Select grade</option>
+                <option v-for="grade in gradeLevels" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
               </select>
             </div>
             <div>
               <label class="field-label" for="section">Section</label>
-              <input id="section" v-model.trim="studentForm.section" class="input-field" maxlength="250" required />
+              <select id="section" v-model="studentForm.section_id" class="input-field" required :disabled="studentSections.length === 0">
+                <option :value="null">Select section</option>
+                <option v-for="section in studentSections" :key="section.id" :value="section.id">{{ section.name }}</option>
+              </select>
             </div>
             <div>
               <label class="field-label" for="student-type">Student Type</label>
@@ -124,6 +133,14 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
+import {
+  fetchGradeLevelOptions,
+  fetchSectionOptions,
+  findGradeLevelIdByName,
+  findSectionIdByName,
+  type GradeLevelOption,
+  type SectionOption,
+} from '@/lib/gradeSections'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -132,22 +149,15 @@ const profile = useProfileStore()
 const imageFile = ref<File | null>(null)
 const previewUrl = ref('')
 const message = ref('')
-
-const gradeOptions = [
-  { value: 'grade_1', label: 'Grade 1' },
-  { value: 'grade_2', label: 'Grade 2' },
-  { value: 'grade_3', label: 'Grade 3' },
-  { value: 'grade_4', label: 'Grade 4' },
-  { value: 'grade_5', label: 'Grade 5' },
-  { value: 'grade_6', label: 'Grade 6' },
-] as const
+const gradeLevels = ref<GradeLevelOption[]>([])
+const studentSections = ref<SectionOption[]>([])
 
 const studentForm = ref({
   name: '',
   age: null as number | null,
   sex: '',
-  grade_level: '',
-  section: '',
+  grade_level_id: null as number | null,
+  section_id: null as number | null,
   student_type: '',
   guardians_name: '',
   guardians_contact_no: '',
@@ -164,18 +174,33 @@ const teacherForm = ref({
 })
 
 const roleLabel = computed(() => auth.role === 'student' ? 'Student' : 'Teacher')
+const gradeOptions = [
+  { value: 'grade_1', label: 'Grade 1' },
+  { value: 'grade_2', label: 'Grade 2' },
+  { value: 'grade_3', label: 'Grade 3' },
+  { value: 'grade_4', label: 'Grade 4' },
+  { value: 'grade_5', label: 'Grade 5' },
+  { value: 'grade_6', label: 'Grade 6' },
+] as const
 
 onMounted(async () => {
+  await loadGradeLevels()
+
   const existing = await profile.fetchProfile()
   if (!existing) return
 
   if (auth.role === 'student' && 'student_type' in existing) {
+    const gradeLevelId = findGradeLevelIdByName(gradeLevels.value, existing.grade_level?.name ?? null)
+    if (gradeLevelId) {
+      await loadStudentSections(gradeLevelId)
+    }
+
     studentForm.value = {
       name: existing.name ?? '',
       age: existing.age ?? null,
       sex: existing.sex ?? '',
-      grade_level: existing.grade_level ?? '',
-      section: existing.section ?? '',
+      grade_level_id: gradeLevelId,
+      section_id: findSectionIdByName(studentSections.value, existing.section?.name ?? null),
       student_type: existing.student_type ?? '',
       guardians_name: existing.guardians_name ?? '',
       guardians_contact_no: existing.guardians_contact_no ?? '',
@@ -210,6 +235,11 @@ function previewImage(event: Event) {
 }
 
 async function submitProfile() {
+  if (auth.role === 'student' && (!studentForm.value.grade_level_id || !studentForm.value.section_id)) {
+    profile.error = 'Select both grade level and section.'
+    return
+  }
+
   if (auth.role === 'teacher' && teacherForm.value.grade_level_handles.length === 0) {
     profile.error = 'Select at least one grade level handled.'
     return
@@ -230,9 +260,30 @@ async function submitProfile() {
 function normalizeStudentPayload() {
   return {
     ...studentForm.value,
+    grade_level_id: studentForm.value.grade_level_id,
+    section_id: studentForm.value.section_id,
     guardians_name: studentForm.value.guardians_name || null,
     guardians_contact_no: studentForm.value.guardians_contact_no || null,
     address: studentForm.value.address || null,
   }
+}
+
+async function handleStudentGradeChange() {
+  studentForm.value.section_id = null
+  await loadStudentSections(studentForm.value.grade_level_id)
+}
+
+async function loadGradeLevels() {
+  if (!auth.token) return
+  gradeLevels.value = await fetchGradeLevelOptions(auth.token)
+}
+
+async function loadStudentSections(gradeLevelId: number | null) {
+  if (!auth.token || !gradeLevelId) {
+    studentSections.value = []
+    return
+  }
+
+  studentSections.value = await fetchSectionOptions(gradeLevelId, auth.token)
 }
 </script>
