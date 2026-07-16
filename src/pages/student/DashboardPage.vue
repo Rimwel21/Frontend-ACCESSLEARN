@@ -92,7 +92,10 @@
               >
                 <div class="flex h-[96px] items-center justify-center bg-[#FFE135] text-sm font-black uppercase tracking-widest">Module</div>
                 <div class="border-t-[3px] border-black bg-white p-2.5">
-                  <div class="truncate font-display text-[11px] font-black uppercase tracking-wide">{{ module.title }}</div>
+                  <div class="flex items-center gap-1.5">
+                    <div class="truncate font-display text-[11px] font-black uppercase tracking-wide">{{ module.title }}</div>
+                    <span v-if="module.behavior_required" class="border border-black bg-[#FFE135] px-1 font-mono text-[8px] font-black uppercase">Required</span>
+                  </div>
                   <div class="mt-0.5 truncate font-mono text-[9px] text-gray-500">{{ module.topics.length }} topics | {{ module.file_name || 'Learning material' }}</div>
                 </div>
               </article>
@@ -110,7 +113,10 @@
                 <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center border-[3px] border-black bg-[#D6E4FF] text-xs font-black">LM</div>
                 <div class="min-w-[180px] flex-1">
                   <div class="text-[15px] font-black">{{ module.title }}</div>
-                  <div class="mt-0.5 truncate font-mono text-[10px] text-gray-500">{{ module.description }}</div>
+                  <div class="mt-0.5 flex flex-wrap items-center gap-2">
+                    <span class="truncate font-mono text-[10px] text-gray-500">{{ module.description }}</span>
+                    <span v-if="module.behavior_required" class="border-[2px] border-black bg-[#FFE135] px-1.5 py-0.5 font-mono text-[9px] font-black uppercase">Required</span>
+                  </div>
                   <div class="mt-2 flex items-center gap-2.5">
                     <div class="h-[11px] flex-1 overflow-hidden border-[2px] border-black bg-[#e8e8e8]">
                       <div class="h-full bg-[#1565FF]" :style="{ width: `${content.progressByModule[module.id]?.percent ?? 0}%` }" />
@@ -152,11 +158,11 @@
               <h2 class="font-display text-sm font-black uppercase tracking-widest text-white">Upcoming Deadlines</h2>
             </div>
             <div class="space-y-3 p-4">
-              <div v-for="deadline in store.deadlines" :key="`${deadline.title}-${deadline.date}`" class="border-[2px] border-black bg-white p-3">
+              <div v-for="deadline in content.deadlines" :key="deadline.id" class="border-[2px] border-black bg-white p-3">
                 <div class="text-xs font-black">{{ deadline.title }}</div>
-                <div class="mt-1 font-mono text-[10px] font-bold text-gray-500">{{ deadline.date }}</div>
+                <div class="mt-1 font-mono text-[10px] font-bold text-gray-500">{{ deadline.item_type }} | {{ formatDeadline(deadline.due_at) }}</div>
               </div>
-              <div v-if="store.deadlines.length === 0" class="text-xs font-bold text-gray-500">No deadlines yet.</div>
+              <div v-if="content.deadlines.length === 0" class="text-xs font-bold text-gray-500">No deadlines yet.</div>
             </div>
           </section>
         </aside>
@@ -204,6 +210,7 @@ const filteredModules = computed(() => content.modules.filter(module =>
 
 onMounted(() => {
   content.fetchModules()
+  content.fetchDeadlines()
 })
 
 function isToday(day: number) {
@@ -217,5 +224,9 @@ function logout() {
   auth.logout()
   profile.clear()
   router.push('/')
+}
+
+function formatDeadline(value: string) {
+  return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 </script>

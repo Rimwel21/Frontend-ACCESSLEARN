@@ -38,7 +38,7 @@
             <th class="table-th">Student</th>
             <th class="table-th">Overall Progress</th>
             <th class="table-th">Activity</th>
-            <th class="table-th">Last Activity</th>
+            <th class="table-th">Quiz</th>
             <th class="table-th">Actions</th>
           </tr>
         </thead>
@@ -59,7 +59,7 @@
               </div>
             </td>
             <td class="table-td font-mono text-xs">{{ s.activitiesCompleted }}/{{ s.activitiesTotal }}</td>
-            <td class="table-td font-mono text-xs">{{ s.lastActivity }}</td>
+            <td class="table-td font-mono text-xs">{{ s.quizActivity }}</td>
             <td class="table-td">
               <span :class="statusBadge(s.status)">{{ s.status }}</span>
             </td>
@@ -71,11 +71,16 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTeacherStore } from '@/stores/teacher'
 
 const router = useRouter()
 const store  = useTeacherStore()
+
+onMounted(() => {
+  store.fetchDashboardSummary()
+})
 
 function progressGradient(status: string) {
   if (status === 'Complete')    return 'bg-gradient-to-r from-brand-teal to-brand-green'

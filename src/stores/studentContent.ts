@@ -20,9 +20,11 @@ export interface StudentModule {
   description: string
   content_type?: string | null
   week?: string | null
+  due_at?: string | null
   file_name?: string | null
   file_type?: string | null
   file_size?: number | null
+  behavior_required?: boolean
   updated_at: string
   topics: LearningTopic[]
   assessments: StudentAssessment[]
@@ -37,8 +39,19 @@ export interface StudentAssessment {
   title: string
   description: string
   category?: string | null
+  week?: string | null
   time_limit?: string | null
+  due_at?: string | null
   questions: Array<{ prompt: string; answer?: string | null }>
+}
+
+export interface StudentDeadline {
+  id: string
+  title: string
+  item_type: string
+  due_at: string
+  module_id?: number | null
+  assessment_id?: number | null
 }
 
 interface ProgressResponse {
@@ -56,6 +69,7 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   const activities = ref<StudentAssessment[]>([])
   const currentActivity = ref<StudentAssessment | null>(null)
   const currentModule = ref<StudentModule | null>(null)
+  const deadlines = ref<StudentDeadline[]>([])
   const progressByModule = ref<Record<number, ProgressResponse>>({})
   const progress = ref<ProgressResponse>({
     completed_topic_ids: [],
@@ -81,6 +95,7 @@ export const useStudentContentStore = defineStore('studentContent', () => {
     try {
       modules.value = await apiFetch<StudentModule[]>('/student/modules/', { token: auth.token })
       await fetchAllProgress()
+      await fetchDeadlines()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Unable to load modules'
     } finally {
@@ -129,6 +144,8 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       token: auth.token,
       body: JSON.stringify({ status }),
     })
+    progressByModule.value[Number(moduleId)] = progress.value
+    if (status === 'completed') await fetchDeadlines()
   }
 
   async function submitQuiz(moduleId: string | number, quizId: number, answers: Record<string, string>) {
@@ -140,6 +157,8 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       body: JSON.stringify({ answers }),
     })
     progress.value = result.progress
+    progressByModule.value[Number(moduleId)] = progress.value
+    await fetchDeadlines()
     return result
   }
 
@@ -182,22 +201,67 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       body: JSON.stringify({ answers }),
     })
     progress.value = result.progress
+    progressByModule.value[Number(moduleId)] = progress.value
+    await fetchDeadlines()
     return result
   }
 
   async function submitActivity(activityId: string | number, answers: Record<string, string>) {
     const auth = useAuthStore()
     if (!auth.token) return null
-    return await apiFetch<{ score: number; total: number }>(`/student/activities/${activityId}/submit`, {
+    const result = await apiFetch<{ score: number; total: number }>(`/student/activities/${activityId}/submit`, {
       method: 'POST',
       token: auth.token,
       body: JSON.stringify({ answers }),
     })
+    await fetchDeadlines()
+    return result
+  }
+
+  async function fetchDeadlines() {
+    const now = Date.now()
+    const moduleDeadlines = modules.value
+      .filter(module => module.due_at && new Date(module.due_at).getTime() >= now)
+      .map(module => ({
+        id: `module-${module.id}`,
+        title: module.title,
+        item_type: 'Learning Material',
+        due_at: module.due_at as string,
+        module_id: module.id,
+        assessment_id: null,
+      }))
+
+    const moduleAssessmentDeadlines = modules.value.flatMap(module =>
+      module.assessments
+        .filter(assessment => assessment.due_at && new Date(assessment.due_at).getTime() >= now)
+        .map(assessment => ({
+          id: `${assessment.assessment_type}-${assessment.id}`,
+          title: assessment.title,
+          item_type: assessment.assessment_type === 'quiz' ? 'Quiz' : 'Activity',
+          due_at: assessment.due_at as string,
+          module_id: assessment.module_id ?? module.id,
+          assessment_id: assessment.id,
+        }))
+    )
+
+    const activityDeadlines = activities.value
+      .filter(activity => activity.due_at && new Date(activity.due_at).getTime() >= now)
+      .map(activity => ({
+        id: `activity-${activity.id}`,
+        title: activity.title,
+        item_type: 'Activity',
+        due_at: activity.due_at as string,
+        module_id: activity.module_id ?? null,
+        assessment_id: activity.id,
+      }))
+
+    deadlines.value = [...moduleDeadlines, ...moduleAssessmentDeadlines, ...activityDeadlines]
+      .sort((a, b) => new Date(a.due_at).getTime() - new Date(b.due_at).getTime())
   }
 
   return {
-    modules, activities, currentActivity, currentModule, progress, progressByModule, sortedTopics, loading, error,
+    modules, activities, currentActivity, currentModule, deadlines, progress, progressByModule, sortedTopics, loading, error,
     fetchModules, fetchModule, fetchActivities, fetchActivity, fetchProgress, fetchAllProgress,
-    markTopic, submitQuiz, submitAssessment, submitActivity,
+    fetchDeadlines, markTopic, submitQuiz, submitAssessment, submitActivity,
   }
 })

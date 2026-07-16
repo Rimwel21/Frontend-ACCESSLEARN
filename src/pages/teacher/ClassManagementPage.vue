@@ -154,7 +154,10 @@
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Subject</label>
-                <input v-model.trim="newClass.subject" class="input-field" placeholder="e.g. Mathematics" />
+                <select v-model="newClass.subject" class="input-field">
+                  <option value="">Select subject...</option>
+                  <option v-for="subject in subjectOptions" :key="subject" :value="subject">{{ subject }}</option>
+                </select>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Grade Level</label>
@@ -218,6 +221,7 @@ const gradeOptions = [
   { value: 'grade_5', label: 'Grade 5' },
   { value: 'grade_6', label: 'Grade 6' },
 ]
+const subjectOptions = ['Science']
 
 const showAddClass = ref(false)
 const newClass = ref(defaultClassForm())
@@ -263,7 +267,7 @@ onMounted(() => {
 function defaultClassForm() {
   return {
     className: '',
-    subject: '',
+    subject: subjectOptions[0] ?? '',
     gradeLevel: '',
     section: '',
     schoolYear: '',

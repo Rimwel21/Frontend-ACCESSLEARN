@@ -17,10 +17,10 @@ interface Module {
   contentType?: string | null
   week?: string | null
   behaviorRequired?: boolean
-  estimatedTime?: string | null
   fileName?: string | null
   fileType?: string | null
   fileSize?: number | null
+  dueAt?: string | null
 }
 
 interface Performer {
@@ -35,6 +35,7 @@ interface Performer {
 }
 
 interface RecentActivity {
+  id: string
   text: string
   time: string
   color: string
@@ -50,6 +51,13 @@ interface StudentRow {
   activitiesTotal: number
   status: 'Complete' | 'In Progress' | 'Needs Help'
   lastActivity: string
+  quizActivity: string
+}
+
+interface DashboardSummary {
+  totalStudents: number
+  activeLearningMaterials: number
+  averageQuizScore: number
 }
 
 interface Quiz {
@@ -140,12 +148,30 @@ interface TeacherModuleResponse {
   week: string | null
   status: ModuleStatus
   behavior_required: boolean
-  estimated_time: string | null
   file_name: string | null
   file_type: string | null
   file_size: number | null
   created_at: string
   updated_at: string
+  due_at?: string | null
+}
+
+interface DashboardStudentProgressResponse {
+  student_id: number
+  student_name: string
+  overall_percent: number
+  activities_completed: number
+  activities_total: number
+  status: 'Complete' | 'In Progress' | 'Needs Help'
+  last_activity: string | null
+  quiz_activity: string | null
+}
+
+interface TeacherDashboardSummaryResponse {
+  total_students: number
+  active_learning_materials: number
+  average_quiz_score: number
+  student_progress: DashboardStudentProgressResponse[]
 }
 
 interface TeacherAssessmentResponse {
@@ -166,6 +192,14 @@ interface TeacherAssessmentResponse {
   questions: AssessmentQuestion[]
   created_at: string
   updated_at: string
+  due_at?: string | null
+}
+
+interface RecentActivityResponse {
+  id: string
+  text: string
+  occurred_at: string
+  activity_type: 'material' | 'quiz' | 'activity' | string
 }
 
 export const useTeacherStore = defineStore('teacher', () => {
@@ -173,6 +207,11 @@ export const useTeacherStore = defineStore('teacher', () => {
   const modules = ref<Module[]>([])
   const quizzes = ref<Quiz[]>([])
   const activities = ref<Activity[]>([])
+  const dashboardSummary = ref<DashboardSummary>({
+    totalStudents: 0,
+    activeLearningMaterials: 0,
+    averageQuizScore: 0,
+  })
 
   const modulesLoading = ref(false)
   const moduleSaving = ref(false)
@@ -194,15 +233,9 @@ export const useTeacherStore = defineStore('teacher', () => {
     { name: 'Santos, Carla M.', initials: 'SC', gradient: 'from-emerald-400 to-teal-500', assignments: 78, quiz: 170, activities: 75, total: 323, avg: '88%' },
   ])
 
-  const recentActivities = ref<RecentActivity[]>([
-    { text: 'Module created', time: '2 min ago', color: 'bg-brand-green' },
-    { text: 'Class management updated', time: '1 hr ago', color: 'bg-brand-blue' },
-  ])
+  const recentActivities = ref<RecentActivity[]>([])
 
-  const students = ref<StudentRow[]>([
-    { studentId: 's1', studentName: 'Penagrin, Aguiluz Emmanuelle O.', initials: 'FE', avatarGradient: 'from-brand-blue to-brand-violet', overallPercent: 95, activitiesCompleted: 12, activitiesTotal: 12, status: 'Complete', lastActivity: '03-24-26' },
-    { studentId: 's2', studentName: 'Nugajin, Rymuel', initials: 'NR', avatarGradient: 'from-cyan-500 to-cyan-700', overallPercent: 88, activitiesCompleted: 10, activitiesTotal: 12, status: 'In Progress', lastActivity: '03-22-26' },
-  ])
+  const students = ref<StudentRow[]>([])
 
   const classes = ref<ClassInfo[]>([])
   const selectedClassId = ref<string | null>(null)
@@ -351,8 +384,8 @@ export const useTeacherStore = defineStore('teacher', () => {
               week: module.week,
               status: module.status,
               behavior_required: module.behaviorRequired ?? true,
-              estimated_time: module.estimatedTime,
               class_id: module.classId ?? null,
+              due_at: module.dueAt ?? null,
             }),
           })
       modules.value.unshift(mapModuleResponse(saved))
@@ -392,8 +425,8 @@ export const useTeacherStore = defineStore('teacher', () => {
         week: updates.week,
         status: updates.status,
         behavior_required: updates.behaviorRequired,
-        estimated_time: updates.estimatedTime,
         class_id: updates.classId ?? null,
+        due_at: updates.dueAt ?? null,
       }),
     })
     const mapped = mapModuleResponse(saved)
@@ -432,6 +465,34 @@ export const useTeacherStore = defineStore('teacher', () => {
     URL.revokeObjectURL(url)
   }
 
+  async function fetchDashboardSummary(classId?: string | null) {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    try {
+      const query = classId ? `?class_id=${encodeURIComponent(classId)}` : ''
+      const data = await apiFetch<TeacherDashboardSummaryResponse>(`/teacher/classes/dashboard-summary${query}`, { token: auth.token })
+      dashboardSummary.value = {
+        totalStudents: data.total_students,
+        activeLearningMaterials: data.active_learning_materials,
+        averageQuizScore: data.average_quiz_score,
+      }
+      students.value = data.student_progress.map(mapDashboardStudentResponse)
+    } catch (err) {
+      classError.value = err instanceof Error ? err.message : 'Unable to load student progress'
+    }
+  }
+
+  async function fetchRecentActivities() {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    try {
+      const data = await apiFetch<RecentActivityResponse[]>('/teacher/classes/recent-activities', { token: auth.token })
+      recentActivities.value = data.map(mapRecentActivityResponse)
+    } catch {
+      recentActivities.value = []
+    }
+  }
+
   async function fetchAssessments(type: 'quiz' | 'activity') {
     const auth = useAuthStore()
     if (!auth.token) return
@@ -453,6 +514,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
     questions: AssessmentQuestion[]
+    dueAt?: string | null
   }) {
     const auth = useAuthStore()
     quizSaving.value = true
@@ -476,6 +538,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           shuffle_questions: payload.shuffleQuestions,
           show_answers_after_submission: payload.showAnswersAfterSubmission,
           questions: payload.questions,
+          due_at: payload.dueAt ?? null,
         }),
       })
       quizzes.value.unshift(mapQuizResponse(saved))
@@ -500,6 +563,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
     questions: AssessmentQuestion[]
+    dueAt?: string | null
   } | Omit<Activity, 'id'>) {
     const auth = useAuthStore()
     activitySaving.value = true
@@ -525,6 +589,7 @@ export const useTeacherStore = defineStore('teacher', () => {
         shuffleQuestions?: boolean
         showAnswersAfterSubmission?: boolean
         questions?: AssessmentQuestion[]
+        dueAt?: string | null
       }
 
       const saved = await apiFetch<TeacherAssessmentResponse>('/teacher/assessments/', {
@@ -544,6 +609,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           shuffle_questions: formPayload.shuffleQuestions ?? true,
           show_answers_after_submission: formPayload.showAnswersAfterSubmission ?? true,
           questions: formPayload.questions ?? [],
+          due_at: formPayload.dueAt ?? null,
         }),
       })
       activities.value.unshift(mapActivityResponse(saved))
@@ -565,12 +631,12 @@ export const useTeacherStore = defineStore('teacher', () => {
   }
 
   return {
-    teacherName, modules, performers, recentActivities, students, quizzes, activities,
+    teacherName, modules, performers, recentActivities, students, quizzes, activities, dashboardSummary,
     classes, selectedClassId, selectedClass, hasClasses,
     modulesLoading, moduleSaving, moduleError, quizSaving, quizError, activitySaving, activityError,
     classesLoading, classSaving, classError, classStudents, classStudentsLoading,
     publishedModules, unpublishedModules, atRiskStudents,
-    fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchAssessments, addQuiz, addActivity, updateActivity, deleteActivity,
+    fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchAssessments, addQuiz, addActivity, updateActivity, deleteActivity,
     fetchClasses, addClass, selectClass, deleteClass, fetchClassStudents,
   }
 })
@@ -612,10 +678,10 @@ function mapModuleResponse(module: TeacherModuleResponse): Module {
     contentType: module.content_type,
     week: module.week,
     behaviorRequired: module.behavior_required,
-    estimatedTime: module.estimated_time,
     fileName: module.file_name,
     fileType: module.file_type,
     fileSize: module.file_size,
+    dueAt: module.due_at ?? null,
   }
 }
 
@@ -627,7 +693,7 @@ function uploadModule(module: Omit<Module, 'id' | 'lastUpdated'> & { file?: File
   formData.append('week', module.week ?? '')
   formData.append('status_value', module.status)
   formData.append('behavior_required', String(module.behaviorRequired ?? true))
-  formData.append('estimated_time', module.estimatedTime ?? '')
+  if (module.dueAt) formData.append('due_at', module.dueAt)
   if (module.classId) formData.append('class_id', String(module.classId))
   if (module.file) formData.append('material_file', module.file)
 
@@ -636,6 +702,62 @@ function uploadModule(module: Omit<Module, 'id' | 'lastUpdated'> & { file?: File
     token,
     body: formData,
   })
+}
+
+function mapDashboardStudentResponse(student: DashboardStudentProgressResponse): StudentRow {
+  return {
+    studentId: String(student.student_id),
+    studentName: student.student_name,
+    initials: initialsFor(student.student_name),
+    avatarGradient: gradientFor(student.student_id),
+    overallPercent: student.overall_percent,
+    activitiesCompleted: student.activities_completed,
+    activitiesTotal: student.activities_total,
+    status: student.status,
+    lastActivity: student.last_activity ? new Date(student.last_activity).toLocaleDateString() : 'No activity',
+    quizActivity: student.quiz_activity ?? 'No quiz yet',
+  }
+}
+
+function mapRecentActivityResponse(activity: RecentActivityResponse): RecentActivity {
+  return {
+    id: activity.id,
+    text: activity.text,
+    time: relativeTime(activity.occurred_at),
+    color: activityColor(activity.activity_type),
+  }
+}
+
+function relativeTime(value: string) {
+  const timestamp = new Date(value).getTime()
+  const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000))
+  if (seconds < 60) return 'Just now'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes} min ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} hr ago`
+  const days = Math.floor(hours / 24)
+  return `${days} day${days === 1 ? '' : 's'} ago`
+}
+
+function activityColor(type: string) {
+  if (type === 'quiz') return 'bg-brand-blue'
+  if (type === 'activity') return 'bg-brand-violet'
+  return 'bg-brand-green'
+}
+
+function initialsFor(name: string) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('') || 'ST'
+}
+
+function gradientFor(id: number) {
+  const gradients = [
+    'from-brand-blue to-brand-violet',
+    'from-cyan-500 to-cyan-700',
+    'from-amber-400 to-rose-500',
+    'from-emerald-400 to-teal-500',
+  ]
+  return gradients[id % gradients.length]
 }
 
 function mapQuizResponse(assessment: TeacherAssessmentResponse): Quiz {

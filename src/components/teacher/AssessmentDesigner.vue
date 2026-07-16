@@ -21,7 +21,14 @@
             </div>
             <div>
               <label class="figma-label" for="assessment-week">Week</label>
-              <input id="assessment-week" v-model.trim="form.week" class="figma-input" />
+              <select id="assessment-week" v-model="form.week" class="figma-input">
+                <option value="">Select week...</option>
+                <option v-for="week in learningWeekOptions" :key="week" :value="week">{{ week }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="figma-label" for="assessment-due-date">Due Date</label>
+              <input id="assessment-due-date" v-model="form.dueDate" class="figma-input" type="date" />
             </div>
             <div>
               <label class="figma-label" for="assessment-class">Target Class</label>
@@ -105,6 +112,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { learningWeekOptions } from '@/constants/learning'
 import { apiFetch } from '@/lib/api'
 import { useTeacherStore } from '@/stores/teacher'
 
@@ -127,6 +135,7 @@ const form = ref({
   description: '',
   category: '',
   week: '',
+  dueDate: '',
   timeLimit: '',
   attemptsAllowed: 1,
   shuffleQuestions: true,
@@ -194,6 +203,7 @@ async function saveAssessment() {
       shuffleQuestions: form.value.shuffleQuestions,
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
       questions,
+      dueAt: toApiDateTime(form.value.dueDate),
     })
   } else {
     await store.addActivity({
@@ -209,6 +219,7 @@ async function saveAssessment() {
       shuffleQuestions: form.value.shuffleQuestions,
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
       questions,
+      dueAt: toApiDateTime(form.value.dueDate),
     })
   }
 
@@ -232,5 +243,9 @@ function gradeLabel(value: string) {
     grade_6: 'Grade 6',
   }
   return grades[value] ?? value
+}
+
+function toApiDateTime(value: string) {
+  return value ? `${value}T23:59:00` : null
 }
 </script>

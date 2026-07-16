@@ -46,6 +46,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}) {
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       headers,
+      cache: options.cache ?? 'no-store',
     })
   } catch (err) {
     throw new ApiError(err instanceof Error ? err.message : 'Network request failed', 0)

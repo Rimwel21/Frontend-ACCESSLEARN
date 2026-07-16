@@ -33,17 +33,19 @@
         <button
           v-for="(topic, index) in topics"
           :key="topic.id"
+          :disabled="!isTopicUnlocked(index)"
           :class="[
             'flex w-full items-center gap-2.5 border-[2px] border-black px-3 py-2.5 text-left text-[13px] font-bold transition-all',
-            activeTopic?.id === topic.id ? 'bg-[#1565FF] text-white' : 'bg-white hover:bg-[#D6E4FF]'
+            activeTopic?.id === topic.id ? 'bg-[#1565FF] text-white' : 'bg-white hover:bg-[#D6E4FF]',
+            !isTopicUnlocked(index) ? 'cursor-not-allowed opacity-50 hover:bg-white' : ''
           ]"
-          style="box-shadow:2px 2px 0 #000"
+          :style="isTopicUnlocked(index) ? 'box-shadow:2px 2px 0 #000' : ''"
           @click="selectTopic(topic.id)"
         >
           <span :class="['grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-black text-[10px] font-black', completedIds.has(topic.id) ? 'bg-green-500 text-white' : 'bg-white text-black']">
-            {{ completedIds.has(topic.id) ? 'OK' : '' }}
+            {{ completedIds.has(topic.id) ? 'OK' : isTopicUnlocked(index) ? '' : 'L' }}
           </span>
-          <span class="truncate">Topic {{ index + 1 }}</span>
+          <span class="truncate">{{ topic.title || `Topic ${index + 1}` }}</span>
         </button>
 
         <button
@@ -180,7 +182,7 @@ const quizResult = ref<{ score: number; total: number } | null>(null)
 
 const moduleId = computed(() => String(route.params.moduleId))
 const moduleData = computed(() => content.currentModule)
-const topics = computed(() => content.sortedTopics.filter(topic => topic.title.toLowerCase() !== 'introduction'))
+const topics = computed(() => content.sortedTopics)
 const progress = computed(() => content.progress)
 const completedIds = computed(() => new Set(progress.value.completed_topic_ids))
 const completedQuizIds = computed(() => new Set(progress.value.completed_quiz_ids))
@@ -203,10 +205,20 @@ watch(topics, value => {
 })
 
 async function selectTopic(topicId: number) {
+  const index = topics.value.findIndex(topic => topic.id === topicId)
+  if (index < 0 || !isTopicUnlocked(index)) return
   activeQuizId.value = null
   quizResult.value = null
   activeTopicId.value = topicId
-  await content.markTopic(moduleId.value, topicId, 'in_progress')
+  if (!completedIds.value.has(topicId)) {
+    await content.markTopic(moduleId.value, topicId, 'in_progress')
+  }
+}
+
+function isTopicUnlocked(index: number) {
+  if (index <= 0) return true
+  const previous = topics.value[index - 1]
+  return Boolean(previous && completedIds.value.has(previous.id))
 }
 
 function selectIntro() {
