@@ -6,15 +6,25 @@ import { useAuthStore } from '@/stores/auth'
 type Role = 'student' | 'teacher'
 type StudentType = 'regular' | 'hearing impaired'
 type UserSex = 'Male' | 'Female'
-type GradeLevel = 'grade_1' | 'grade_2' | 'grade_3' | 'grade_4' | 'grade_5' | 'grade_6'
+
+interface GradeLevelRef {
+  id: number
+  name: string
+}
+
+interface SectionRef {
+  id: number
+  name: string
+  grade_level_id: number
+}
 
 export interface StudentProfile {
   id: number
   name: string
   age: number | null
   sex: UserSex | null
-  grade_level: GradeLevel | null
-  section: string | null
+  grade_level: GradeLevelRef | null
+  section: SectionRef | null
   student_type: StudentType
   account_id: number
   profile_image_id: number | null
@@ -32,7 +42,7 @@ export interface TeacherProfile {
   name: string
   age: number | null
   sex: UserSex | null
-  handle_grade_levels: Array<{ grade_level_handles: GradeLevel }>
+  handle_grade_levels: Array<{ grade_level_id: number; grade_level: GradeLevelRef }>
   contact_no: string
   email_address: string
   address: string
