@@ -161,14 +161,17 @@
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Grade Level</label>
-                <select v-model="newClass.gradeLevel" class="input-field">
-                  <option value="">Select grade level...</option>
-                  <option v-for="g in gradeOptions" :key="g.value" :value="g.value">{{ g.label }}</option>
+                <select v-model="newClass.gradeLevelId" class="input-field">
+                  <option :value="null">Select grade level...</option>
+                  <option v-for="g in gradeLevels" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Section</label>
-                <input v-model.trim="newClass.section" class="input-field" placeholder="e.g. A, Diamond, Sampaguita" />
+                <select v-model="newClass.sectionId" class="input-field" :disabled="classSections.length === 0">
+                  <option :value="null">Select section...</option>
+                  <option v-for="section in classSections" :key="section.id" :value="section.id">{{ section.name }}</option>
+                </select>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">School Year</label>
@@ -206,26 +209,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTeacherStore } from '@/stores/teacher'
+import {
+  fetchGradeLevelOptions,
+  fetchSectionOptions,
+  type GradeLevelOption,
+  type SectionOption,
+} from '@/lib/gradeSections'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const store = useTeacherStore()
 
-const gradeOptions = [
-  { value: 'grade_1', label: 'Grade 1' },
-  { value: 'grade_2', label: 'Grade 2' },
-  { value: 'grade_3', label: 'Grade 3' },
-  { value: 'grade_4', label: 'Grade 4' },
-  { value: 'grade_5', label: 'Grade 5' },
-  { value: 'grade_6', label: 'Grade 6' },
-]
 const subjectOptions = ['Science']
+const auth = useAuthStore()
 
 const showAddClass = ref(false)
 const newClass = ref(defaultClassForm())
 const deleteTargetId = ref<string | null>(null)
+const gradeLevels = ref<GradeLevelOption[]>([])
+const classSections = ref<SectionOption[]>([])
 
 const classModules = computed(() => store.modules.filter(module => module.classId === Number(store.selectedClassId)))
 
@@ -259,7 +264,8 @@ const sections = computed(() => [
   },
 ])
 
-onMounted(() => {
+onMounted(async () => {
+  await loadGradeLevels()
   store.fetchClasses()
   store.fetchModules()
 })
@@ -267,15 +273,20 @@ onMounted(() => {
 function defaultClassForm() {
   return {
     className: '',
-    subject: subjectOptions[0] ?? '',
-    gradeLevel: '',
-    section: '',
+    subject: '',
+    gradeLevelId: null as number | null,
+    sectionId: null as number | null,
     schoolYear: '',
   }
 }
 
+watch(() => newClass.value.gradeLevelId, async (gradeLevelId) => {
+  newClass.value.sectionId = null
+  await loadClassSections(gradeLevelId)
+})
+
 async function createClass() {
-  if (!newClass.value.className || !newClass.value.subject || !newClass.value.gradeLevel || !newClass.value.section) {
+  if (!newClass.value.className || !newClass.value.subject || !newClass.value.gradeLevelId || !newClass.value.sectionId) {
     alert('Please complete the class details.')
     return
   }
@@ -283,8 +294,8 @@ async function createClass() {
   await store.addClass({
     className: newClass.value.className,
     subject: newClass.value.subject,
-    gradeLevel: newClass.value.gradeLevel,
-    section: newClass.value.section,
+    gradeLevelId: newClass.value.gradeLevelId,
+    sectionId: newClass.value.sectionId,
     schoolYear: newClass.value.schoolYear || null,
   })
   closeClassModal()
@@ -305,7 +316,21 @@ async function performDelete() {
 }
 
 function gradeLabel(value: string) {
-  return gradeOptions.find(option => option.value === value)?.label ?? value
+  return value
+}
+
+async function loadGradeLevels() {
+  if (!auth.token) return
+  gradeLevels.value = await fetchGradeLevelOptions(auth.token)
+}
+
+async function loadClassSections(gradeLevelId: number | null) {
+  if (!auth.token || !gradeLevelId) {
+    classSections.value = []
+    return
+  }
+
+  classSections.value = await fetchSectionOptions(gradeLevelId, auth.token)
 }
 </script>
 

@@ -234,15 +234,7 @@ function classNameFor(classId?: number | null) {
 }
 
 function gradeLabel(value: string) {
-  const grades: Record<string, string> = {
-    grade_1: 'Grade 1',
-    grade_2: 'Grade 2',
-    grade_3: 'Grade 3',
-    grade_4: 'Grade 4',
-    grade_5: 'Grade 5',
-    grade_6: 'Grade 6',
-  }
-  return grades[value] ?? value
+  return value
 }
 
 function toApiDateTime(value: string) {

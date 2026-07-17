@@ -119,8 +119,8 @@ interface TeacherClassResponse {
   teacher_id: number
   class_name: string
   subject: string
-  grade_level: string
-  section: string
+  grade_levels: { id: number; name: string }
+  sections: { id: number; name: string; grade_level_id: number }
   school_year: string | null
   student_count: number
   created_at: string
@@ -133,8 +133,8 @@ interface ClassStudentResponse {
   name: string
   username?: string | null
   email?: string | null
-  grade_level: string
-  section: string
+  grade_level: { id: number; name: string }
+  section: { id: number; name: string; grade_level_id: number }
   created_at?: string | null
 }
 
@@ -272,8 +272,8 @@ export const useTeacherStore = defineStore('teacher', () => {
   async function addClass(payload: {
     className: string
     subject: string
-    gradeLevel: string
-    section: string
+    gradeLevelId: number
+    sectionId: number
     schoolYear?: string | null
   }) {
     const auth = useAuthStore()
@@ -288,8 +288,8 @@ export const useTeacherStore = defineStore('teacher', () => {
         body: JSON.stringify({
           class_name: payload.className,
           subject: payload.subject,
-          grade_level: payload.gradeLevel,
-          section: payload.section,
+          grade_level_id: payload.gradeLevelId,
+          section_id: payload.sectionId,
           school_year: payload.schoolYear || null,
         }),
       })
@@ -646,8 +646,8 @@ function mapClassResponse(cls: TeacherClassResponse): ClassInfo {
     id: String(cls.id),
     className: cls.class_name,
     subject: cls.subject,
-    gradeLevel: cls.grade_level,
-    section: cls.section,
+    gradeLevel: cls.grade_levels?.name ?? '',
+    section: cls.sections?.name ?? '',
     schoolYear: cls.school_year,
     studentCount: cls.student_count,
     createdAt: new Date(cls.created_at).toLocaleDateString(),
@@ -661,8 +661,8 @@ function mapClassStudentResponse(student: ClassStudentResponse): ClassStudent {
     name: student.name,
     username: student.username,
     email: student.email,
-    gradeLevel: student.grade_level,
-    section: student.section,
+    gradeLevel: student.grade_level?.name ?? '',
+    section: student.section?.name ?? '',
     createdAt: student.created_at ? new Date(student.created_at).toLocaleDateString() : null,
   }
 }
