@@ -44,6 +44,63 @@
       </div>
     </div>
 
+    <!-- Section Creation Panel -->
+    <div class="card">
+      <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between bg-white">
+        <span class="font-display font-semibold text-base text-ink">Create Section</span>
+      </div>
+
+      <div class="grid gap-5 p-5 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)]">
+        <form class="form-stack" @submit.prevent="createSection">
+          <div>
+            <label class="field-label" for="section-name">Section Name</label>
+            <input
+              id="section-name"
+              v-model.trim="sectionForm.name"
+              class="input-field mt-1"
+              type="text"
+              placeholder="Section A"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="field-label" for="section-grade">Grade Level</label>
+            <select
+              id="section-grade"
+              v-model="sectionForm.grade_level_id"
+              class="input-field mt-1"
+              required
+              @change="loadSectionsForSelectedGrade"
+            >
+              <option :value="null">Select grade</option>
+              <option v-for="grade in gradeLevels" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn-primary w-full justify-center rounded-lg" :disabled="creatingSection">
+            {{ creatingSection ? 'Creating...' : 'Create Section' }}
+          </button>
+        </form>
+
+        <div class="rounded-lg border border-gray-100 bg-surface p-4">
+          <div class="mb-3 flex items-center justify-between">
+            <span class="text-xs font-bold uppercase text-ink-soft">Sections</span>
+            <span class="badge badge-blue">{{ selectedGradeLabel }}</span>
+          </div>
+
+          <div v-if="sectionsLoading" class="empty-state bg-white">Loading sections...</div>
+          <div v-else-if="!sectionForm.grade_level_id" class="empty-state bg-white">Select a grade level to view sections.</div>
+          <div v-else-if="gradeSections.length === 0" class="empty-state bg-white">No sections yet for this grade level.</div>
+          <div v-else class="grid gap-2 sm:grid-cols-2">
+            <span v-for="section in gradeSections" :key="section.id" class="badge badge-amber justify-center py-1.5">
+              {{ section.name }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Content Panel -->
     <div class="card">
       <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between bg-white">
@@ -146,9 +203,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { apiFetch, ApiError } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
+import {
+  createAdminSection,
+  fetchGradeLevelOptions,
+  fetchSectionOptions,
+  type GradeLevelOption,
+  type SectionOption,
+} from '@/lib/gradeSections'
 
 interface PendingTeacher {
   id: number
@@ -165,6 +229,15 @@ const loading = ref(false)
 const submittingId = ref<number | null>(null)
 const successMsg = ref('')
 const errorMsg = ref('')
+const creatingSection = ref(false)
+const sectionsLoading = ref(false)
+const gradeLevels = ref<GradeLevelOption[]>([])
+const gradeSections = ref<SectionOption[]>([])
+
+const sectionForm = ref({
+  name: '',
+  grade_level_id: null as number | null,
+})
 
 const confirmingId = ref<number | null>(null)
 const confirmingAction = ref<'approve' | 'block' | null>(null)
@@ -172,6 +245,11 @@ const confirmingAction = ref<'approve' | 'block' | null>(null)
 const actionCounts = ref({
   approved: 0,
   blocked: 0,
+})
+
+const selectedGradeLabel = computed(() => {
+  if (!sectionForm.value.grade_level_id) return 'No grade selected'
+  return gradeLevels.value.find(grade => grade.id === sectionForm.value.grade_level_id)?.name ?? 'Selected grade'
 })
 
 function initiateAction(teacherId: number, action: 'approve' | 'block') {
@@ -210,6 +288,73 @@ async function loadPendingAccounts() {
     errorMsg.value = err instanceof ApiError ? err.message : 'Failed to fetch pending teacher accounts.'
   } finally {
     loading.value = false
+  }
+}
+
+async function loadGradeLevels() {
+  try {
+    gradeLevels.value = await fetchGradeLevelOptions(auth.token)
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to fetch grade levels.'
+  }
+}
+
+async function loadSectionsForSelectedGrade() {
+  if (!sectionForm.value.grade_level_id) {
+    gradeSections.value = []
+    return
+  }
+
+  sectionsLoading.value = true
+  try {
+    gradeSections.value = await fetchSectionOptions(sectionForm.value.grade_level_id, auth.token)
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to fetch sections.'
+  } finally {
+    sectionsLoading.value = false
+  }
+}
+
+async function createSection() {
+  const name = sectionForm.value.name.trim()
+  const gradeLevelId = sectionForm.value.grade_level_id
+
+  errorMsg.value = ''
+  successMsg.value = ''
+
+  if (!name) {
+    errorMsg.value = 'Section name cannot be empty.'
+    return
+  }
+
+  if (!/^[A-Z]/.test(name)) {
+    errorMsg.value = 'Section name must start with uppercase letter.'
+    return
+  }
+
+  if (!gradeLevelId) {
+    errorMsg.value = 'Select a grade level.'
+    return
+  }
+
+  creatingSection.value = true
+  try {
+    const section = await createAdminSection({ name, grade_level_id: gradeLevelId }, auth.token)
+    successMsg.value = `${section.name} created for ${section.grade_level.name}.`
+    sectionForm.value.name = ''
+    await loadSectionsForSelectedGrade()
+  } catch (err) {
+    if (
+      err instanceof ApiError &&
+      err.status === 400 &&
+      err.message.toLowerCase().includes('section already exists')
+    ) {
+      errorMsg.value = 'This section already exists for the selected grade level. Please choose a different section name.'
+    } else {
+      errorMsg.value = err instanceof ApiError ? err.message : 'Failed to create section.'
+    }
+  } finally {
+    creatingSection.value = false
   }
 }
 
@@ -271,6 +416,7 @@ function formatDate(dateStr: string) {
 
 onMounted(() => {
   loadPendingAccounts()
+  loadGradeLevels()
 })
 </script>
 
