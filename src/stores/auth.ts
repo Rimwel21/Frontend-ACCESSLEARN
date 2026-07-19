@@ -32,6 +32,36 @@ interface TokenResponse {
   profile_completed: boolean
 }
 
+interface AccessTokenPayload {
+  role?: unknown
+}
+
+function decodeAccessTokenPayload(token: string) {
+  const payload = token.split('.')[1]
+  if (!payload) return null
+
+  try {
+    const paddedPayload = payload
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .padEnd(Math.ceil(payload.length / 4) * 4, '=')
+
+    return JSON.parse(atob(paddedPayload)) as AccessTokenPayload
+  } catch {
+    return null
+  }
+}
+
+function isRole(value: unknown): value is Role {
+  return value === 'student' || value === 'teacher' || value === 'admin'
+}
+
+function roleLabel(value: Role) {
+  if (value === 'student') return 'Student'
+  if (value === 'teacher') return 'Teacher'
+  return 'Admin'
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('access_token'))
   const tokenType = ref(localStorage.getItem('token_type') ?? 'bearer')
@@ -114,17 +144,27 @@ export const useAuthStore = defineStore('auth', () => {
         body: JSON.stringify(payload),
       })
 
+      const actualRole = decodeAccessTokenPayload(data.access_token)?.role
+
+      if (!isRole(actualRole)) {
+        throw new Error('Unable to verify account role. Please try again.')
+      }
+
+      if (actualRole !== selectedRole) {
+        throw new Error(`This account belongs to ${roleLabel(actualRole)}. Please use the ${roleLabel(actualRole)} login.`)
+      }
+
       token.value = data.access_token
       tokenType.value = data.token_type
-      role.value = selectedRole
-      accountIdentity.value = selectedRole === 'student' ? payload.username ?? '' : payload.email ?? ''
-      const isCompleted = selectedRole === 'admin' ? true : data.profile_completed
+      role.value = actualRole
+      accountIdentity.value = actualRole === 'student' ? payload.username ?? '' : payload.email ?? ''
+      const isCompleted = actualRole === 'admin' ? true : data.profile_completed
       profileCompleted.value = isCompleted
 
       localStorage.setItem('access_token', data.access_token)
       localStorage.setItem('token_type', data.token_type)
-      localStorage.setItem('role', selectedRole)
-      localStorage.setItem('selectedRole', selectedRole)
+      localStorage.setItem('role', actualRole)
+      localStorage.setItem('selectedRole', actualRole)
       localStorage.setItem('account_identity', accountIdentity.value)
       localStorage.setItem('profile_completed', String(isCompleted))
 

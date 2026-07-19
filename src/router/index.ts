@@ -74,6 +74,10 @@ router.beforeEach((to) => {
     return { path: '/forbidden' }
   }
 
+  if (to.name === 'ProfileSetup' && auth.role === 'admin') {
+    return { path: '/admin/dashboard' }
+  }
+
   if (to.meta.role && auth.role && to.meta.role !== auth.role) {
     return auth.role === 'teacher'
       ? { path: '/teacher/class' }
