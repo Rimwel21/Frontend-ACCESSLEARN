@@ -41,7 +41,7 @@
             </div>
             <div v-if="props.kind === 'quiz'">
               <label class="figma-label" for="assessment-module">Learning Material</label>
-              <select id="assessment-module" v-model.number="form.moduleId" class="figma-input" :disabled="!form.classId" @change="loadTopics">
+              <select id="assessment-module" v-model.number="form.moduleId" class="figma-input" :disabled="!form.classId" @change="loadTopics()">
                 <option :value="null">Select a material</option>
                 <option v-for="module in availableModules" :key="module.id" :value="Number(module.id)">
                   {{ module.title }} - {{ classNameFor(module.classId) }}
@@ -89,7 +89,17 @@
           <p class="mb-3 text-xs text-gray-600">Add clear questions and optional exact answers for automatic scoring.</p>
           <div class="grid gap-2">
             <div v-for="(question, index) in form.questions" :key="index" class="grid gap-1">
-              <input v-model.trim="question.prompt" class="figma-input bg-white" :placeholder="`Question ${index + 1}`" />
+              <div class="flex gap-2">
+                <input v-model.trim="question.prompt" class="figma-input min-w-0 bg-white" :placeholder="`Question ${index + 1}`" />
+                <button
+                  class="figma-button flex-shrink-0"
+                  type="button"
+                  :disabled="form.questions.length === 1"
+                  @click="removeQuestion(index)"
+                >
+                  Remove
+                </button>
+              </div>
               <input v-model.trim="question.answer" class="figma-input bg-white" placeholder="Correct answer (optional)" />
             </div>
           </div>
@@ -104,30 +114,34 @@
       <p v-if="error" class="status-error mr-auto" role="alert">{{ error }}</p>
       <p v-if="success" class="status-success mr-auto" role="status">{{ success }}</p>
       <button class="figma-primary" :disabled="saving" @click="saveAssessment">
-        {{ saving ? 'Saving...' : `Save ${title}` }}
+        {{ saving ? 'Saving...' : `${isEditing ? 'Update' : 'Save'} ${title}` }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { learningWeekOptions } from '@/constants/learning'
 import { apiFetch } from '@/lib/api'
 import { useTeacherStore } from '@/stores/teacher'
+import type { Activity, Quiz } from '@/stores/teacher'
 
 const props = defineProps<{
   kind: 'quiz' | 'activity'
   title: string
+  initialAssessment?: Quiz | Activity | null
 }>()
 const emit = defineEmits<{
-  saved: []
+  saved: [mode: 'created' | 'updated']
 }>()
 
 const store = useTeacherStore()
 const error = ref('')
 const success = ref('')
-const form = ref({
+
+function blankForm() {
+  return {
   classId: '',
   moduleId: null as number | null,
   topicId: null as number | null,
@@ -143,14 +157,21 @@ const form = ref({
   questions: [
     { prompt: '', answer: '' },
   ],
-})
+  }
+}
+
+const form = ref(blankForm())
 const topics = ref<Array<{ id: number; title: string }>>([])
 
 const saving = computed(() => props.kind === 'quiz' ? store.quizSaving : store.activitySaving)
+const isEditing = computed(() => Boolean(props.initialAssessment))
 
-onMounted(() => {
-  store.fetchClasses()
-  store.fetchModules()
+onMounted(async () => {
+  await Promise.all([
+    store.fetchClasses(),
+    store.fetchModules(),
+  ])
+  hydrateForm()
 })
 
 const availableModules = computed(() => store.modules.filter(module => form.value.classId && module.classId === Number(form.value.classId)))
@@ -159,9 +180,14 @@ function addQuestion() {
   form.value.questions.push({ prompt: '', answer: '' })
 }
 
-async function loadTopics() {
+function removeQuestion(index: number) {
+  if (form.value.questions.length === 1) return
+  form.value.questions.splice(index, 1)
+}
+
+async function loadTopics(resetTopic = true) {
   topics.value = []
-  form.value.topicId = null
+  if (resetTopic) form.value.topicId = null
   if (!form.value.moduleId) return
   const detail = await apiFetch<{ topics: Array<{ id: number; title: string }> }>(`/teacher/modules/${form.value.moduleId}`)
   topics.value = detail.topics
@@ -191,8 +217,9 @@ async function saveAssessment() {
   }
 
   if (props.kind === 'quiz') {
-    await store.addQuiz({
+    const payload = {
       title: form.value.title,
+      classId: Number(form.value.classId),
       moduleId: form.value.moduleId,
       topicId: form.value.topicId,
       description: form.value.description,
@@ -204,9 +231,15 @@ async function saveAssessment() {
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
       questions,
       dueAt: toApiDateTime(form.value.dueDate),
-    })
+    }
+
+    if (props.initialAssessment) {
+      await store.updateQuiz(props.initialAssessment.id, payload)
+    } else {
+      await store.addQuiz(payload)
+    }
   } else {
-    await store.addActivity({
+    const payload = {
       title: form.value.title,
       classId: Number(form.value.classId),
       moduleId: null,
@@ -220,11 +253,64 @@ async function saveAssessment() {
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
       questions,
       dueAt: toApiDateTime(form.value.dueDate),
-    })
+    }
+
+    if (props.initialAssessment) {
+      await store.updateActivity(props.initialAssessment.id, payload)
+    } else {
+      await store.addActivity(payload)
+    }
   }
 
-  success.value = `${props.title} saved successfully.`
-  emit('saved')
+  const mode = props.initialAssessment ? 'updated' : 'created'
+  success.value = `${props.title} ${mode} successfully.`
+  emit('saved', mode)
+}
+
+watch(() => props.initialAssessment, () => {
+  hydrateForm()
+}, { deep: true })
+
+async function hydrateForm() {
+  error.value = ''
+  success.value = ''
+
+  const assessment = props.initialAssessment
+  if (!assessment) {
+    form.value = blankForm()
+    topics.value = []
+    return
+  }
+
+  const module = assessment.moduleId
+    ? store.modules.find(item => Number(item.id) === assessment.moduleId)
+    : null
+  const inferredClassId = assessment.classId ?? module?.classId ?? ''
+
+  form.value = {
+    classId: inferredClassId ? String(inferredClassId) : '',
+    moduleId: assessment.moduleId ?? null,
+    topicId: assessment.topicId ?? null,
+    title: assessment.title,
+    description: assessment.description ?? '',
+    category: assessment.category ?? ('type' in assessment ? assessment.type : assessment.module) ?? '',
+    week: assessment.week ?? '',
+    dueDate: toDateInput(assessment.dueAt),
+    timeLimit: assessment.timeLimit ?? ('dueTime' in assessment ? assessment.dueTime : '') ?? '',
+    attemptsAllowed: assessment.attemptsAllowed ?? 1,
+    shuffleQuestions: assessment.shuffleQuestions ?? true,
+    showAnswersAfterSubmission: assessment.showAnswersAfterSubmission ?? true,
+    questions: assessment.questions?.length
+      ? assessment.questions.map(question => ({
+          prompt: question.prompt,
+          answer: question.answer ?? '',
+        }))
+      : [{ prompt: '', answer: '' }],
+  }
+
+  if (props.kind === 'quiz' && form.value.moduleId) {
+    await loadTopics(false)
+  }
 }
 
 function classNameFor(classId?: number | null) {
@@ -239,5 +325,12 @@ function gradeLabel(value: string) {
 
 function toApiDateTime(value: string) {
   return value ? `${value}T23:59:00` : null
+}
+
+function toDateInput(value?: string | null) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toISOString().slice(0, 10)
 }
 </script>
