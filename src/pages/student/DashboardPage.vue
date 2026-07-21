@@ -66,7 +66,7 @@
           <section class="border-[3px] border-black bg-[#1565FF] px-6 py-5" style="box-shadow:5px 5px 0 #000">
             <div class="flex min-h-[88px] items-center">
               <div>
-                <h1 class="font-display text-[28px] font-black leading-tight text-white md:text-[32px]">Welcome, {{ store.studentName }}!</h1>
+                <h1 class="font-display text-[28px] font-black leading-tight text-white md:text-[32px]">Welcome, {{ welcomeName }}!</h1>
                 <p class="font-mono text-[11px] tracking-widest text-white">READY TO STUDY?</p>
               </div>
             </div>
@@ -174,13 +174,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
 import { useStudentContentStore } from '@/stores/studentContent'
 
 const router = useRouter()
-const store = useAppStore()
 const auth = useAuthStore()
 const profile = useProfileStore()
 const content = useStudentContentStore()
@@ -200,6 +198,7 @@ const calendarDays = computed(() => new Date(calendarYear.value, viewedDate.valu
 const calendarLeadingBlanks = computed(() => new Date(calendarYear.value, viewedDate.value.getMonth(), 1).getDay())
 
 const studentEmail = computed(() => auth.accountIdentity.includes('@') ? auth.accountIdentity : 'Not provided')
+const welcomeName = computed(() => profile.profile?.name ?? (auth.accountIdentity || 'Student'))
 const studentType = computed(() => {
   const data = profile.profile
   return data && 'student_type' in data ? data.student_type : 'Not provided'
@@ -209,6 +208,9 @@ const filteredModules = computed(() => content.modules.filter(module =>
 ))
 
 onMounted(() => {
+  if (!profile.profile) {
+    profile.fetchProfile().catch(() => null)
+  }
   content.fetchModules()
   content.fetchDeadlines()
 })

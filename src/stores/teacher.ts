@@ -60,36 +60,43 @@ interface DashboardSummary {
   averageQuizScore: number
 }
 
-interface Quiz {
+export interface AssessmentQuestion {
+  prompt: string
+  answer?: string | null
+}
+
+interface AssessmentSettings {
+  classId?: number | null
+  moduleId?: number | null
+  topicId?: number | null
+  category?: string | null
+  week?: string | null
+  timeLimit?: string | null
+  attemptsAllowed?: number
+  shuffleQuestions?: boolean
+  showAnswersAfterSubmission?: boolean
+  dueAt?: string | null
+  questions?: AssessmentQuestion[]
+}
+
+export interface Quiz extends AssessmentSettings {
   id: string
   title: string
   description?: string
   module: string
-  moduleId?: number | null
-  topicId?: number | null
   type: string
   difficulty: Difficulty
   date: string
-  questions?: AssessmentQuestion[]
 }
 
-interface Activity {
+export interface Activity extends AssessmentSettings {
   id: string
   title: string
   description: string
   module: string
-  classId?: number | null
-  moduleId?: number | null
-  topicId?: number | null
   dueDate: string
   dueTime: string
   status: ActivityStatus
-  questions?: AssessmentQuestion[]
-}
-
-interface AssessmentQuestion {
-  prompt: string
-  answer?: string | null
 }
 
 interface ClassInfo {
@@ -503,6 +510,7 @@ export const useTeacherStore = defineStore('teacher', () => {
   }
 
   async function addQuiz(payload: {
+    classId?: number | null
     moduleId?: number | null
     topicId?: number | null
     title: string
@@ -527,6 +535,7 @@ export const useTeacherStore = defineStore('teacher', () => {
         token: auth.token,
         body: JSON.stringify({
           assessment_type: 'quiz',
+          class_id: payload.classId ?? null,
           module_id: payload.moduleId ?? null,
           topic_id: payload.topicId ?? null,
           title: payload.title,
@@ -542,6 +551,7 @@ export const useTeacherStore = defineStore('teacher', () => {
         }),
       })
       quizzes.value.unshift(mapQuizResponse(saved))
+      return saved
     } catch (err) {
       quizError.value = err instanceof Error ? err.message : 'Unable to create quiz'
       throw err
@@ -613,6 +623,7 @@ export const useTeacherStore = defineStore('teacher', () => {
         }),
       })
       activities.value.unshift(mapActivityResponse(saved))
+      return saved
     } catch (err) {
       activityError.value = err instanceof Error ? err.message : 'Unable to create activity'
       throw err
@@ -621,9 +632,106 @@ export const useTeacherStore = defineStore('teacher', () => {
     }
   }
 
-  function updateActivity(id: string, updates: Partial<Activity>) {
-    const idx = activities.value.findIndex(a => a.id === id)
-    if (idx !== -1) activities.value[idx] = { ...activities.value[idx], ...updates }
+  async function updateQuiz(id: string, payload: {
+    classId?: number | null
+    moduleId?: number | null
+    topicId?: number | null
+    title: string
+    description: string
+    quizType: string
+    week: string
+    timeLimit: string
+    attemptsAllowed: number
+    shuffleQuestions: boolean
+    showAnswersAfterSubmission: boolean
+    questions: AssessmentQuestion[]
+    dueAt?: string | null
+  }) {
+    const auth = useAuthStore()
+    quizSaving.value = true
+    quizError.value = ''
+
+    try {
+      if (!auth.token) throw new Error('Please login first')
+      const saved = await apiFetch<TeacherAssessmentResponse>(`/teacher/assessments/${id}`, {
+        method: 'PATCH',
+        token: auth.token,
+        body: JSON.stringify({
+          class_id: payload.classId ?? null,
+          module_id: payload.moduleId ?? null,
+          topic_id: payload.topicId ?? null,
+          title: payload.title,
+          description: payload.description,
+          category: payload.quizType,
+          week: payload.week,
+          time_limit: payload.timeLimit,
+          attempts_allowed: payload.attemptsAllowed,
+          shuffle_questions: payload.shuffleQuestions,
+          show_answers_after_submission: payload.showAnswersAfterSubmission,
+          questions: payload.questions,
+          due_at: payload.dueAt ?? null,
+        }),
+      })
+      const mapped = mapQuizResponse(saved)
+      quizzes.value = quizzes.value.map(quiz => quiz.id === id ? mapped : quiz)
+      return saved
+    } catch (err) {
+      quizError.value = err instanceof Error ? err.message : 'Unable to update quiz'
+      throw err
+    } finally {
+      quizSaving.value = false
+    }
+  }
+
+  async function updateActivity(id: string, payload: {
+    classId?: number | null
+    moduleId?: number | null
+    topicId?: number | null
+    title: string
+    description: string
+    activityType: string
+    week: string
+    timeLimit: string
+    attemptsAllowed: number
+    shuffleQuestions: boolean
+    showAnswersAfterSubmission: boolean
+    questions: AssessmentQuestion[]
+    dueAt?: string | null
+  }) {
+    const auth = useAuthStore()
+    activitySaving.value = true
+    activityError.value = ''
+
+    try {
+      if (!auth.token) throw new Error('Please login first')
+      const saved = await apiFetch<TeacherAssessmentResponse>(`/teacher/assessments/${id}`, {
+        method: 'PATCH',
+        token: auth.token,
+        body: JSON.stringify({
+          class_id: payload.classId ?? null,
+          module_id: null,
+          topic_id: null,
+          title: payload.title,
+          description: payload.description,
+          category: payload.activityType,
+          week: payload.week,
+          time_limit: payload.timeLimit,
+          attempts_allowed: payload.attemptsAllowed,
+          shuffle_questions: payload.shuffleQuestions,
+          show_answers_after_submission: payload.showAnswersAfterSubmission,
+          questions: payload.questions,
+          due_at: payload.dueAt ?? null,
+        }),
+      })
+      const mapped = mapActivityResponse(saved)
+      activities.value = activities.value.map(activity => activity.id === id ? mapped : activity)
+      return saved
+    } catch (err) {
+      activityError.value = err instanceof Error ? err.message : 'Unable to update activity'
+      throw err
+    } finally {
+      activitySaving.value = false
+    }
   }
 
   function deleteActivity(id: string) {
@@ -636,7 +744,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     modulesLoading, moduleSaving, moduleError, quizSaving, quizError, activitySaving, activityError,
     classesLoading, classSaving, classError, classStudents, classStudentsLoading,
     publishedModules, unpublishedModules, atRiskStudents,
-    fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchAssessments, addQuiz, addActivity, updateActivity, deleteActivity,
+    fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchAssessments, addQuiz, updateQuiz, addActivity, updateActivity, deleteActivity,
     fetchClasses, addClass, selectClass, deleteClass, fetchClassStudents,
   }
 })
@@ -765,9 +873,17 @@ function mapQuizResponse(assessment: TeacherAssessmentResponse): Quiz {
     id: String(assessment.id),
     title: assessment.title,
     description: assessment.description,
-      module: assessment.week ?? 'No week',
+    module: assessment.week ?? 'No week',
+    classId: assessment.class_id,
     moduleId: assessment.module_id,
     topicId: assessment.topic_id,
+    category: assessment.category,
+    week: assessment.week,
+    timeLimit: assessment.time_limit,
+    attemptsAllowed: assessment.attempts_allowed,
+    shuffleQuestions: assessment.shuffle_questions,
+    showAnswersAfterSubmission: assessment.show_answers_after_submission,
+    dueAt: assessment.due_at ?? null,
     type: assessment.category ?? 'Quiz',
     difficulty: 'Medium',
     date: new Date(assessment.updated_at).toLocaleDateString(),
@@ -784,7 +900,14 @@ function mapActivityResponse(assessment: TeacherAssessmentResponse): Activity {
     classId: assessment.class_id,
     moduleId: assessment.module_id,
     topicId: assessment.topic_id,
-    dueDate: assessment.week ?? '',
+    category: assessment.category,
+    week: assessment.week,
+    timeLimit: assessment.time_limit,
+    attemptsAllowed: assessment.attempts_allowed,
+    shuffleQuestions: assessment.shuffle_questions,
+    showAnswersAfterSubmission: assessment.show_answers_after_submission,
+    dueAt: assessment.due_at ?? null,
+    dueDate: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString() : '',
     dueTime: assessment.time_limit ?? '',
     status: 'Not Started',
     questions: assessment.questions,

@@ -5,7 +5,7 @@
         <p class="eyebrow">Class Management</p>
         <h1 class="font-display text-2xl font-bold">{{ listTitle }}</h1>
       </div>
-      <button class="btn-primary" @click="openForm">Add {{ title }}</button>
+      <button class="btn-primary" @click="openForm()">Add {{ title }}</button>
     </div>
 
     <div class="card p-4">
@@ -21,7 +21,7 @@
       <p class="mx-auto mt-2 max-w-md text-sm text-ink-soft">
         Create your first {{ title.toLowerCase() }} for the selected module.
       </p>
-      <button class="btn-primary mt-5" @click="openForm">Add {{ title }}</button>
+      <button class="btn-primary mt-5" @click="openForm()">Add {{ title }}</button>
     </div>
 
     <div v-else class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -34,10 +34,13 @@
           <span class="badge-blue badge">{{ item.badge }}</span>
         </div>
         <dl class="mt-4 grid gap-2 text-xs text-ink-soft">
-          <div class="flex justify-between gap-3"><dt class="font-bold">Module</dt><dd>{{ item.module || 'Not set' }}</dd></div>
+          <div class="flex justify-between gap-3"><dt class="font-bold">{{ props.kind === 'quiz' ? 'Module' : 'Type' }}</dt><dd>{{ item.module || 'Not set' }}</dd></div>
           <div class="flex justify-between gap-3"><dt class="font-bold">Questions</dt><dd>{{ item.questionCount }}</dd></div>
-          <div class="flex justify-between gap-3"><dt class="font-bold">Updated</dt><dd>{{ item.updated }}</dd></div>
+          <div class="flex justify-between gap-3"><dt class="font-bold">{{ props.kind === 'quiz' ? 'Updated' : 'Due' }}</dt><dd>{{ item.updated }}</dd></div>
         </dl>
+        <div class="mt-4 flex justify-end">
+          <button class="figma-button" type="button" @click="openForm(item.source)">Edit</button>
+        </div>
       </article>
     </div>
 
@@ -48,7 +51,7 @@
             <div class="mb-2 flex justify-end">
               <button class="figma-button" @click="closeForm">Close</button>
             </div>
-            <AssessmentDesigner :kind="kind" :title="title" @saved="handleSaved" />
+            <AssessmentDesigner :kind="kind" :title="title" :initial-assessment="editingItem" @saved="handleSaved" />
           </div>
         </div>
       </Transition>
@@ -60,6 +63,7 @@
 import { computed, onMounted, ref } from 'vue'
 import AssessmentDesigner from '@/components/teacher/AssessmentDesigner.vue'
 import { useTeacherStore } from '@/stores/teacher'
+import type { Activity, Quiz } from '@/stores/teacher'
 
 const props = defineProps<{
   kind: 'quiz' | 'activity'
@@ -71,6 +75,7 @@ const search = ref('')
 const showForm = ref(false)
 const loading = ref(false)
 const successMessage = ref('')
+const editingItem = ref<Quiz | Activity | null>(null)
 
 const listTitle = computed(() => props.kind === 'quiz' ? 'Quizzes' : 'Activities')
 const items = computed(() => props.kind === 'quiz' ? store.quizzes : store.activities)
@@ -87,6 +92,7 @@ const filteredCards = computed(() => filteredItems.value.map(item => {
       badge: item.type,
       questionCount: item.questions?.length ?? 0,
       updated: item.date,
+      source: item,
     }
   }
 
@@ -98,6 +104,7 @@ const filteredCards = computed(() => filteredItems.value.map(item => {
     badge: item.status,
     questionCount: item.questions?.length ?? 0,
     updated: item.dueDate || 'Not set',
+    source: item,
   }
 }))
 
@@ -110,18 +117,19 @@ onMounted(async () => {
   }
 })
 
-function openForm() {
+function openForm(item: Quiz | Activity | null = null) {
   successMessage.value = ''
+  editingItem.value = item
   showForm.value = true
 }
 
 function closeForm() {
   showForm.value = false
+  editingItem.value = null
 }
 
-async function handleSaved() {
-  await store.fetchAssessments(props.kind)
-  successMessage.value = `${props.title} created successfully.`
+function handleSaved(mode: 'created' | 'updated') {
+  successMessage.value = `${props.title} ${mode} successfully.`
   closeForm()
 }
 </script>
