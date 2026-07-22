@@ -12,6 +12,7 @@
       <div class="flex flex-wrap items-center gap-3">
         <input v-model="search" class="input-field max-w-sm" :placeholder="`Search ${listTitle.toLowerCase()}...`" />
         <span v-if="successMessage" class="status-success">{{ successMessage }}</span>
+        <span v-if="errorMessage" class="status-error">{{ errorMessage }}</span>
       </div>
     </div>
 
@@ -38,8 +39,11 @@
           <div class="flex justify-between gap-3"><dt class="font-bold">Questions</dt><dd>{{ item.questionCount }}</dd></div>
           <div class="flex justify-between gap-3"><dt class="font-bold">{{ props.kind === 'quiz' ? 'Updated' : 'Due' }}</dt><dd>{{ item.updated }}</dd></div>
         </dl>
-        <div class="mt-4 flex justify-end">
+        <div class="mt-4 flex justify-end gap-2">
           <button class="figma-button" type="button" @click="openForm(item.source)">Edit</button>
+          <button class="figma-button" type="button" :disabled="deletingId === item.id" @click="deleteItem(item.source)">
+            {{ deletingId === item.id ? 'Deleting...' : 'Delete' }}
+          </button>
         </div>
       </article>
     </div>
@@ -75,7 +79,9 @@ const search = ref('')
 const showForm = ref(false)
 const loading = ref(false)
 const successMessage = ref('')
+const errorMessage = ref('')
 const editingItem = ref<Quiz | Activity | null>(null)
+const deletingId = ref('')
 
 const listTitle = computed(() => props.kind === 'quiz' ? 'Quizzes' : 'Activities')
 const items = computed(() => props.kind === 'quiz' ? store.quizzes : store.activities)
@@ -119,6 +125,7 @@ onMounted(async () => {
 
 function openForm(item: Quiz | Activity | null = null) {
   successMessage.value = ''
+  errorMessage.value = ''
   editingItem.value = item
   showForm.value = true
 }
@@ -130,7 +137,26 @@ function closeForm() {
 
 function handleSaved(mode: 'created' | 'updated') {
   successMessage.value = `${props.title} ${mode} successfully.`
+  errorMessage.value = ''
   closeForm()
+}
+
+async function deleteItem(item: Quiz | Activity) {
+  if (!confirm(`Delete "${item.title}"?`)) return
+  successMessage.value = ''
+  errorMessage.value = ''
+  deletingId.value = item.id
+
+  try {
+    if (props.kind === 'quiz') await store.deleteQuiz(item.id)
+    else await store.deleteActivity(item.id)
+    if (editingItem.value?.id === item.id) closeForm()
+    successMessage.value = `${props.title} deleted successfully.`
+  } catch (err) {
+    errorMessage.value = err instanceof Error ? err.message : `Unable to delete ${props.title.toLowerCase()}.`
+  } finally {
+    deletingId.value = ''
+  }
 }
 </script>
 

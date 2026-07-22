@@ -110,7 +110,7 @@
                 <div class="text-[10px] font-mono text-gray-400 mt-0.5">{{ act.time }}</div>
               </div>
             </div>
-            <div v-if="store.recentActivities.length === 0" class="text-xs text-ink-soft">No recent student activity yet.</div>
+            <div v-if="store.recentActivities.length === 0" class="text-xs text-ink-soft">No recent teacher uploads yet.</div>
           </div>
         </div>
       </div>

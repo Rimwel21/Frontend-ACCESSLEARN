@@ -734,8 +734,44 @@ export const useTeacherStore = defineStore('teacher', () => {
     }
   }
 
-  function deleteActivity(id: string) {
-    activities.value = activities.value.filter(a => a.id !== id)
+  async function deleteQuiz(id: string) {
+    const auth = useAuthStore()
+    const original = quizzes.value
+    quizError.value = ''
+    quizzes.value = quizzes.value.filter(quiz => quiz.id !== id)
+
+    try {
+      if (!auth.token) throw new Error('Please login first')
+      await apiFetch<{ detail: string }>(`/teacher/assessments/${id}`, {
+        method: 'DELETE',
+        token: auth.token,
+      })
+      await fetchRecentActivities()
+    } catch (err) {
+      quizzes.value = original
+      quizError.value = err instanceof Error ? err.message : 'Unable to delete quiz'
+      throw err
+    }
+  }
+
+  async function deleteActivity(id: string) {
+    const auth = useAuthStore()
+    const original = activities.value
+    activityError.value = ''
+    activities.value = activities.value.filter(activity => activity.id !== id)
+
+    try {
+      if (!auth.token) throw new Error('Please login first')
+      await apiFetch<{ detail: string }>(`/teacher/assessments/${id}`, {
+        method: 'DELETE',
+        token: auth.token,
+      })
+      await fetchRecentActivities()
+    } catch (err) {
+      activities.value = original
+      activityError.value = err instanceof Error ? err.message : 'Unable to delete activity'
+      throw err
+    }
   }
 
   return {
@@ -744,7 +780,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     modulesLoading, moduleSaving, moduleError, quizSaving, quizError, activitySaving, activityError,
     classesLoading, classSaving, classError, classStudents, classStudentsLoading,
     publishedModules, unpublishedModules, atRiskStudents,
-    fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchAssessments, addQuiz, updateQuiz, addActivity, updateActivity, deleteActivity,
+    fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchAssessments, addQuiz, updateQuiz, deleteQuiz, addActivity, updateActivity, deleteActivity,
     fetchClasses, addClass, selectClass, deleteClass, fetchClassStudents,
   }
 })
