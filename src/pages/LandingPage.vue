@@ -69,7 +69,8 @@
     <main class="flex-1 flex flex-col relative grid-bg h-full lg:overflow-y-auto overflow-x-hidden">
       
       <!-- Content Area -->
-      <div class="p-4 sm:p-6 lg:px-8 lg:py-7 w-full max-w-[1240px] mx-auto space-y-4 lg:space-y-5 flex-1 flex flex-col justify-start xl:justify-center relative">
+      <div class="flex min-h-full w-full max-w-[1240px] flex-1 flex-col justify-between gap-5 p-4 sm:p-6 lg:mx-auto lg:px-8 lg:py-7">
+        <div class="space-y-4 lg:space-y-5">
         
         <!-- Hero Banner -->
         <div class="relative w-full max-w-[1120px] mx-auto rounded-[20px] gradient-brand shadow-xl overflow-hidden">
@@ -89,51 +90,55 @@
               <p class="text-surface text-[13px] sm:text-sm mb-6 max-w-[540px] font-medium leading-relaxed">
                 AccessLearn combines audio lessons, sign-language videos, subtitles, and adaptive quizzes to create equitable learning in Philippine schools.
               </p>
-              <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
-                <RouterLink to="/portal" class="bg-brand-amber text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg transition-all hover:scale-105 text-center sm:min-w-40 hover:bg-gradient-to-r hover:from-brand-amber hover:to-brand-rose hover:shadow-[0_0_20px_rgba(244,163,99,0.4)]">Get Started</RouterLink>
-                <a href="#features" class="bg-white text-brand-blue px-8 py-3 rounded-full font-bold text-sm shadow-lg transition-all hover:scale-105 text-center sm:min-w-40 border border-brand-blue hover:border-brand-rose hover:bg-brand-rose hover:text-white hover:shadow-[0_0_18px_rgba(219,118,125,0.28)]">See Features</a>
+              <div class="flex justify-center sm:justify-start">
+                <RouterLink to="/portal" class="bg-brand-amber text-white px-10 py-3 rounded-full font-bold text-sm shadow-lg transition-all hover:scale-105 text-center min-w-44 hover:bg-gradient-to-r hover:from-brand-amber hover:to-brand-rose hover:shadow-[0_0_20px_rgba(244,163,99,0.4)]">Get Started</RouterLink>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Feature Cards -->
-        <div id="features" class="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 relative z-20 xl:-mt-6">
+        <section id="features" class="relative z-20 space-y-3 xl:-mt-5" aria-labelledby="features-title">
+          <div class="text-center">
+            <p id="features-title" class="text-[10px] font-black uppercase tracking-widest text-brand-blue">Features</p>
+          </div>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:gap-4">
           <!-- Card 1 -->
-          <div class="bg-white rounded-2xl p-4 lg:p-5 flex flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
+          <div class="bg-white rounded-2xl p-4 lg:p-5 flex min-h-[210px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">🧏💬</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Sign & Captions</h3>
             <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">For hearing support learners.<br/> Each module includes sign‑language videos, subtitles, and transcript toggles.</p>
           </div>
           <!-- Card 2 -->
-          <div class="bg-white rounded-2xl p-4 lg:p-5 flex flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
+          <div class="bg-white rounded-2xl p-4 lg:p-5 flex min-h-[210px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">🎯📚</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Adaptive Activities</h3>
             <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Personalized interactive tasks.<br/> Adjust to each learner’s progress, ensuring engagement and mastery of skills.</p>
           </div>
           <!-- Card 3 -->
-          <div class="bg-white rounded-2xl p-4 lg:p-5 flex flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
+          <div class="bg-white rounded-2xl p-4 lg:p-5 flex min-h-[210px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">✅⚙️</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Adaptive Quizzes</h3>
             <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Smart assessments.<br/> Adapt difficulty based on performance, guiding learners toward review or advancement.</p>
           </div>
           <!-- Card 4 -->
-          <div class="bg-white rounded-2xl p-4 lg:p-5 flex flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
+          <div class="bg-white rounded-2xl p-4 lg:p-5 flex min-h-[210px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">👩🏫📊</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Teacher Dashboard</h3>
             <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Class insights.<br/> Track progress, scores, and upload new inclusive lessons.</p>
           </div>
           <!-- Card 5 -->
-          <div class="col-span-2 lg:col-span-1 bg-white rounded-2xl p-4 lg:p-5 flex flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
+          <div class="bg-white rounded-2xl p-4 lg:p-5 flex min-h-[210px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group sm:col-span-2 lg:col-span-1">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">☁️💾</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Offline‑Ready</h3>
             <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Low bandwidth support.<br/> Download lesson briefs for classrooms with limited connectivity.</p>
           </div>
+          </div>
+        </section>
         </div>
 
-
         <!-- Footer -->
-        <div class="pt-3 pb-2">
+        <div class="pb-1 pt-2">
           <div class="system-footer mx-auto flex max-w-4xl flex-col items-center justify-center gap-1 text-center text-[10px] font-bold text-ink-soft sm:flex-row sm:flex-wrap sm:gap-x-3 sm:gap-y-1 sm:text-xs">
             <span>&copy; {{ new Date().getFullYear() }} ACCESSLearn Inc. | Philippine Schools Initiative</span>
             <span class="hidden text-ink-soft sm:inline" aria-hidden="true">|</span>
