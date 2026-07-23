@@ -74,9 +74,9 @@
       <button class="btn-primary mt-5" @click="openForm()">Add {{ title }}</button>
     </div>
 
-    <div v-else class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
-      <div class="hidden bg-gray-50 px-5 py-3 text-[11px] font-semibold uppercase text-ink-soft lg:grid lg:grid-cols-[minmax(240px,1.35fr)_minmax(160px,0.9fr)_90px_110px_110px_120px]">
-        <div>{{ props.kind === 'quiz' ? 'Quiz' : 'Activity' }}</div>
+    <div v-else class="card overflow-hidden">
+      <div class="hidden grid-cols-[minmax(240px,1.35fr)_minmax(160px,0.9fr)_90px_110px_110px_120px] gap-4 border-b border-gray-100 bg-surface px-5 py-3 text-xs font-semibold uppercase tracking-wide text-ink-soft lg:grid">
+        <div>{{ title }}</div>
         <div>{{ props.kind === 'quiz' ? 'Learning Material' : 'Type' }}</div>
         <div>Questions</div>
         <div>Created</div>
@@ -94,16 +94,14 @@
             <span class="badge-blue badge">{{ item.badge }}</span>
           </div>
           <p class="mt-1 line-clamp-2 text-sm text-ink-soft">{{ item.description || 'No description' }}</p>
-          <div v-if="props.kind === 'activity' && item.submissions.length" class="mt-3 border-t border-gray-100 pt-3">
-            <div class="mb-2 text-[11px] font-bold uppercase text-ink-soft">Submitted by</div>
-            <div class="grid gap-1.5">
-              <div v-for="submission in item.submissions" :key="submission.id" class="text-xs">
-                <div class="flex items-center justify-between gap-3">
-                  <span class="truncate font-semibold">{{ submission.studentName }}</span>
-                  <span class="font-mono">{{ submission.score ?? 0 }}/{{ submission.total ?? 0 }}</span>
-                </div>
-                <div class="mt-0.5 truncate font-mono text-[11px] text-ink-soft">{{ formatSubmissionAnswers(submission.answers) }}</div>
+          <div v-if="props.kind === 'activity' && item.submissions.length" class="mt-2 grid gap-1 border-t border-gray-100 pt-2 text-xs">
+            <div class="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Submitted by</div>
+            <div v-for="submission in item.submissions" :key="submission.id" class="min-w-0">
+              <div class="flex items-center justify-between gap-3">
+                <span class="truncate font-medium">{{ submission.studentName }}</span>
+                <span class="font-mono text-ink-soft">{{ submission.score ?? 0 }}/{{ submission.total ?? 0 }}</span>
               </div>
+              <div class="mt-0.5 truncate font-mono text-[11px] text-ink-soft">{{ formatSubmissionAnswers(submission.answers) }}</div>
             </div>
           </div>
         </div>
@@ -120,7 +118,7 @@
           <span class="font-semibold lg:hidden">{{ props.kind === 'quiz' ? 'Updated: ' : 'Due: ' }}</span>{{ item.updated }}
           <div v-if="props.kind === 'activity'" class="mt-1 text-xs">Submissions {{ item.submissionCount }}</div>
         </div>
-        <div class="flex justify-end gap-2">
+        <div class="flex justify-start gap-2 lg:justify-end">
           <button class="figma-button" type="button" @click="openForm(item.source)">Edit</button>
           <button class="figma-button" type="button" :disabled="deletingId === item.id" @click="deleteItem(item.source)">
             {{ deletingId === item.id ? 'Deleting...' : 'Delete' }}
@@ -246,6 +244,7 @@ function matchesAssessmentSearch(item: Quiz | Activity) {
     item.module,
     item.category,
     item.week,
+    item.createdAt,
     'type' in item ? item.type : item.status,
     item.createdAt,
     'dueDate' in item ? item.dueDate : item.date,
