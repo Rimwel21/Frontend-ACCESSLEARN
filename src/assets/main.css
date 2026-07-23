@@ -8,8 +8,8 @@
   body {
     @apply font-body bg-surface text-ink;
     background-image:
-      radial-gradient(circle at 86% 8%, rgba(244, 163, 99, 0.08), transparent 34rem),
-      radial-gradient(circle at 78% 12%, rgba(10, 123, 121, 0.05), transparent 28rem);
+      radial-gradient(circle at 85% 10%, rgba(245, 158, 91, 0.06), transparent 30rem),
+      radial-gradient(circle at 78% 15%, rgba(45, 110, 97, 0.04), transparent 25rem);
     background-attachment: fixed;
   }
   * { @apply box-border; }
@@ -28,7 +28,7 @@
 
 @layer components {
   .btn-primary   { @apply px-5 py-2.5 rounded-full bg-brand-amber text-white font-semibold text-sm shadow-sm hover:-translate-y-px hover:scale-105 transition-all cursor-pointer border-0; }
-  .btn-primary:hover { background: linear-gradient(135deg,#F4A363,#DB767D); box-shadow: 0 0 20px rgba(244, 163, 99, 0.4); }
+  .btn-primary:hover { background: linear-gradient(135deg,#f59e5b,#DB767D); box-shadow: 0 0 20px rgba(245, 158, 91, 0.4); }
   .btn-secondary { @apply px-5 py-2.5 rounded-full bg-white text-ink font-semibold text-sm shadow-sm hover:-translate-y-px transition-all cursor-pointer border border-brand-blue; }
   .btn-secondary:hover { @apply bg-brand-rose text-white; box-shadow: 0 0 18px rgba(219, 118, 125, 0.28); }
   .card          { @apply bg-white rounded-xl shadow-card overflow-hidden border border-brand-teal/30; }
@@ -64,15 +64,15 @@
   .figma-card-title { @apply mb-3 text-sm font-bold text-ink; }
   .figma-button  { @apply rounded border border-brand-teal/40 bg-white px-4 py-2 text-xs font-bold shadow-sm transition hover:-translate-y-px hover:border-brand-amber hover:text-brand-blue disabled:cursor-wait disabled:opacity-60; }
   .figma-primary { @apply rounded bg-brand-amber px-4 py-2 text-xs font-bold text-white transition hover:scale-105 disabled:cursor-wait disabled:opacity-60; }
-  .figma-primary:hover { background: linear-gradient(135deg,#F4A363,#DB767D); box-shadow: 0 0 20px rgba(244, 163, 99, 0.35); }
+  .figma-primary:hover { background: linear-gradient(135deg,#f59e5b,#DB767D); box-shadow: 0 0 20px rgba(245, 158, 91, 0.35); }
   .nav-icon-box  { @apply h-5 w-5 flex-shrink-0 rounded border border-current bg-white/20; }
 }
 
 @layer utilities {
-  .gradient-brand  { background: linear-gradient(135deg,#0A7B79 0%,#7CA8A1 100%); }
-  .gradient-teal   { background: linear-gradient(135deg,#0A7B79,#7CA8A1); }
-  .gradient-amber  { background: linear-gradient(135deg,#F4A363,#DB767D); }
-  .gradient-violet { background: linear-gradient(135deg,#7CA8A1,#DB767D); }
+  .gradient-brand  { background: linear-gradient(135deg,#2d6e61 0%,#5a8d82 100%); }
+  .gradient-teal   { background: linear-gradient(135deg,#2d6e61,#5a8d82); }
+  .gradient-amber  { background: linear-gradient(135deg,#f59e5b,#DB767D); }
+  .gradient-violet { background: linear-gradient(135deg,#5a8d82,#DB767D); }
   .scrollbar-thin::-webkit-scrollbar { width:5px; }
   .scrollbar-thin::-webkit-scrollbar-thumb { @apply bg-brand-teal rounded-full; }
 }
