@@ -69,24 +69,24 @@
     <main class="flex-1 flex flex-col relative grid-bg h-full lg:overflow-y-auto overflow-x-hidden">
       
       <!-- Content Area -->
-      <div class="p-6 lg:px-8 lg:pb-12 w-full max-w-[1300px] mx-auto space-y-6 flex-1 flex flex-col justify-center relative">
+      <div class="p-4 sm:p-6 lg:px-8 lg:pb-12 w-full max-w-[1240px] mx-auto space-y-5 lg:space-y-6 flex-1 flex flex-col justify-center relative">
         
         <!-- Hero Banner -->
-        <div class="relative w-full rounded-[24px] gradient-brand shadow-xl overflow-hidden">
-          <div class="grid items-stretch lg:grid-cols-[minmax(280px,0.92fr)_minmax(0,1.08fr)]">
-            <div class="flex items-end justify-center bg-white/14 p-4 sm:p-6 lg:min-h-[320px] lg:p-0">
+        <div class="relative w-full max-w-[1120px] mx-auto rounded-[20px] gradient-brand shadow-xl overflow-hidden">
+          <div class="grid items-stretch lg:grid-cols-[minmax(260px,0.78fr)_minmax(0,1fr)]">
+            <div class="flex items-end justify-center bg-white/14 p-3 sm:p-5 lg:min-h-[260px] xl:min-h-[285px] lg:p-0">
               <img
                 src="@/assets/hero_illustration.png"
                 alt="Students learning"
-                class="h-auto max-h-[260px] w-full max-w-[420px] object-contain drop-shadow-2xl sm:max-h-[320px] lg:h-full lg:max-h-none lg:max-w-none lg:object-contain"
+                class="h-auto max-h-[190px] w-full max-w-[300px] object-contain drop-shadow-2xl sm:max-h-[230px] sm:max-w-[360px] lg:h-full lg:max-h-[285px] lg:max-w-[440px]"
               />
             </div>
 
-            <div class="flex min-w-0 flex-col justify-center px-6 py-8 text-white sm:px-8 sm:py-10 lg:px-12">
-              <h2 class="font-display text-2xl sm:text-3xl lg:text-3xl xl:text-4xl font-extrabold mb-4 leading-[1.2] w-full text-shadow-sm tracking-tight text-white">
+            <div class="flex min-w-0 flex-col justify-center px-6 py-7 text-white sm:px-8 sm:py-8 lg:px-10 xl:px-12">
+              <h2 class="font-display text-2xl sm:text-3xl lg:text-[32px] xl:text-[36px] font-extrabold mb-4 leading-[1.2] w-full text-shadow-sm tracking-tight text-white">
                 Learning that adapts to every child, every ability, every classroom.
               </h2>
-              <p class="text-surface text-[13px] sm:text-sm mb-8 max-w-[560px] font-medium leading-relaxed">
+              <p class="text-surface text-[13px] sm:text-sm mb-6 max-w-[540px] font-medium leading-relaxed">
                 AccessLearn combines audio lessons, sign-language videos, subtitles, and adaptive quizzes to create equitable learning in Philippine schools.
               </p>
               <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
