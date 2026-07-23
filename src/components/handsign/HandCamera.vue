@@ -26,11 +26,20 @@
       <div v-if="detection?.detected" class="absolute left-3 top-3">
         <ConfidenceBadge :prediction="detection.prediction" :confidence="detection.confidence" :threshold-met="detection.threshold_met" />
       </div>
+      <div
+        v-if="detection?.detected"
+        class="absolute bottom-0 left-0 h-2 bg-[#22C55E]"
+        :style="progressStyle"
+        aria-hidden="true"
+      ></div>
       <div v-else-if="isRunning" class="absolute left-3 top-3 border-[3px] border-black bg-white px-3 py-2 font-mono text-[10px] font-black uppercase">
         No hand detected
       </div>
     </div>
 
+    <p v-if="detection?.detected" class="mt-3 font-mono text-[10px] font-bold uppercase tracking-wide text-gray-600">
+      {{ statusDetails }}
+    </p>
     <p v-if="error" class="mt-3 border-[3px] border-black bg-[#FFC2C2] px-3 py-2 text-xs font-black text-red-700" role="alert">{{ error }}</p>
     <p v-if="retryMessage" class="mt-2 font-mono text-[10px] font-bold uppercase tracking-wide text-gray-600">{{ retryMessage }}</p>
   </section>
@@ -70,5 +79,19 @@ const boxStyle = computed(() => {
     width: `${boxWidth}%`,
     height: `${boxHeight}%`,
   }
+})
+
+const progressStyle = computed(() => ({
+  width: `${Math.round((props.detection?.confirmation_progress ?? 0) * 100)}%`,
+}))
+
+const statusDetails = computed(() => {
+  const detection = props.detection
+  if (!detection) return ''
+
+  const details = [detection.confirmation_status]
+  if (detection.prediction_source === 'mirrored') details.push('mirror')
+  if (detection.calibration_status) details.push(detection.calibration_status)
+  return details.filter(Boolean).join(' | ')
 })
 </script>

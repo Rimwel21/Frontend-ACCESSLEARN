@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { API_BASE_URL } from '@/lib/api'
-import type { CameraDetectionResponse, PredictionResponse } from '@/types/handsign'
+import type { BackspaceCameraSessionResponse, CameraDetectionResponse, PredictionResponse } from '@/types/handsign'
 
 const handsignApi = axios.create({
   baseURL: `${API_BASE_URL}/api/handsign`,
@@ -35,6 +35,13 @@ export async function detectCameraFrame(sessionId: string, image: string): Promi
 
 export async function resetCameraSession(sessionId: string): Promise<void> {
   await handsignApi.post('/reset', { session_id: sessionId })
+}
+
+export async function backspaceCameraSession(sessionId: string): Promise<BackspaceCameraSessionResponse> {
+  const response = await handsignApi.post<BackspaceCameraSessionResponse>('/backspace', {
+    session_id: sessionId,
+  })
+  return response.data
 }
 
 export function handsignErrorMessage(error: unknown) {

@@ -22,6 +22,14 @@
       type="button"
       class="border-[3px] border-black bg-white px-4 py-2 text-xs font-black"
       style="box-shadow:3px 3px 0 #000"
+      @click="$emit('backspace')"
+    >
+      Backspace
+    </button>
+    <button
+      type="button"
+      class="border-[3px] border-black bg-white px-4 py-2 text-xs font-black"
+      style="box-shadow:3px 3px 0 #000"
       @click="$emit('reset')"
     >
       Clear
@@ -36,5 +44,6 @@ defineEmits<{
   start: []
   stop: []
   reset: []
+  backspace: []
 }>()
 </script>

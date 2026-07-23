@@ -118,7 +118,7 @@ const activities = computed<ActivityRow[]>(() => content.activities.map(assessme
   description: assessment.description,
   category: assessment.category,
   timeLimit: assessment.time_limit,
-  status: 'Not Started',
+  status: assessment.student_status === 'completed' ? 'Finished' : 'Not Started',
 })))
 
 const inProgress = computed(() => activities.value.filter(activity => activity.status === 'In Progress'))

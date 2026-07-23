@@ -52,7 +52,7 @@
           <thead>
             <tr>
               <th class="table-th">Student</th>
-              <th class="table-th">Overall Progress</th>
+              <th class="table-th">Learning Material Progress</th>
               <th class="table-th">Activity</th>
               <th class="table-th">Quiz</th>
               <th class="table-th">Status</th>
@@ -73,8 +73,15 @@
                   </div>
                   <span class="font-mono text-[11px] text-ink-soft min-w-[34px] text-right">{{ s.overallPercent }}%</span>
                 </div>
+                <div v-if="s.learningMaterialsTotal" class="mt-1 font-mono text-[11px] text-ink-soft">
+                  {{ s.learningMaterialsCompleted }}/{{ s.learningMaterialsTotal }}
+                  <span v-if="s.learningMaterialsInProgress">, {{ s.learningMaterialsInProgress }} in progress</span>
+                </div>
               </td>
-              <td class="table-td font-mono text-xs">{{ s.activitiesCompleted }}/{{ s.activitiesTotal }}</td>
+              <td class="table-td font-mono text-xs">
+                <div>{{ s.activitiesCompleted }}/{{ s.activitiesTotal }}</div>
+                <div class="mt-1 text-[11px] text-ink-soft">{{ s.activityPercent }}%</div>
+              </td>
               <td class="table-td font-mono text-xs">{{ s.quizActivity }}</td>
               <td class="table-td"><span :class="statusBadge(s.status)">{{ s.status }}</span></td>
             </tr>
@@ -110,7 +117,7 @@
                 <div class="text-[10px] font-mono text-gray-400 mt-0.5">{{ act.time }}</div>
               </div>
             </div>
-            <div v-if="store.recentActivities.length === 0" class="text-xs text-ink-soft">No recent student activity yet.</div>
+            <div v-if="store.recentActivities.length === 0" class="text-xs text-ink-soft">No recent teacher uploads yet.</div>
           </div>
         </div>
       </div>

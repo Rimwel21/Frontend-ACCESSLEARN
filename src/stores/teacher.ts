@@ -49,6 +49,10 @@ interface StudentRow {
   overallPercent: number
   activitiesCompleted: number
   activitiesTotal: number
+  activityPercent: number
+  learningMaterialsCompleted: number
+  learningMaterialsInProgress: number
+  learningMaterialsTotal: number
   status: 'Complete' | 'In Progress' | 'Needs Help'
   lastActivity: string
   quizActivity: string
@@ -65,10 +69,21 @@ export interface AssessmentQuestion {
   answer?: string | null
 }
 
+export interface ActivitySubmission {
+  id: number
+  studentId: number
+  studentName: string
+  score?: number | null
+  total?: number | null
+  answers: Record<string, string>
+  completedAt?: string | null
+}
+
 interface AssessmentSettings {
   classId?: number | null
   moduleId?: number | null
   topicId?: number | null
+  createdAt?: string | null
   category?: string | null
   week?: string | null
   timeLimit?: string | null
@@ -77,6 +92,8 @@ interface AssessmentSettings {
   showAnswersAfterSubmission?: boolean
   dueAt?: string | null
   questions?: AssessmentQuestion[]
+  submissionsCount?: number
+  submissions?: ActivitySubmission[]
 }
 
 export interface Quiz extends AssessmentSettings {
@@ -169,6 +186,10 @@ interface DashboardStudentProgressResponse {
   overall_percent: number
   activities_completed: number
   activities_total: number
+  activity_percent?: number
+  learning_materials_completed?: number
+  learning_materials_in_progress?: number
+  learning_materials_total?: number
   status: 'Complete' | 'In Progress' | 'Needs Help'
   last_activity: string | null
   quiz_activity: string | null
@@ -197,6 +218,16 @@ interface TeacherAssessmentResponse {
   shuffle_questions: boolean
   show_answers_after_submission: boolean
   questions: AssessmentQuestion[]
+  submissions_count?: number
+  submissions?: Array<{
+    id: number
+    student_id: number
+    student_name: string
+    score?: number | null
+    total?: number | null
+    answers?: Record<string, string>
+    completed_at?: string | null
+  }>
   created_at: string
   updated_at: string
   due_at?: string | null
@@ -504,8 +535,12 @@ export const useTeacherStore = defineStore('teacher', () => {
     const auth = useAuthStore()
     if (!auth.token) return
 
+    if (type === 'quiz' && modules.value.length === 0) {
+      await fetchModules()
+    }
+
     const data = await apiFetch<TeacherAssessmentResponse[]>(`/teacher/assessments/${type}`, { token: auth.token })
-    if (type === 'quiz') quizzes.value = data.map(mapQuizResponse)
+    if (type === 'quiz') quizzes.value = data.map(assessment => mapQuizResponse(assessment, modules.value))
     else activities.value = data.map(mapActivityResponse)
   }
 
@@ -550,7 +585,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           due_at: payload.dueAt ?? null,
         }),
       })
-      quizzes.value.unshift(mapQuizResponse(saved))
+      quizzes.value.unshift(mapQuizResponse(saved, modules.value))
       return saved
     } catch (err) {
       quizError.value = err instanceof Error ? err.message : 'Unable to create quiz'
@@ -623,6 +658,7 @@ export const useTeacherStore = defineStore('teacher', () => {
         }),
       })
       activities.value.unshift(mapActivityResponse(saved))
+      await fetchDashboardSummary()
       return saved
     } catch (err) {
       activityError.value = err instanceof Error ? err.message : 'Unable to create activity'
@@ -672,7 +708,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           due_at: payload.dueAt ?? null,
         }),
       })
-      const mapped = mapQuizResponse(saved)
+      const mapped = mapQuizResponse(saved, modules.value)
       quizzes.value = quizzes.value.map(quiz => quiz.id === id ? mapped : quiz)
       return saved
     } catch (err) {
@@ -725,6 +761,7 @@ export const useTeacherStore = defineStore('teacher', () => {
       })
       const mapped = mapActivityResponse(saved)
       activities.value = activities.value.map(activity => activity.id === id ? mapped : activity)
+      await fetchDashboardSummary()
       return saved
     } catch (err) {
       activityError.value = err instanceof Error ? err.message : 'Unable to update activity'
@@ -734,8 +771,45 @@ export const useTeacherStore = defineStore('teacher', () => {
     }
   }
 
-  function deleteActivity(id: string) {
-    activities.value = activities.value.filter(a => a.id !== id)
+  async function deleteQuiz(id: string) {
+    const auth = useAuthStore()
+    const original = quizzes.value
+    quizError.value = ''
+    quizzes.value = quizzes.value.filter(quiz => quiz.id !== id)
+
+    try {
+      if (!auth.token) throw new Error('Please login first')
+      await apiFetch<{ detail: string }>(`/teacher/assessments/${id}`, {
+        method: 'DELETE',
+        token: auth.token,
+      })
+      await fetchRecentActivities()
+    } catch (err) {
+      quizzes.value = original
+      quizError.value = err instanceof Error ? err.message : 'Unable to delete quiz'
+      throw err
+    }
+  }
+
+  async function deleteActivity(id: string) {
+    const auth = useAuthStore()
+    const original = activities.value
+    activityError.value = ''
+    activities.value = activities.value.filter(activity => activity.id !== id)
+
+    try {
+      if (!auth.token) throw new Error('Please login first')
+      await apiFetch<{ detail: string }>(`/teacher/assessments/${id}`, {
+        method: 'DELETE',
+        token: auth.token,
+      })
+      await fetchRecentActivities()
+      await fetchDashboardSummary()
+    } catch (err) {
+      activities.value = original
+      activityError.value = err instanceof Error ? err.message : 'Unable to delete activity'
+      throw err
+    }
   }
 
   return {
@@ -744,7 +818,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     modulesLoading, moduleSaving, moduleError, quizSaving, quizError, activitySaving, activityError,
     classesLoading, classSaving, classError, classStudents, classStudentsLoading,
     publishedModules, unpublishedModules, atRiskStudents,
-    fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchAssessments, addQuiz, updateQuiz, addActivity, updateActivity, deleteActivity,
+    fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchAssessments, addQuiz, updateQuiz, deleteQuiz, addActivity, updateActivity, deleteActivity,
     fetchClasses, addClass, selectClass, deleteClass, fetchClassStudents,
   }
 })
@@ -821,6 +895,10 @@ function mapDashboardStudentResponse(student: DashboardStudentProgressResponse):
     overallPercent: student.overall_percent,
     activitiesCompleted: student.activities_completed,
     activitiesTotal: student.activities_total,
+    activityPercent: student.activity_percent ?? 0,
+    learningMaterialsCompleted: student.learning_materials_completed ?? 0,
+    learningMaterialsInProgress: student.learning_materials_in_progress ?? 0,
+    learningMaterialsTotal: student.learning_materials_total ?? 0,
     status: student.status,
     lastActivity: student.last_activity ? new Date(student.last_activity).toLocaleDateString() : 'No activity',
     quizActivity: student.quiz_activity ?? 'No quiz yet',
@@ -868,12 +946,15 @@ function gradientFor(id: number) {
   return gradients[id % gradients.length]
 }
 
-function mapQuizResponse(assessment: TeacherAssessmentResponse): Quiz {
+function mapQuizResponse(assessment: TeacherAssessmentResponse, availableModules: Module[] = []): Quiz {
+  const material = assessment.module_id
+    ? availableModules.find(module => Number(module.id) === assessment.module_id)
+    : null
   return {
     id: String(assessment.id),
     title: assessment.title,
     description: assessment.description,
-    module: assessment.week ?? 'No week',
+    module: material?.title ?? 'No learning material',
     classId: assessment.class_id,
     moduleId: assessment.module_id,
     topicId: assessment.topic_id,
@@ -884,6 +965,7 @@ function mapQuizResponse(assessment: TeacherAssessmentResponse): Quiz {
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,
     dueAt: assessment.due_at ?? null,
+    createdAt: assessment.created_at ? new Date(assessment.created_at).toLocaleDateString() : null,
     type: assessment.category ?? 'Quiz',
     difficulty: 'Medium',
     date: new Date(assessment.updated_at).toLocaleDateString(),
@@ -892,6 +974,7 @@ function mapQuizResponse(assessment: TeacherAssessmentResponse): Quiz {
 }
 
 function mapActivityResponse(assessment: TeacherAssessmentResponse): Activity {
+  const submissions = (assessment.submissions ?? []).map(mapActivitySubmissionResponse)
   return {
     id: String(assessment.id),
     title: assessment.title,
@@ -907,9 +990,32 @@ function mapActivityResponse(assessment: TeacherAssessmentResponse): Activity {
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,
     dueAt: assessment.due_at ?? null,
+    createdAt: assessment.created_at ? new Date(assessment.created_at).toLocaleDateString() : null,
     dueDate: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString() : '',
     dueTime: assessment.time_limit ?? '',
-    status: 'Not Started',
+    status: (assessment.submissions_count ?? submissions.length) > 0 ? 'Finished' : 'Not Started',
     questions: assessment.questions,
+    submissionsCount: assessment.submissions_count ?? submissions.length,
+    submissions,
+  }
+}
+
+function mapActivitySubmissionResponse(submission: {
+  id: number
+  student_id: number
+  student_name: string
+  score?: number | null
+  total?: number | null
+  answers?: Record<string, string>
+  completed_at?: string | null
+}): ActivitySubmission {
+  return {
+    id: submission.id,
+    studentId: submission.student_id,
+    studentName: submission.student_name,
+    score: submission.score,
+    total: submission.total,
+    answers: submission.answers ?? {},
+    completedAt: submission.completed_at ?? null,
   }
 }

@@ -19,7 +19,7 @@
 
     <div class="grid gap-5 px-7 py-6 xl:grid-cols-[minmax(0,1fr)_330px]">
       <div class="space-y-5">
-        <SignLanguageToggle v-model="signLanguageMode" />
+        <SignLanguageToggle v-model="signLanguageMode" :disabled="isActivityCompleted" />
 
         <section v-if="content.loading" class="border-[3px] border-black bg-white p-5 text-sm font-black" style="box-shadow:4px 4px 0 #000">
           Loading activity...
@@ -36,7 +36,7 @@
         </section>
 
         <HandCamera
-          v-if="signLanguageMode && activeActivity"
+          v-if="signLanguageMode && activeActivity && !isActivityCompleted"
           v-model:video-ref="videoRef"
           v-model:canvas-ref="canvasRef"
           :detection="detection"
@@ -53,6 +53,7 @@
           :sign-mode="signLanguageMode"
           :answer="answer"
           :detection="detection"
+          :disabled="isActivityCompleted"
         />
 
         <div v-if="activeActivity" class="flex flex-wrap gap-2">
@@ -72,11 +73,12 @@
 
         <div class="flex flex-wrap items-center justify-between gap-3 border-[3px] border-black bg-white p-4" style="box-shadow:4px 4px 0 #000">
           <CameraControls
-            v-if="signLanguageMode"
+            v-if="signLanguageMode && !isActivityCompleted"
             :is-running="isRunning"
             @start="start"
             @stop="stop"
             @reset="reset"
+            @backspace="backspace"
           />
           <button
             v-if="activeActivity && activeQuestionIndex < activeActivity.questions.length - 1"
@@ -89,11 +91,12 @@
           </button>
           <button
             type="button"
-            class="border-[3px] border-black bg-[#FFE135] px-5 py-2.5 text-xs font-black"
+            class="border-[3px] border-black bg-[#FFE135] px-5 py-2.5 text-xs font-black disabled:cursor-not-allowed disabled:opacity-60"
             style="box-shadow:3px 3px 0 #000"
+            :disabled="isActivityCompleted"
             @click="submitAnswer"
           >
-            Submit Answer
+            {{ isActivityCompleted ? 'Submitted' : 'Submit Answer' }}
           </button>
         </div>
       </div>
@@ -132,6 +135,34 @@
         </section>
       </aside>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="resultPopup"
+        class="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4"
+        @click.self="closeResultPopup"
+      >
+        <section class="w-full max-w-sm border-[3px] border-black bg-white p-5" style="box-shadow:6px 6px 0 #000">
+          <div
+            :class="[
+              'border-[3px] border-black px-4 py-3 font-display text-lg font-black uppercase tracking-widest',
+              resultPopup.isCorrect ? 'bg-green-200 text-black' : 'bg-[#FFE135] text-black'
+            ]"
+          >
+            {{ resultPopup.title }}
+          </div>
+          <p class="mt-4 text-sm font-bold text-gray-700">{{ resultPopup.message }}</p>
+          <button
+            type="button"
+            class="mt-5 w-full border-[3px] border-black bg-[#1565FF] px-4 py-2.5 text-xs font-black text-white"
+            style="box-shadow:3px 3px 0 #000"
+            @click="closeResultPopup"
+          >
+            OK
+          </button>
+        </section>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -163,6 +194,7 @@ const {
   start,
   stop,
   reset,
+  backspace,
 } = useHandSign()
 
 const signLanguageMode = ref(false)
@@ -172,6 +204,11 @@ const submitMessage = ref('')
 const activeQuestionIndex = ref(0)
 const answers = ref<Record<string, string>>({})
 const result = ref<{ score: number; total: number } | null>(null)
+const resultPopup = ref<{
+  isCorrect: boolean
+  title: string
+  message: string
+} | null>(null)
 
 const activityId = computed(() => route.query.activityId ? Number(route.query.activityId) : null)
 const activeActivity = computed(() => content.currentActivity)
@@ -183,9 +220,26 @@ const isHearingImpaired = computed(() => {
 const studentTypeLabel = computed(() => isHearingImpaired.value ? 'Student with Hearing Impairment' : 'Regular Student')
 const defaultModeLabel = computed(() => isHearingImpaired.value ? 'Sign Language Mode on' : 'Text input')
 const currentAnswer = computed(() => signLanguageMode.value ? answer.value : textAnswer.value)
-const scoreLabel = computed(() => result.value ? `${result.value.score} / ${result.value.total}` : 'Not submitted')
+const isActivityCompleted = computed(() => activeActivity.value?.student_status === 'completed')
+const scoreLabel = computed(() => {
+  if (result.value) return `${result.value.score} / ${result.value.total}`
+  if (
+    isActivityCompleted.value &&
+    activeActivity.value?.student_score !== null &&
+    activeActivity.value?.student_score !== undefined &&
+    activeActivity.value?.student_total !== null &&
+    activeActivity.value?.student_total !== undefined
+  ) {
+    return `${activeActivity.value.student_score} / ${activeActivity.value.student_total}`
+  }
+  return 'Not submitted'
+})
 
 watch(signLanguageMode, async (enabled) => {
+  if (isActivityCompleted.value) {
+    stop()
+    return
+  }
   submitMessage.value = ''
   if (enabled) {
     await nextTick()
@@ -201,6 +255,10 @@ onMounted(async () => {
   }
   if (activityId.value) {
     await content.fetchActivity(activityId.value)
+  }
+  if (isActivityCompleted.value) {
+    stop()
+    submitMessage.value = `Already submitted. Score: ${scoreLabel.value}`
   }
   if (!defaultWasApplied.value) {
     signLanguageMode.value = isHearingImpaired.value
@@ -229,19 +287,44 @@ async function submitAnswer() {
     submitMessage.value = 'Activity is not ready yet.'
     return
   }
+  if (isActivityCompleted.value) {
+    submitMessage.value = `Already submitted. Score: ${scoreLabel.value}`
+    return
+  }
   if (activeActivity.value.questions.some((_, index) => !answers.value[String(index)]?.trim())) {
     submitMessage.value = 'Answer every question before submitting.'
     return
   }
 
-  const submitted = await content.submitActivity(activityId.value, answers.value)
+  const submittedMode = signLanguageMode.value ? 'Sign Language Mode' : 'Text Mode'
+  const submitted = await content.submitActivity(activityId.value, answers.value).catch((err) => {
+    submitMessage.value = err instanceof Error ? err.message : 'Unable to submit activity.'
+    return null
+  })
   if (!submitted) return
   result.value = { score: submitted.score, total: submitted.total }
   submitMessage.value = `Submitted. Score: ${submitted.score} / ${submitted.total}`
+  stop()
+  openResultPopup(submitted, submittedMode)
 }
 
 function saveCurrentAnswer() {
   const value = currentAnswer.value.trim()
   if (value) answers.value[String(activeQuestionIndex.value)] = value
+}
+
+function openResultPopup(submitted: { score: number; total: number }, submittedMode: string) {
+  const isCorrect = submitted.total > 0 && submitted.score === submitted.total
+  resultPopup.value = {
+    isCorrect,
+    title: isCorrect ? 'Correct' : 'Not correct',
+    message: isCorrect
+      ? `Your ${submittedMode} answer was submitted successfully. Score: ${submitted.score} / ${submitted.total}.`
+      : `Your ${submittedMode} answer was submitted successfully, but it did not match the expected answer. Score: ${submitted.score} / ${submitted.total}.`,
+  }
+}
+
+function closeResultPopup() {
+  resultPopup.value = null
 }
 </script>
