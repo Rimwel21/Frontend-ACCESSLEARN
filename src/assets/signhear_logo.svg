@@ -1,7 +1,12 @@
 <svg width="900" height="760" viewBox="0 0 900 760" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">SIGNHEAR logo</title>
   <desc id="desc">Sign language education logo with hand, book, accessibility icons, and SIGNHEAR wordmark.</desc>
-  <rect width="900" height="760" rx="28" fill="white"/>
+  <defs>
+    <filter id="softLogoShadow" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#071B80" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <g filter="url(#softLogoShadow)">
   <path d="M215 198C297 73 484 38 637 86" stroke="#0B63CE" stroke-width="24" stroke-linecap="round"/>
   <path d="M686 142C737 198 767 270 768 345" stroke="#1689E8" stroke-width="24" stroke-linecap="round"/>
   <path d="M782 373C770 444 731 511 670 559" stroke="#12A865" stroke-width="24" stroke-linecap="round"/>
@@ -50,4 +55,5 @@
   <text x="450" y="728" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="700">
     <tspan fill="#FF7A00">Hearing</tspan><tspan fill="#0A2A7A"> Education and </tspan><tspan fill="#0AAA61">Accessible</tspan><tspan fill="#0B63CE"> Resources</tspan>
   </text>
+  </g>
 </svg>

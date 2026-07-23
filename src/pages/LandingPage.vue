@@ -7,7 +7,7 @@
         <img
           src="@/assets/signhear_logo.svg"
           alt="SIGNHEAR - Sign Language Integrated Guidance for Hearing Education and Accessible Resources"
-          class="h-12 w-auto max-w-[min(68vw,220px)] object-contain object-left"
+          class="h-14 w-auto max-w-[min(70vw,240px)] object-contain object-left sm:h-16"
         />
       </div>
       <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="text-ink-soft hover:text-ink">
@@ -30,7 +30,7 @@
           <img
             src="@/assets/signhear_logo.svg"
             alt="SIGNHEAR - Sign Language Integrated Guidance for Hearing Education and Accessible Resources"
-            class="h-auto w-full max-w-[190px] object-contain"
+            class="h-auto w-full max-w-[210px] object-contain"
           />
         </div>
 
