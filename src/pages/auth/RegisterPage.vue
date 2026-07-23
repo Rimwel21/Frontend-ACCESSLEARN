@@ -34,7 +34,7 @@
             <div class="grid gap-4 sm:grid-cols-2">
               <div>
                 <label class="field-label" for="grade-level">Grade level</label>
-                <input id="grade-level" v-model.trim="studentGradeLevel" class="input-field mt-2" type="text" placeholder="Grade 7" required />
+                <input id="grade-level" v-model.trim="studentGradeLevel" class="input-field mt-2" type="text" placeholder="Grade 1" required />
               </div>
               <div>
                 <label class="field-label" for="student-email">School email</label>
@@ -243,6 +243,7 @@ const otpInputRefs = ref<(HTMLInputElement | null)[]>([null, null, null, null, n
 const requestStatus = ref({ message: '', type: '' })
 const verifyStatus = ref({ message: '', type: '' })
 const formStatus = ref({ message: '', type: '' })
+const fallbackOtp = ref('')
 const timerText = ref('')
 const timerTextType = ref('')
 const countdownInterval = ref<any>(null)
@@ -526,6 +527,7 @@ async function handleRequestOtp() {
   requestStatus.value = { message: '', type: '' }
   verifyStatus.value = { message: '', type: '' }
   formStatus.value = { message: '', type: '' }
+  fallbackOtp.value = ''
   timerText.value = ''
 
   if (!currentEmail) {
@@ -541,7 +543,7 @@ async function handleRequestOtp() {
 
   requestLoading.value = true
   try {
-    await auth.requestTeacherOtp(currentEmail)
+    const otpResponse = await auth.requestTeacherOtp(currentEmail)
 
     const expiresAt = Date.now() + 5 * 60 * 1000
     localStorage.setItem('teacher_pending_email', currentEmail)
@@ -557,12 +559,22 @@ async function handleRequestOtp() {
 
     setTimeout(() => focusOtpDigit(0), 50)
 
-    requestStatus.value = {
-      message: 'OTP sent. Check your email and enter the 6-digit code below.',
-      type: 'success',
+    if (otpResponse.delivery === 'failed' && otpResponse.debug_otp) {
+      fallbackOtp.value = otpResponse.debug_otp
+      requestStatus.value = {
+        message: `Email delivery failed. Use this development OTP: ${otpResponse.debug_otp}`,
+        type: 'info',
+      }
+    } else {
+      requestStatus.value = {
+        message: 'OTP sent. Check your email and enter the 6-digit code below.',
+        type: 'success',
+      }
     }
     verifyStatus.value = {
-      message: 'Enter the code before the timer ends.',
+      message: fallbackOtp.value
+        ? `Enter development code ${fallbackOtp.value} before the timer ends.`
+        : 'Enter the code before the timer ends.',
       type: 'info',
     }
   } catch (err: any) {

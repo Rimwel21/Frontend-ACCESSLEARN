@@ -110,11 +110,13 @@ async function submitLogin() {
   isBlocked.value = false
   auth.error = ''
   recoveryMessage.value = ''
+  const accountIdentity = accountIdentityInput.value.trim()
+  const isEmailLogin = accountIdentity.includes('@')
 
   try {
     const data = await auth.login({
-      email: role.value === 'teacher' ? accountIdentityInput.value : null,
-      username: role.value === 'student' ? accountIdentityInput.value : null,
+      email: role.value === 'teacher' || isEmailLogin ? accountIdentity : null,
+      username: role.value === 'student' && !isEmailLogin ? accountIdentity : null,
       password: password.value,
     }, role.value)
 

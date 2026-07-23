@@ -61,7 +61,6 @@
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { mockAdmin } from '@/modules/admin/mock/admin'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -75,17 +74,21 @@ const errorMsg = ref('')
 async function handleLogin() {
   loading.value = true
   errorMsg.value = ''
-  
-  // Simulated delay for security feel
-  setTimeout(() => {
-    if (email.value === mockAdmin.email && password.value === mockAdmin.password) {
-      auth.setAdminSession(email.value)
-      router.push('/admin/dashboard')
-    } else {
-      errorMsg.value = 'Invalid administrative credentials or unauthorized access.'
-      loading.value = false
-    }
-  }, 1000)
+
+  try {
+    await auth.login(
+      {
+        email: email.value,
+        password: password.value,
+      },
+      'admin',
+    )
+    router.push('/admin/dashboard')
+  } catch (err) {
+    errorMsg.value = err instanceof Error ? err.message : 'Invalid administrative credentials or unauthorized access.'
+  } finally {
+    loading.value = false
+  }
 }
 
 function handleForgotPassword() {

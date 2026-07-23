@@ -15,6 +15,7 @@ export interface LoginPayload {
   username?: string | null
   email?: string | null
   password: string
+  role?: Role
 }
 
 interface AccountResponse {
@@ -30,6 +31,13 @@ interface TokenResponse {
   access_token: string
   token_type: string
   profile_completed: boolean
+}
+
+interface TeacherOtpResponse {
+  message: string
+  delivery?: 'sent' | 'failed'
+  debug_otp?: string
+  detail?: string
 }
 
 interface AccessTokenPayload {
@@ -82,7 +90,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = ''
 
     try {
-      const data = await apiFetch<{ message: string }>('/otp/teacher/request', {
+      const data = await apiFetch<TeacherOtpResponse>('/otp/teacher/request', {
         method: 'POST',
         body: JSON.stringify({ email, role: 'teacher' }),
       })
@@ -141,7 +149,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const data = await apiFetch<TokenResponse>('/auth/account/login', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, role: selectedRole }),
       })
 
       const actualRole = decodeAccessTokenPayload(data.access_token)?.role
@@ -157,7 +165,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = data.access_token
       tokenType.value = data.token_type
       role.value = actualRole
-      accountIdentity.value = actualRole === 'student' ? payload.username ?? '' : payload.email ?? ''
+      accountIdentity.value = actualRole === 'student' ? payload.username ?? payload.email ?? '' : payload.email ?? ''
       const isCompleted = actualRole === 'admin' ? true : data.profile_completed
       profileCompleted.value = isCompleted
 

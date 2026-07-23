@@ -90,7 +90,16 @@
             </div>
             <fieldset class="md:col-span-2 rounded-lg border border-gray-200 bg-white p-3">
               <legend class="field-label px-1">Grade Levels Handled</legend>
-              <div class="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+              <div v-if="gradeLevelsLoading" class="text-sm font-semibold text-ink-soft">
+                Loading grade levels...
+              </div>
+              <div v-else-if="gradeLevelError" class="status-error">
+                {{ gradeLevelError }}
+              </div>
+              <div v-else-if="gradeLevels.length === 0" class="text-sm font-semibold text-ink-soft">
+                No grade levels available. Ask an admin to create grade levels.
+              </div>
+              <div v-else class="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
                 <label v-for="grade in gradeLevels" :key="grade.id" class="flex items-center gap-2 text-sm font-semibold text-ink">
                   <input v-model="teacherForm.grade_level_ids" type="checkbox" :value="grade.id" />
                   {{ grade.name }}
@@ -151,6 +160,8 @@ const previewUrl = ref('')
 const message = ref('')
 const gradeLevels = ref<GradeLevelOption[]>([])
 const studentSections = ref<SectionOption[]>([])
+const gradeLevelsLoading = ref(false)
+const gradeLevelError = ref('')
 
 const studentForm = ref({
   name: '',
@@ -267,7 +278,15 @@ async function handleStudentGradeChange() {
 
 async function loadGradeLevels() {
   if (!auth.token) return
-  gradeLevels.value = await fetchGradeLevelOptions(auth.token)
+  gradeLevelsLoading.value = true
+  gradeLevelError.value = ''
+  try {
+    gradeLevels.value = await fetchGradeLevelOptions(auth.token)
+  } catch (err) {
+    gradeLevelError.value = err instanceof Error ? err.message : 'Failed to load grade levels.'
+  } finally {
+    gradeLevelsLoading.value = false
+  }
 }
 
 async function loadStudentSections(gradeLevelId: number | null) {
