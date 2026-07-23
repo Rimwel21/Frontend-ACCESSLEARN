@@ -53,15 +53,17 @@
         </nav>
       </div>
 
-      <!-- Bottom illustration -->
-      <div class="p-6 opacity-80 pointer-events-none self-center">
-        <svg class="w-32 h-auto" viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="100" cy="80" r="30" stroke="#1565FF" stroke-width="6" stroke-dasharray="6 6"/>
-          <path d="M70 120 C 80 145, 120 145, 130 120" stroke="#FFA726" stroke-width="8" stroke-linecap="round"/>
-          <circle cx="100" cy="80" r="18" fill="#29B6F6"/>
-          <path d="M60 40 L40 60 L60 80" stroke="#4CAF50" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M140 40 L160 60 L140 80" stroke="#9C27B0" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+      <!-- Accessibility badge -->
+      <div class="px-6 pb-8">
+        <div class="rounded-xl border border-brand-teal/30 bg-white/70 px-4 py-3 text-center shadow-sm">
+          <div class="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-brand-blue text-[11px] font-black leading-none text-white">
+            WCAG<br />2.2
+          </div>
+          <p class="text-[10px] font-bold uppercase tracking-wide text-brand-blue">Compliant</p>
+          <p class="mt-1 text-[10px] font-semibold leading-snug text-ink-soft">
+            Readable, keyboard-friendly, accessible learning.
+          </p>
+        </div>
       </div>
     </aside>
 
@@ -69,7 +71,7 @@
     <main class="flex-1 flex flex-col relative grid-bg h-full lg:overflow-y-auto overflow-x-hidden">
       
       <!-- Content Area -->
-      <div class="p-4 sm:p-6 lg:px-8 lg:pb-12 w-full max-w-[1240px] mx-auto space-y-5 lg:space-y-6 flex-1 flex flex-col justify-center relative">
+      <div class="p-4 sm:p-6 lg:px-8 lg:py-7 w-full max-w-[1240px] mx-auto space-y-4 lg:space-y-5 flex-1 flex flex-col justify-start xl:justify-center relative">
         
         <!-- Hero Banner -->
         <div class="relative w-full max-w-[1120px] mx-auto rounded-[20px] gradient-brand shadow-xl overflow-hidden">
@@ -98,7 +100,7 @@
         </div>
 
         <!-- Feature Cards -->
-        <div id="features" class="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 relative z-20 xl:-mt-10">
+        <div id="features" class="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 relative z-20 xl:-mt-6">
           <!-- Card 1 -->
           <div class="bg-white rounded-2xl p-4 lg:p-5 flex flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">🧏💬</div>
@@ -133,9 +135,14 @@
 
 
         <!-- Footer -->
-        <div class="mt-auto pt-8 pb-4">
-          <div class="system-footer text-center text-[10px] sm:text-xs font-bold text-ink-soft">
-            © {{ new Date().getFullYear() }} ACCESSLearn Inc. | Philippine Schools Initiative | WCAG 2.2 Compliant
+        <div class="pt-3 pb-2">
+          <div class="system-footer mx-auto flex max-w-3xl flex-col items-center justify-center gap-1 text-center text-[10px] font-bold text-ink-soft sm:flex-row sm:text-xs">
+            <span>&copy; {{ new Date().getFullYear() }} ACCESSLearn Inc. | Philippine Schools Initiative</span>
+            <span class="hidden sm:inline">|</span>
+            <span class="inline-flex flex-wrap items-center justify-center gap-1 text-brand-blue">
+              <span class="rounded bg-brand-blue px-1.5 py-0.5 text-[9px] font-black text-white">WCAG 2.2</span>
+              Compliant: supports accessible contrast, navigation, and readable content.
+            </span>
           </div>
         </div>
       </div>
