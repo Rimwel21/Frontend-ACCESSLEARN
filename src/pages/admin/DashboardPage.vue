@@ -61,6 +61,7 @@
               type="text"
               placeholder="Section A"
               required
+              @input="handleSectionNameInput"
             />
           </div>
 
@@ -252,6 +253,17 @@ const selectedGradeLabel = computed(() => {
   return gradeLevels.value.find(grade => grade.id === sectionForm.value.grade_level_id)?.name ?? 'Selected grade'
 })
 
+function normalizeSectionName(value: string) {
+  const normalized = value.trimStart().replace(/\s+/g, ' ')
+  if (!normalized) return ''
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
+
+function handleSectionNameInput(event: Event) {
+  const input = event.target as HTMLInputElement
+  sectionForm.value.name = normalizeSectionName(input.value)
+}
+
 function initiateAction(teacherId: number, action: 'approve' | 'block') {
   confirmingId.value = teacherId
   confirmingAction.value = action
@@ -316,19 +328,15 @@ async function loadSectionsForSelectedGrade() {
 }
 
 async function createSection() {
-  const name = sectionForm.value.name.trim()
+  const name = normalizeSectionName(sectionForm.value.name)
   const gradeLevelId = sectionForm.value.grade_level_id
 
   errorMsg.value = ''
   successMsg.value = ''
+  sectionForm.value.name = name
 
   if (!name) {
     errorMsg.value = 'Section name cannot be empty.'
-    return
-  }
-
-  if (!/^[A-Z]/.test(name)) {
-    errorMsg.value = 'Section name must start with uppercase letter.'
     return
   }
 
