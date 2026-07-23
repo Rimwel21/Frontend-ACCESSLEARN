@@ -67,28 +67,28 @@
       </div>
     </aside>
 
-    <main class="grid-bg relative flex h-full flex-1 flex-col overflow-x-hidden lg:h-screen lg:overflow-hidden">
-      <div class="mx-auto flex min-h-full w-full max-w-[1120px] flex-1 flex-col justify-between gap-2 p-4 sm:p-5 lg:px-6 lg:py-2.5">
-        <div class="space-y-2 lg:space-y-3">
-          <section class="relative mx-auto w-full max-w-[980px] overflow-hidden rounded-[12px] shadow-xl gradient-brand">
-            <div class="grid items-stretch lg:grid-cols-[minmax(250px,0.78fr)_minmax(0,1fr)]">
-              <div class="flex items-center justify-center bg-white/14 px-4 pt-4 sm:px-5 sm:pt-5 lg:min-h-[210px] lg:p-0 xl:min-h-[225px]">
+    <main class="grid-bg relative flex h-full flex-1 flex-col overflow-x-hidden lg:min-h-screen">
+      <div class="mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-3 p-4 sm:p-5 lg:px-8 lg:py-4">
+        <div class="space-y-3 lg:space-y-4">
+          <section class="relative mx-auto w-full max-w-[1450px] overflow-hidden rounded-[12px] shadow-xl gradient-brand">
+            <div class="grid items-stretch lg:grid-cols-[minmax(430px,0.64fr)_minmax(0,1fr)]">
+              <div class="flex items-center justify-center bg-white/14 px-4 pt-4 sm:px-5 sm:pt-5 lg:min-h-[390px] lg:p-0 xl:min-h-[425px]">
                 <img
                   src="@/assets/hero_illustration.png"
                   alt="Students learning"
-                  class="aspect-[4/3] w-full max-w-[min(78vw,300px)] rounded-t-sm object-contain drop-shadow-2xl sm:max-w-[min(62vw,350px)] lg:aspect-auto lg:h-full lg:max-h-[225px] lg:max-w-[315px] lg:rounded-none"
+                  class="aspect-[4/3] w-full max-w-[min(78vw,300px)] rounded-t-sm object-contain drop-shadow-2xl sm:max-w-[min(62vw,350px)] lg:aspect-auto lg:h-full lg:max-h-[425px] lg:max-w-[520px] lg:rounded-none"
                 />
               </div>
 
-              <div class="flex min-w-0 flex-col justify-center px-6 py-6 text-white sm:px-8 sm:py-7 lg:px-9 xl:px-10">
-                <h1 class="mb-2.5 w-full font-display text-2xl font-extrabold leading-[1.08] tracking-tight text-white text-shadow-sm sm:text-3xl lg:text-[28px] xl:text-[31px]">
+              <div class="flex min-w-0 flex-col justify-center px-6 py-6 text-white sm:px-8 sm:py-7 lg:px-12 xl:px-16">
+                <h1 class="mb-4 w-full font-display text-2xl font-extrabold leading-[1.08] tracking-tight text-white text-shadow-sm sm:text-3xl lg:text-[42px] xl:text-[50px]">
                   Learning that adapts to every child, every ability, every classroom.
                 </h1>
-                <p class="mb-4 max-w-[520px] text-[13px] font-medium leading-relaxed text-surface sm:text-sm lg:text-[12px]">
+                <p class="mb-9 max-w-[740px] text-[13px] font-medium leading-relaxed text-surface sm:text-sm lg:text-[18px]">
                   AccessLearn combines audio lessons, sign-language videos, subtitles, and adaptive quizzes to create equitable learning in Philippine schools.
                 </p>
                 <div class="flex justify-center sm:justify-start">
-                  <RouterLink to="/portal" class="min-w-36 rounded-full bg-brand-amber px-8 py-2.5 text-center text-xs font-bold text-white shadow-lg transition-all hover:scale-105 hover:bg-gradient-to-r hover:from-brand-amber hover:to-brand-rose hover:shadow-[0_0_20px_rgba(244,163,99,0.4)]">
+                  <RouterLink to="/portal" class="min-w-52 rounded-full bg-brand-amber px-10 py-4 text-center text-base font-bold text-white shadow-lg transition-all hover:scale-105 hover:bg-gradient-to-r hover:from-brand-amber hover:to-brand-rose hover:shadow-[0_0_20px_rgba(244,163,99,0.4)]">
                     Get Started
                   </RouterLink>
                 </div>
@@ -96,15 +96,15 @@
             </div>
           </section>
 
-          <section id="features" class="relative z-20 mx-auto w-full max-w-[980px] space-y-1.5" aria-labelledby="features-title">
-            <h2 id="features-title" class="font-display text-[22px] font-black leading-none text-ink">Features</h2>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:gap-3.5">
-              <article v-for="feature in features" :key="feature.title" class="flex min-h-[158px] flex-col items-center rounded-xl border border-brand-teal/30 bg-white p-4 text-center shadow-card transition-all hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover lg:p-3">
-                <div class="mb-1.5 flex h-8 items-center justify-center text-3xl transition-transform lg:text-[27px]">
+          <section id="features" class="relative z-20 mx-auto w-full max-w-[1450px] space-y-4" aria-labelledby="features-title">
+            <h2 id="features-title" class="font-display text-[30px] font-black leading-none text-ink">Features</h2>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:gap-7">
+              <article v-for="feature in features" :key="feature.title" class="flex min-h-[290px] flex-col items-center rounded-xl border border-brand-teal/30 bg-white p-4 text-center shadow-card transition-all hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover lg:p-8">
+                <div class="mb-5 flex h-12 items-center justify-center text-3xl transition-transform lg:text-[48px]">
                   {{ feature.icon }}
                 </div>
-                <h3 class="mb-1.5 font-bold leading-tight text-ink text-[13px] lg:text-xs">{{ feature.title }}</h3>
-                <p class="text-[10px] font-medium leading-relaxed text-ink-soft">
+                <h3 class="mb-4 font-bold leading-tight text-ink text-[13px] lg:text-xl">{{ feature.title }}</h3>
+                <p class="text-[10px] font-medium leading-relaxed text-ink-soft lg:text-[16px]">
                   {{ feature.summary }}<br />{{ feature.detail }}
                 </p>
               </article>
@@ -112,7 +112,7 @@
           </section>
         </div>
 
-        <footer class="pb-1 pt-1">
+        <footer class="pb-1 pt-1 lg:pt-0">
           <div class="system-footer mx-auto flex max-w-4xl flex-col items-center justify-center gap-1 text-center text-[10px] font-semibold text-black sm:flex-row sm:flex-wrap sm:gap-x-2 sm:gap-y-1">
             <span>&copy; {{ new Date().getFullYear() }} ACCESSLearn Inc. | Philippine Schools Initiative</span>
             <span class="hidden text-black sm:inline" aria-hidden="true">|</span>
