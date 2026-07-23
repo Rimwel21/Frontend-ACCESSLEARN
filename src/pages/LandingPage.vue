@@ -5,7 +5,7 @@
     <header class="lg:hidden flex items-center justify-between gap-3 p-3 border-b border-brand-teal/30 bg-white z-50">
       <div class="min-w-0">
         <img
-          src="@/assets/signhear_logo.svg"
+          src="@/assets/signhear_logo.png"
           alt="SIGNHEAR - Sign Language Integrated Guidance for Hearing Education and Accessible Resources"
           class="h-14 w-auto max-w-[min(70vw,240px)] object-contain object-left sm:h-16"
         />
@@ -28,7 +28,7 @@
         <!-- Logo Area -->
         <div class="flex flex-col items-center px-5 pb-7 pt-8 text-center">
           <img
-            src="@/assets/signhear_logo.svg"
+            src="@/assets/signhear_logo.png"
             alt="SIGNHEAR - Sign Language Integrated Guidance for Hearing Education and Accessible Resources"
             class="h-auto w-full max-w-[210px] object-contain"
           />
