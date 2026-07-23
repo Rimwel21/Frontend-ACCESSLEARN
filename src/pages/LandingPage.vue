@@ -136,12 +136,12 @@
 
         <!-- Footer -->
         <div class="pt-3 pb-2">
-          <div class="system-footer mx-auto flex max-w-3xl flex-col items-center justify-center gap-1 text-center text-[10px] font-bold text-ink-soft sm:flex-row sm:text-xs">
+          <div class="system-footer mx-auto flex max-w-4xl flex-col items-center justify-center gap-1 text-center text-[10px] font-bold text-ink-soft sm:flex-row sm:flex-wrap sm:gap-x-3 sm:gap-y-1 sm:text-xs">
             <span>&copy; {{ new Date().getFullYear() }} ACCESSLearn Inc. | Philippine Schools Initiative</span>
-            <span class="hidden sm:inline">|</span>
-            <span class="inline-flex flex-wrap items-center justify-center gap-1 text-brand-blue">
+            <span class="hidden text-ink-soft sm:inline" aria-hidden="true">|</span>
+            <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap text-brand-blue">
               <span class="rounded bg-brand-blue px-1.5 py-0.5 text-[9px] font-black text-white">WCAG 2.2</span>
-              Compliant: supports accessible contrast, navigation, and readable content.
+              Compliant: Accessible learning.
             </span>
           </div>
         </div>
