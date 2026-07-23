@@ -2,12 +2,12 @@
   <div class="flex flex-col lg:flex-row min-h-screen bg-surface font-body w-full">
     
     <!-- Mobile Header (Visible only on small screens) -->
-    <header class="lg:hidden flex items-center justify-between gap-3 p-3 border-b border-brand-teal/30 bg-white z-50">
+    <header class="lg:hidden flex items-center justify-between gap-3 px-4 py-2.5 border-b border-brand-teal/30 bg-white z-50">
       <div class="min-w-0">
         <img
           src="@/assets/signhear_logo.png"
           alt="SIGNHEAR - Sign Language Integrated Guidance for Hearing Education and Accessible Resources"
-          class="h-14 w-auto max-w-[min(70vw,240px)] object-contain object-left sm:h-16"
+          class="h-10 w-auto max-w-[min(58vw,180px)] object-contain object-left sm:h-12"
         />
       </div>
       <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="text-ink-soft hover:text-ink">
@@ -26,11 +26,11 @@
     <aside class="hidden lg:flex w-[260px] bg-surface/60 border-r border-brand-teal/30 flex-col justify-between shrink-0 relative z-20 shadow-[4px_0_24px_rgba(10,123,121,0.04)]">
       <div>
         <!-- Logo Area -->
-        <div class="flex flex-col items-center px-5 pb-7 pt-8 text-center">
+        <div class="flex flex-col items-center px-6 pb-5 pt-7 text-center">
           <img
             src="@/assets/signhear_logo.png"
             alt="SIGNHEAR - Sign Language Integrated Guidance for Hearing Education and Accessible Resources"
-            class="h-auto w-full max-w-[210px] object-contain"
+            class="h-auto w-full max-w-[150px] object-contain xl:max-w-[165px]"
           />
         </div>
 
