@@ -72,24 +72,27 @@
       <div class="p-6 lg:px-8 lg:pb-12 w-full max-w-[1300px] mx-auto space-y-6 flex-1 flex flex-col justify-center relative">
         
         <!-- Hero Banner -->
-        <div class="relative w-full rounded-[24px] gradient-brand shadow-xl overflow-hidden min-h-[300px] flex flex-col justify-center">
-          <!-- Desktop Illustration -->
-          <img src="@/assets/hero_illustration.png" alt="Students learning" class="hidden lg:block absolute left-8 bottom-0 w-[42%] max-w-[480px] object-contain drop-shadow-2xl z-10 scale-105 origin-bottom" />
-          
-          <!-- Banner Content -->
-          <div class="relative z-20 text-white w-full px-8 py-10 lg:pl-[48%] lg:pr-12">
-            <!-- Mobile Illustration (Shows above text on small screens) -->
-            <img src="@/assets/hero_illustration.png" alt="Students learning" class="lg:hidden w-full max-w-[320px] mx-auto object-contain drop-shadow-xl mb-6" />
+        <div class="relative w-full rounded-[24px] gradient-brand shadow-xl overflow-hidden">
+          <div class="grid items-stretch lg:grid-cols-[minmax(280px,0.92fr)_minmax(0,1.08fr)]">
+            <div class="flex items-end justify-center bg-white/14 p-4 sm:p-6 lg:min-h-[320px] lg:p-0">
+              <img
+                src="@/assets/hero_illustration.png"
+                alt="Students learning"
+                class="h-auto max-h-[260px] w-full max-w-[420px] object-contain drop-shadow-2xl sm:max-h-[320px] lg:h-full lg:max-h-none lg:max-w-none lg:object-contain"
+              />
+            </div>
 
-            <h2 class="font-display text-2xl sm:text-3xl lg:text-3xl xl:text-4xl font-extrabold mb-4 leading-[1.2] w-full text-shadow-sm tracking-tight text-white">
-              Learning that adapts to every child, every ability, every classroom.
-            </h2>
-            <p class="text-surface text-[13px] sm:text-sm mb-8 max-w-[500px] font-medium leading-relaxed">
-              AccessLearn combines audio lessons, sign-language videos, subtitles, and adaptive quizzes to create equitable learning in Philippine schools.
-            </p>
-            <div class="flex flex-wrap items-center gap-4">
-              <RouterLink to="/portal" class="bg-brand-amber text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg transition-all hover:scale-105 text-center flex-1 sm:flex-none hover:bg-gradient-to-r hover:from-brand-amber hover:to-brand-rose hover:shadow-[0_0_20px_rgba(244,163,99,0.4)]">Get Started</RouterLink>
-              <a href="#features" class="bg-white text-brand-blue px-8 py-3 rounded-full font-bold text-sm shadow-lg transition-all hover:scale-105 text-center flex-1 sm:flex-none border border-brand-blue hover:border-brand-rose hover:bg-brand-rose hover:text-white hover:shadow-[0_0_18px_rgba(219,118,125,0.28)]">See Features</a>
+            <div class="flex min-w-0 flex-col justify-center px-6 py-8 text-white sm:px-8 sm:py-10 lg:px-12">
+              <h2 class="font-display text-2xl sm:text-3xl lg:text-3xl xl:text-4xl font-extrabold mb-4 leading-[1.2] w-full text-shadow-sm tracking-tight text-white">
+                Learning that adapts to every child, every ability, every classroom.
+              </h2>
+              <p class="text-surface text-[13px] sm:text-sm mb-8 max-w-[560px] font-medium leading-relaxed">
+                AccessLearn combines audio lessons, sign-language videos, subtitles, and adaptive quizzes to create equitable learning in Philippine schools.
+              </p>
+              <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <RouterLink to="/portal" class="bg-brand-amber text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg transition-all hover:scale-105 text-center sm:min-w-40 hover:bg-gradient-to-r hover:from-brand-amber hover:to-brand-rose hover:shadow-[0_0_20px_rgba(244,163,99,0.4)]">Get Started</RouterLink>
+                <a href="#features" class="bg-white text-brand-blue px-8 py-3 rounded-full font-bold text-sm shadow-lg transition-all hover:scale-105 text-center sm:min-w-40 border border-brand-blue hover:border-brand-rose hover:bg-brand-rose hover:text-white hover:shadow-[0_0_18px_rgba(219,118,125,0.28)]">See Features</a>
+              </div>
             </div>
           </div>
         </div>
