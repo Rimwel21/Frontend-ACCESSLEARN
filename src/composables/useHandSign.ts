@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
-import { detectCameraFrame, handsignErrorMessage, resetCameraSession } from '@/services/handsign'
+import { backspaceCameraSession, detectCameraFrame, handsignErrorMessage, resetCameraSession } from '@/services/handsign'
 import type { CameraDetectionResponse } from '@/types/handsign'
 
 const FRAME_INTERVAL_MS = 140
@@ -13,7 +13,8 @@ export function useHandSign() {
   const isDetecting = ref(false)
   const error = ref('')
   const retryMessage = ref('')
-  const answer = computed(() => detection.value?.confirmed_text ?? '')
+  const confirmedText = ref('')
+  const answer = computed(() => confirmedText.value)
   let stream: MediaStream | null = null
   let timer: number | null = null
   let inFlight = false
@@ -61,9 +62,28 @@ export function useHandSign() {
 
   async function reset() {
     detection.value = null
+    confirmedText.value = ''
     failureCount = 0
     retryMessage.value = ''
     await resetCameraSession(sessionId).catch(() => null)
+  }
+
+  async function backspace() {
+    try {
+      const response = await backspaceCameraSession(sessionId)
+      confirmedText.value = response.confirmed_text
+      if (detection.value) {
+        detection.value = {
+          ...detection.value,
+          confirmed_text: response.confirmed_text,
+          confirmed_prediction: null,
+        }
+      }
+      error.value = ''
+      retryMessage.value = ''
+    } catch (err) {
+      error.value = handsignErrorMessage(err)
+    }
   }
 
   async function captureAndDetect() {
@@ -82,6 +102,7 @@ export function useHandSign() {
       context.drawImage(video, 0, 0, canvas.width, canvas.height)
       const image = canvas.toDataURL('image/jpeg', 0.72)
       detection.value = await detectCameraFrame(sessionId, image)
+      confirmedText.value = detection.value.confirmed_text
       failureCount = 0
       retryMessage.value = ''
       error.value = ''
@@ -109,5 +130,6 @@ export function useHandSign() {
     start,
     stop,
     reset,
+    backspace,
   }
 }

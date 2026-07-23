@@ -36,7 +36,7 @@
         <thead>
           <tr>
             <th class="table-th">Student</th>
-            <th class="table-th">Overall Progress</th>
+            <th class="table-th">Learning Material Progress</th>
             <th class="table-th">Activity</th>
             <th class="table-th">Quiz</th>
             <th class="table-th">Actions</th>
@@ -57,8 +57,15 @@
                 </div>
                 <span class="font-mono text-[11px] text-ink-soft min-w-[36px] text-right">{{ s.overallPercent }}%</span>
               </div>
+              <div v-if="s.learningMaterialsTotal" class="mt-1 font-mono text-[11px] text-ink-soft">
+                {{ s.learningMaterialsCompleted }}/{{ s.learningMaterialsTotal }}
+                <span v-if="s.learningMaterialsInProgress">, {{ s.learningMaterialsInProgress }} in progress</span>
+              </div>
             </td>
-            <td class="table-td font-mono text-xs">{{ s.activitiesCompleted }}/{{ s.activitiesTotal }}</td>
+            <td class="table-td font-mono text-xs">
+              <div>{{ s.activitiesCompleted }}/{{ s.activitiesTotal }}</div>
+              <div class="mt-1 text-[11px] text-ink-soft">{{ s.activityPercent }}%</div>
+            </td>
             <td class="table-td font-mono text-xs">{{ s.quizActivity }}</td>
             <td class="table-td">
               <span :class="statusBadge(s.status)">{{ s.status }}</span>

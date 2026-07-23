@@ -1,19 +1,28 @@
 <template>
   <div class="figma-page">
-    <div class="figma-title mb-2">{{ title }}</div>
+    <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <div class="figma-title">{{ title }}</div>
+        <p class="mt-1 text-xs font-semibold text-ink-soft">Organize details, availability, and scoring questions before saving.</p>
+      </div>
+      <span class="rounded-full bg-[#D6E4FF] px-3 py-1 text-[11px] font-bold text-[#315ed8]">{{ form.questions.length }} question{{ form.questions.length === 1 ? '' : 's' }}</span>
+    </div>
 
     <div class="grid gap-2 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)]">
       <div class="grid gap-2">
         <section class="figma-panel">
-          <h2 class="figma-card-title">{{ title }} Information</h2>
-          <div class="grid gap-3">
+          <div class="mb-4">
+            <h2 class="figma-card-title mb-1">{{ title }} Information</h2>
+            <p class="text-xs font-semibold text-ink-soft">Choose the class and context students will see.</p>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
             <div>
               <label class="figma-label" for="assessment-title">{{ title }} Title</label>
               <input id="assessment-title" v-model.trim="form.title" class="figma-input" />
             </div>
-            <div>
+            <div class="sm:col-span-2">
               <label class="figma-label" for="assessment-description">Description</label>
-              <input id="assessment-description" v-model.trim="form.description" class="figma-input" />
+              <textarea id="assessment-description" v-model.trim="form.description" class="figma-input min-h-20 resize-y" />
             </div>
             <div>
               <label class="figma-label" for="assessment-type">{{ title }} Type</label>
@@ -61,8 +70,11 @@
         </section>
 
         <section class="figma-panel">
-          <h2 class="figma-card-title">{{ title }} Settings</h2>
-          <div class="grid gap-3">
+          <div class="mb-4">
+            <h2 class="figma-card-title mb-1">{{ title }} Settings</h2>
+            <p class="text-xs font-semibold text-ink-soft">Control attempt behavior and answer visibility.</p>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
             <div>
               <label class="figma-label" for="time-limit">Time Limit</label>
               <input id="time-limit" v-model.trim="form.timeLimit" class="figma-input" />
@@ -71,11 +83,11 @@
               <label class="figma-label" for="attempts">Attempts Allowed</label>
               <input id="attempts" v-model.number="form.attemptsAllowed" class="figma-input" min="1" type="number" />
             </div>
-            <label class="flex items-center gap-2 text-xs font-bold">
+            <label class="flex items-center gap-2 text-xs font-bold sm:col-span-2">
               <input v-model="form.shuffleQuestions" type="checkbox" class="accent-green-500" />
               Shuffle Questions
             </label>
-            <label class="flex items-center gap-2 text-xs font-bold">
+            <label class="flex items-center gap-2 text-xs font-bold sm:col-span-2">
               <input v-model="form.showAnswersAfterSubmission" type="checkbox" class="accent-green-500" />
               Show Answers after Submission
             </label>
@@ -84,13 +96,18 @@
       </div>
 
       <section class="figma-panel">
-        <h2 class="figma-card-title">Questions</h2>
-        <div class="rounded bg-gray-200 p-3">
-          <p class="mb-3 text-xs text-gray-600">Add clear questions and optional exact answers for automatic scoring.</p>
-          <div class="grid gap-2">
-            <div v-for="(question, index) in form.questions" :key="index" class="grid gap-1">
-              <div class="flex gap-2">
-                <input v-model.trim="question.prompt" class="figma-input min-w-0 bg-white" :placeholder="`Question ${index + 1}`" />
+        <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 class="figma-card-title mb-1">Questions</h2>
+            <p class="text-xs font-semibold text-ink-soft">Add clear prompts and exact answers for automatic scoring.</p>
+          </div>
+          <button class="figma-button" type="button" @click="addQuestion">Add Question</button>
+        </div>
+        <div class="rounded-md bg-gray-100 p-3">
+          <div class="grid gap-3">
+            <div v-for="(question, index) in form.questions" :key="index" class="grid gap-2 rounded-md border border-gray-200 bg-white p-3">
+              <div class="flex items-center justify-between gap-2">
+                <label class="figma-label mb-0">Question {{ index + 1 }}</label>
                 <button
                   class="figma-button flex-shrink-0"
                   type="button"
@@ -100,12 +117,10 @@
                   Remove
                 </button>
               </div>
+              <input v-model.trim="question.prompt" class="figma-input min-w-0 bg-white" :placeholder="`Prompt for question ${index + 1}`" />
               <input v-model.trim="question.answer" class="figma-input bg-white" placeholder="Correct answer (optional)" />
             </div>
           </div>
-        </div>
-        <div class="mt-3 flex justify-center">
-          <button class="figma-button" type="button" @click="addQuestion">Add Question</button>
         </div>
       </section>
     </div>

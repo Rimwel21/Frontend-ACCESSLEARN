@@ -8,9 +8,40 @@
       <button class="btn-primary" @click="openForm()">Add Learning Material</button>
     </div>
 
+    <div class="grid gap-3 md:grid-cols-3">
+      <RouterLink to="/teacher/modules" class="card border-2 border-brand-blue p-4 no-underline">
+        <div class="flex items-center gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-blue text-xs font-black text-white">LM</span>
+          <div>
+            <div class="font-display text-sm font-bold text-ink">Learning Materials</div>
+            <div class="text-xs font-semibold text-ink-soft">Upload PDFs for student lessons</div>
+          </div>
+        </div>
+      </RouterLink>
+      <RouterLink to="/teacher/activities" class="card p-4 no-underline transition hover:-translate-y-0.5">
+        <div class="flex items-center gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-violet-100 text-xs font-black text-brand-violet">A</span>
+          <div>
+            <div class="font-display text-sm font-bold text-ink">Activities</div>
+            <div class="text-xs font-semibold text-ink-soft">Create practice tasks</div>
+          </div>
+        </div>
+      </RouterLink>
+      <RouterLink to="/teacher/quizzes" class="card p-4 no-underline transition hover:-translate-y-0.5">
+        <div class="flex items-center gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-cyan-100 text-xs font-black text-brand-blue">Q</span>
+          <div>
+            <div class="font-display text-sm font-bold text-ink">Quizzes</div>
+            <div class="text-xs font-semibold text-ink-soft">Build scored checks</div>
+          </div>
+        </div>
+      </RouterLink>
+    </div>
+
     <div class="card p-4">
-      <div class="flex flex-wrap items-center gap-3">
-        <input v-model="search" class="input-field max-w-sm" placeholder="Search learning materials..." />
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <input v-model="search" class="input-field max-w-sm" placeholder="Search by title, class, week, status, or file..." />
+        <span class="text-xs font-semibold text-ink-soft">{{ filteredMaterials.length }} of {{ store.modules.length }} shown</span>
         <span v-if="successMessage" class="status-success">{{ successMessage }}</span>
       </div>
     </div>
@@ -21,23 +52,41 @@
       <p class="mx-auto mt-2 max-w-md text-sm text-ink-soft">Add PDFs, PowerPoint decks, or Word documents for the selected module.</p>
       <button class="btn-primary mt-5" @click="openForm()">Add Learning Material</button>
     </div>
-    <div v-else class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-      <article v-for="material in filteredMaterials" :key="material.id" class="card p-5">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h2 class="font-display text-lg font-bold">{{ material.title }}</h2>
-            <p class="mt-1 line-clamp-2 text-sm text-ink-soft">{{ material.description }}</p>
+    <div v-else class="card overflow-hidden">
+      <div class="hidden grid-cols-[minmax(240px,1.4fr)_minmax(170px,1fr)_110px_120px_minmax(180px,1fr)_220px] gap-4 border-b border-gray-100 bg-surface px-5 py-3 text-xs font-semibold uppercase tracking-wide text-ink-soft lg:grid">
+        <div>Material</div>
+        <div>Class</div>
+        <div>Type</div>
+        <div>Week</div>
+        <div>File</div>
+        <div class="text-right">Actions</div>
+      </div>
+      <article
+        v-for="material in filteredMaterials"
+        :key="material.id"
+        class="grid gap-3 border-b border-gray-100 px-5 py-4 last:border-b-0 lg:grid-cols-[minmax(240px,1.4fr)_minmax(170px,1fr)_110px_120px_minmax(180px,1fr)_220px] lg:items-center"
+      >
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="truncate font-display text-base font-bold">{{ material.title }}</h2>
+            <span :class="material.status === 'Published' ? 'badge-green' : 'badge-amber'" class="badge">{{ material.status }}</span>
           </div>
-          <span :class="material.status === 'Published' ? 'badge-green' : 'badge-amber'" class="badge">{{ material.status }}</span>
+          <p class="mt-1 line-clamp-2 text-sm text-ink-soft">{{ material.description }}</p>
         </div>
-        <dl class="mt-4 grid gap-2 text-xs text-ink-soft">
-          <div class="flex justify-between gap-3"><dt class="font-bold">Class</dt><dd>{{ classNameFor(material.classId) }}</dd></div>
-          <div class="flex justify-between gap-3"><dt class="font-bold">Type</dt><dd>{{ material.contentType || 'Material' }}</dd></div>
-          <div class="flex justify-between gap-3"><dt class="font-bold">Week</dt><dd>{{ material.week || 'Not set' }}</dd></div>
-          <div class="flex justify-between gap-3"><dt class="font-bold">File</dt><dd class="truncate">{{ material.fileName || 'No file' }}</dd></div>
-          <div class="flex justify-between gap-3"><dt class="font-bold">Size</dt><dd>{{ formatFileSize(material.fileSize) }}</dd></div>
-        </dl>
-        <div class="mt-4 flex flex-wrap gap-2">
+        <div class="text-sm font-semibold text-ink-soft">
+          <span class="lg:hidden">Class: </span>{{ classNameFor(material.classId) }}
+        </div>
+        <div class="text-sm text-ink-soft">
+          <span class="lg:hidden">Type: </span>{{ material.contentType || 'Material' }}
+        </div>
+        <div class="text-sm text-ink-soft">
+          <span class="lg:hidden">Week: </span>{{ material.week || 'Not set' }}
+        </div>
+        <div class="min-w-0 text-sm text-ink-soft">
+          <div class="truncate">{{ material.fileName || 'No file' }}</div>
+          <div class="mt-0.5 text-xs">{{ formatFileSize(material.fileSize) }}</div>
+        </div>
+        <div class="flex flex-wrap justify-start gap-2 lg:justify-end">
           <button class="figma-button" @click="router.push(`/teacher/modules/${material.id}/preview`)">Preview</button>
           <button class="figma-button" :disabled="!material.fileName" @click="downloadMaterial(material)">Download</button>
           <button class="figma-button" @click="openForm(material)">Edit</button>
@@ -49,9 +98,12 @@
     <Teleport to="body">
       <Transition name="modal">
         <div v-if="showForm" class="fixed inset-0 z-50 overflow-y-auto bg-ink/40 p-4 backdrop-blur-sm" @click.self="closeForm">
-          <div class="mx-auto max-w-5xl rounded-lg bg-[#ededed] p-3 shadow-2xl">
-            <div class="mb-2 flex items-center justify-between">
-              <h2 class="text-sm font-bold">{{ editingMaterialId ? 'Edit Learning Material' : 'Upload Learning Materials' }}</h2>
+          <div class="mx-auto max-w-6xl rounded-lg bg-[#ededed] p-3 shadow-2xl">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-gray-300 bg-white px-4 py-3 shadow-sm">
+              <div>
+                <h2 class="font-display text-base font-bold">{{ editingMaterialId ? 'Edit Learning Material' : 'Upload Learning Materials' }}</h2>
+                <p class="mt-0.5 text-xs font-semibold text-ink-soft">Fill in the details, attach a PDF, then save it for the selected class.</p>
+              </div>
               <div class="flex gap-2">
                 <button class="figma-button" @click="closeForm">Cancel</button>
                 <button class="figma-primary" :disabled="store.moduleSaving" @click="submitMaterial">
@@ -62,10 +114,16 @@
 
             <div class="figma-shell">
               <section class="figma-panel">
-                <h3 class="figma-card-title">Material Details</h3>
-                <div class="grid gap-3">
-                  <div><label class="figma-label">Title</label><input v-model.trim="form.title" class="figma-input" /></div>
-                  <div><label class="figma-label">Description</label><input v-model.trim="form.description" class="figma-input" /></div>
+                <div class="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <h3 class="figma-card-title mb-1">Material Details</h3>
+                    <p class="text-xs font-semibold text-ink-soft">These fields control how students and teachers find the material.</p>
+                  </div>
+                  <span class="rounded-full bg-[#D6E4FF] px-3 py-1 text-[11px] font-bold text-[#315ed8]">Required</span>
+                </div>
+                <div class="grid gap-4">
+                  <div><label class="figma-label">Title</label><input v-model.trim="form.title" class="figma-input" placeholder="e.g. Separating mixtures" /></div>
+                  <div><label class="figma-label">Description</label><textarea v-model.trim="form.description" class="figma-input min-h-24 resize-y" placeholder="Briefly describe what students will learn." /></div>
                   <div>
                     <label class="figma-label">Class</label>
                     <select v-model="form.classId" class="figma-input">
@@ -75,52 +133,78 @@
                       </option>
                     </select>
                   </div>
-                  <div>
-                    <label class="figma-label">Content Type</label>
-                    <select v-model="form.contentType" class="figma-input">
-                      <option value="">Select content type...</option>
-                      <option v-for="type in contentTypeOptions" :key="type" :value="type">{{ type }}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="figma-label">Week</label>
-                    <select v-model="form.week" class="figma-input">
-                      <option value="">Select week...</option>
-                      <option v-for="week in learningWeekOptions" :key="week" :value="week">{{ week }}</option>
-                    </select>
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label class="figma-label">Content Type</label>
+                      <select v-model="form.contentType" class="figma-input">
+                        <option value="">Select content type...</option>
+                        <option v-for="type in contentTypeOptions" :key="type" :value="type">{{ type }}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="figma-label">Week</label>
+                      <select v-model="form.week" class="figma-input">
+                        <option value="">Select week...</option>
+                        <option v-for="week in learningWeekOptions" :key="week" :value="week">{{ week }}</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </section>
 
-              <section class="figma-panel flex min-h-72 items-center justify-center">
-                <label class="grid cursor-pointer place-items-center gap-3 text-center">
+              <section class="figma-panel flex min-h-72 flex-col justify-between">
+                <div>
+                  <h3 class="figma-card-title mb-1">Upload File</h3>
+                  <p class="text-xs font-semibold text-ink-soft">PDF files are parsed into readable topics after saving.</p>
+                </div>
+                <label
+                  :class="[
+                    'mt-4 grid min-h-52 cursor-pointer place-items-center rounded-md border-2 border-dashed p-6 text-center transition hover:border-[#5d7ee7] hover:bg-white',
+                    isDraggingFile ? 'border-[#5d7ee7] bg-white' : 'border-gray-300 bg-surface/70'
+                  ]"
+                  @dragenter.prevent="isDraggingFile = true"
+                  @dragover.prevent="isDraggingFile = true"
+                  @dragleave.prevent="isDraggingFile = false"
+                  @drop.prevent="onFileDrop"
+                >
                   <input class="sr-only" type="file" accept=".pdf" @change="onFileChange" />
-                  <span class="text-sm font-bold">{{ editingMaterialId ? 'Choose a new file to replace the current upload' : 'Drag and drop your files here' }}<br />or</span>
+                  <span class="text-sm font-bold">{{ editingMaterialId ? 'Choose a new file to replace the current upload' : 'Drop your PDF here' }}</span>
                   <span class="figma-button">Browse File</span>
-                  <span v-if="fileName" class="text-xs font-semibold text-ink-soft">{{ fileName }}</span>
+                  <span v-if="fileName" class="max-w-full truncate text-xs font-semibold text-ink-soft">{{ fileName }}</span>
+                  <span v-else class="text-xs font-semibold text-ink-soft">PDF only</span>
                 </label>
               </section>
             </div>
 
-            <section class="mt-2 grid gap-2 lg:grid-cols-3">
+            <section class="mt-2 grid gap-2 lg:grid-cols-[minmax(220px,0.9fr)_minmax(220px,0.9fr)_minmax(260px,1.2fr)]">
               <div class="figma-panel">
                 <h3 class="figma-card-title">Additional Settings</h3>
-                <label class="figma-label">Status</label>
-                <select v-model="form.status" class="figma-input">
-                  <option value="Unpublished">Draft</option>
-                  <option value="Published">Published</option>
-                </select>
-                <label class="figma-label mt-3">Due Date</label>
-                <input v-model="form.releaseDate" class="figma-input" type="date" />
+                <div class="grid gap-3">
+                  <div>
+                    <label class="figma-label">Status</label>
+                    <select v-model="form.status" class="figma-input">
+                      <option value="Unpublished">Draft</option>
+                      <option value="Published">Published</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="figma-label">Due Date</label>
+                    <input v-model="form.releaseDate" class="figma-input" type="date" />
+                  </div>
+                </div>
               </div>
               <div class="figma-panel">
                 <h3 class="figma-card-title">Behavior</h3>
                 <label class="flex items-center gap-2 text-xs font-bold"><input v-model="form.behaviorRequired" type="checkbox" class="accent-green-500" /> Mark as required</label>
+                <p class="mt-2 text-xs font-semibold text-ink-soft">Required materials appear in student progress tracking.</p>
               </div>
-              <div class="figma-panel flex flex-col items-center justify-center text-center">
-                <div class="grid h-12 w-12 place-items-center rounded-full border-[2px] border-black bg-[#D6E4FF] text-xs font-black">LM</div>
-                <h3 class="mt-3 font-display text-sm font-bold">Material Preview</h3>
-                <p class="mt-1 max-w-48 text-xs font-semibold text-ink-soft">Selected files are parsed into readable topics for students after saving.</p>
+              <div class="figma-panel">
+                <h3 class="figma-card-title">Review</h3>
+                <dl class="grid gap-2 text-xs">
+                  <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">Class</dt><dd class="text-right font-semibold">{{ selectedClassLabel }}</dd></div>
+                  <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">Week</dt><dd class="text-right font-semibold">{{ form.week || 'Not set' }}</dd></div>
+                  <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">File</dt><dd class="max-w-44 truncate text-right font-semibold">{{ fileName || 'No file selected' }}</dd></div>
+                </dl>
               </div>
             </section>
 
@@ -149,12 +233,25 @@ const formError = ref('')
 const successMessage = ref('')
 const selectedFile = ref<File | null>(null)
 const fileName = ref('')
+const isDraggingFile = ref(false)
 const form = ref(defaultForm())
 const editingMaterialId = ref<string | null>(null)
 
-const filteredMaterials = computed(() => store.modules.filter(material =>
-  !search.value || material.title.toLowerCase().includes(search.value.toLowerCase())
-))
+const normalizedSearch = computed(() => search.value.trim().toLowerCase())
+const filteredMaterials = computed(() => store.modules.filter(material => {
+  if (!normalizedSearch.value) return true
+  return [
+    material.title,
+    material.description,
+    classNameFor(material.classId),
+    material.contentType,
+    material.week,
+    material.status,
+    material.fileName,
+    formatFileSize(material.fileSize),
+  ].some(value => String(value ?? '').toLowerCase().includes(normalizedSearch.value))
+}))
+const selectedClassLabel = computed(() => classNameFor(form.value.classId ? Number(form.value.classId) : null))
 
 onMounted(() => {
   store.fetchClasses()
@@ -211,6 +308,16 @@ function closeForm() {
 function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0] ?? null
+  setSelectedFile(file, input)
+}
+
+function onFileDrop(event: DragEvent) {
+  isDraggingFile.value = false
+  const file = event.dataTransfer?.files?.[0] ?? null
+  setSelectedFile(file)
+}
+
+function setSelectedFile(file: File | null, input?: HTMLInputElement) {
   selectedFile.value = null
   fileName.value = ''
 
@@ -220,7 +327,7 @@ function onFileChange(event: Event) {
   const isAllowed = allowedExtensions.some(extension => lowerName.endsWith(extension))
   if (!isAllowed) {
     formError.value = 'Unsupported file type. Upload PDF files only.'
-    input.value = ''
+    if (input) input.value = ''
     return
   }
 

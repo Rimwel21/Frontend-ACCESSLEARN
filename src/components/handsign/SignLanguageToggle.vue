@@ -1,10 +1,16 @@
 <template>
-  <label class="flex items-center justify-between gap-4 border-[3px] border-black bg-white p-4" style="box-shadow:4px 4px 0 #000">
+  <label
+    :class="[
+      'flex items-center justify-between gap-4 border-[3px] border-black bg-white p-4',
+      disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+    ]"
+    style="box-shadow:4px 4px 0 #000"
+  >
     <span>
       <span class="block text-sm font-black">Sign Language Mode</span>
       <span class="mt-1 block font-mono text-[10px] font-bold uppercase tracking-wide text-gray-500">{{ modeLabel }}</span>
     </span>
-    <input v-model="enabled" type="checkbox" class="sr-only" />
+    <input v-model="enabled" type="checkbox" class="sr-only" :disabled="disabled" />
     <span
       :class="[
         'relative h-8 w-16 flex-shrink-0 border-[3px] border-black transition-colors',
@@ -24,6 +30,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
+withDefaults(defineProps<{
+  disabled?: boolean
+}>(), {
+  disabled: false,
+})
 
 const enabled = defineModel<boolean>({ required: true })
 

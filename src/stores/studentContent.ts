@@ -43,6 +43,10 @@ export interface StudentAssessment {
   time_limit?: string | null
   due_at?: string | null
   questions: Array<{ prompt: string; answer?: string | null }>
+  student_status?: string | null
+  student_score?: number | null
+  student_total?: number | null
+  student_completed_at?: string | null
 }
 
 export interface StudentDeadline {
@@ -214,6 +218,25 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       token: auth.token,
       body: JSON.stringify({ answers }),
     })
+    const completedAt = new Date().toISOString()
+    activities.value = activities.value.map(activity => activity.id === Number(activityId)
+      ? {
+          ...activity,
+          student_status: 'completed',
+          student_score: result.score,
+          student_total: result.total,
+          student_completed_at: completedAt,
+        }
+      : activity)
+    if (currentActivity.value?.id === Number(activityId)) {
+      currentActivity.value = {
+        ...currentActivity.value,
+        student_status: 'completed',
+        student_score: result.score,
+        student_total: result.total,
+        student_completed_at: completedAt,
+      }
+    }
     await fetchDeadlines()
     return result
   }
