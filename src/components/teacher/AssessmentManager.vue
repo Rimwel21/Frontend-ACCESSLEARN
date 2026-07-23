@@ -61,6 +61,7 @@
         <input v-model="search" class="input-field max-w-sm" :placeholder="`Search ${listTitle.toLowerCase()} by title, type, module, week, or student...`" />
         <span class="text-xs font-semibold text-ink-soft">{{ filteredItems.length }} of {{ items.length }} shown</span>
         <span v-if="successMessage" class="status-success">{{ successMessage }}</span>
+        <span v-if="errorMessage" class="status-error">{{ errorMessage }}</span>
       </div>
     </div>
 
@@ -88,6 +89,7 @@
           <div class="flex justify-between gap-3"><dt class="font-bold">{{ props.kind === 'quiz' ? 'Updated' : 'Due' }}</dt><dd>{{ item.updated }}</dd></div>
           <div v-if="props.kind === 'activity'" class="flex justify-between gap-3"><dt class="font-bold">Submissions</dt><dd>{{ item.submissionCount }}</dd></div>
         </dl>
+<<<<<<< HEAD
         <div v-if="props.kind === 'activity' && item.submissions.length" class="mt-4 border-t border-gray-100 pt-3">
           <div class="mb-2 text-[11px] font-bold uppercase tracking-wide text-ink-soft">Submitted by</div>
           <div class="grid gap-1.5">
@@ -101,7 +103,13 @@
           </div>
         </div>
         <div class="mt-4 flex justify-end">
+=======
+        <div class="mt-4 flex justify-end gap-2">
+>>>>>>> f99820c2a9f52096d745c228f19d693b9767d948
           <button class="figma-button" type="button" @click="openForm(item.source)">Edit</button>
+          <button class="figma-button" type="button" :disabled="deletingId === item.id" @click="deleteItem(item.source)">
+            {{ deletingId === item.id ? 'Deleting...' : 'Delete' }}
+          </button>
         </div>
       </article>
     </div>
@@ -141,7 +149,9 @@ const search = ref('')
 const showForm = ref(false)
 const loading = ref(false)
 const successMessage = ref('')
+const errorMessage = ref('')
 const editingItem = ref<Quiz | Activity | null>(null)
+const deletingId = ref('')
 
 const listTitle = computed(() => props.kind === 'quiz' ? 'Quizzes' : 'Activities')
 const items = computed(() => props.kind === 'quiz' ? store.quizzes : store.activities)
@@ -189,6 +199,7 @@ onMounted(async () => {
 
 function openForm(item: Quiz | Activity | null = null) {
   successMessage.value = ''
+  errorMessage.value = ''
   editingItem.value = item
   showForm.value = true
 }
@@ -200,9 +211,11 @@ function closeForm() {
 
 function handleSaved(mode: 'created' | 'updated') {
   successMessage.value = `${props.title} ${mode} successfully.`
+  errorMessage.value = ''
   closeForm()
 }
 
+<<<<<<< HEAD
 function formatSubmissionAnswers(answers: Record<string, string>) {
   const values = Object.values(answers).filter(Boolean)
   return values.length ? values.join(' / ') : 'No answer text'
@@ -225,6 +238,24 @@ function matchesAssessmentSearch(item: Quiz | Activity) {
       formatSubmissionAnswers(submission.answers),
     ]),
   ].some(value => String(value ?? '').toLowerCase().includes(normalizedSearch.value))
+=======
+async function deleteItem(item: Quiz | Activity) {
+  if (!confirm(`Delete "${item.title}"?`)) return
+  successMessage.value = ''
+  errorMessage.value = ''
+  deletingId.value = item.id
+
+  try {
+    if (props.kind === 'quiz') await store.deleteQuiz(item.id)
+    else await store.deleteActivity(item.id)
+    if (editingItem.value?.id === item.id) closeForm()
+    successMessage.value = `${props.title} deleted successfully.`
+  } catch (err) {
+    errorMessage.value = err instanceof Error ? err.message : `Unable to delete ${props.title.toLowerCase()}.`
+  } finally {
+    deletingId.value = ''
+  }
+>>>>>>> f99820c2a9f52096d745c228f19d693b9767d948
 }
 </script>
 
