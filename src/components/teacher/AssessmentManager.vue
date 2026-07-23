@@ -74,38 +74,53 @@
       <button class="btn-primary mt-5" @click="openForm()">Add {{ title }}</button>
     </div>
 
-    <div v-else class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-      <article v-for="item in filteredCards" :key="item.id" class="card p-5">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h2 class="font-display text-lg font-bold">{{ item.title }}</h2>
-            <p class="mt-1 line-clamp-2 text-sm text-ink-soft">{{ item.description }}</p>
+    <div v-else class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+      <div class="hidden bg-gray-50 px-5 py-3 text-[11px] font-semibold uppercase text-ink-soft lg:grid lg:grid-cols-[minmax(240px,1.35fr)_minmax(160px,0.9fr)_90px_110px_110px_120px]">
+        <div>{{ props.kind === 'quiz' ? 'Quiz' : 'Activity' }}</div>
+        <div>{{ props.kind === 'quiz' ? 'Learning Material' : 'Type' }}</div>
+        <div>Questions</div>
+        <div>Created</div>
+        <div>{{ props.kind === 'quiz' ? 'Updated' : 'Due' }}</div>
+        <div class="text-right">Actions</div>
+      </div>
+      <article
+        v-for="item in filteredCards"
+        :key="item.id"
+        class="grid gap-3 border-b border-gray-100 px-5 py-4 transition-colors last:border-b-0 hover:bg-gray-50/70 lg:grid-cols-[minmax(240px,1.35fr)_minmax(160px,0.9fr)_90px_110px_110px_120px] lg:items-center"
+      >
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="truncate font-display text-base font-bold">{{ item.title }}</h2>
+            <span class="badge-blue badge">{{ item.badge }}</span>
           </div>
-          <span class="badge-blue badge">{{ item.badge }}</span>
-        </div>
-        <dl class="mt-4 grid gap-2 text-xs text-ink-soft">
-          <div class="flex justify-between gap-3"><dt class="font-bold">{{ props.kind === 'quiz' ? 'Module' : 'Type' }}</dt><dd>{{ item.module || 'Not set' }}</dd></div>
-          <div class="flex justify-between gap-3"><dt class="font-bold">Questions</dt><dd>{{ item.questionCount }}</dd></div>
-          <div class="flex justify-between gap-3"><dt class="font-bold">{{ props.kind === 'quiz' ? 'Updated' : 'Due' }}</dt><dd>{{ item.updated }}</dd></div>
-          <div v-if="props.kind === 'activity'" class="flex justify-between gap-3"><dt class="font-bold">Submissions</dt><dd>{{ item.submissionCount }}</dd></div>
-        </dl>
-<<<<<<< HEAD
-        <div v-if="props.kind === 'activity' && item.submissions.length" class="mt-4 border-t border-gray-100 pt-3">
-          <div class="mb-2 text-[11px] font-bold uppercase tracking-wide text-ink-soft">Submitted by</div>
-          <div class="grid gap-1.5">
-            <div v-for="submission in item.submissions" :key="submission.id" class="text-xs">
-              <div class="flex items-center justify-between gap-3">
-                <span class="truncate font-semibold">{{ submission.studentName }}</span>
-                <span class="font-mono">{{ submission.score ?? 0 }}/{{ submission.total ?? 0 }}</span>
+          <p class="mt-1 line-clamp-2 text-sm text-ink-soft">{{ item.description || 'No description' }}</p>
+          <div v-if="props.kind === 'activity' && item.submissions.length" class="mt-3 border-t border-gray-100 pt-3">
+            <div class="mb-2 text-[11px] font-bold uppercase text-ink-soft">Submitted by</div>
+            <div class="grid gap-1.5">
+              <div v-for="submission in item.submissions" :key="submission.id" class="text-xs">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="truncate font-semibold">{{ submission.studentName }}</span>
+                  <span class="font-mono">{{ submission.score ?? 0 }}/{{ submission.total ?? 0 }}</span>
+                </div>
+                <div class="mt-0.5 truncate font-mono text-[11px] text-ink-soft">{{ formatSubmissionAnswers(submission.answers) }}</div>
               </div>
-              <div class="mt-0.5 truncate font-mono text-[11px] text-ink-soft">{{ formatSubmissionAnswers(submission.answers) }}</div>
             </div>
           </div>
         </div>
-        <div class="mt-4 flex justify-end">
-=======
-        <div class="mt-4 flex justify-end gap-2">
->>>>>>> f99820c2a9f52096d745c228f19d693b9767d948
+        <div class="text-sm text-ink-soft">
+          <span class="font-semibold lg:hidden">{{ props.kind === 'quiz' ? 'Learning Material: ' : 'Type: ' }}</span>{{ item.module || 'Not set' }}
+        </div>
+        <div class="text-sm text-ink-soft">
+          <span class="font-semibold lg:hidden">Questions: </span>{{ item.questionCount }}
+        </div>
+        <div class="text-sm text-ink-soft">
+          <span class="font-semibold lg:hidden">Created: </span>{{ item.created }}
+        </div>
+        <div class="text-sm text-ink-soft">
+          <span class="font-semibold lg:hidden">{{ props.kind === 'quiz' ? 'Updated: ' : 'Due: ' }}</span>{{ item.updated }}
+          <div v-if="props.kind === 'activity'" class="mt-1 text-xs">Submissions {{ item.submissionCount }}</div>
+        </div>
+        <div class="flex justify-end gap-2">
           <button class="figma-button" type="button" @click="openForm(item.source)">Edit</button>
           <button class="figma-button" type="button" :disabled="deletingId === item.id" @click="deleteItem(item.source)">
             {{ deletingId === item.id ? 'Deleting...' : 'Delete' }}
@@ -166,6 +181,7 @@ const filteredCards = computed(() => filteredItems.value.map(item => {
       module: item.module,
       badge: item.type,
       questionCount: item.questions?.length ?? 0,
+      created: item.createdAt ?? 'Not set',
       updated: item.date,
       submissionCount: 0,
       submissions: [],
@@ -180,6 +196,7 @@ const filteredCards = computed(() => filteredItems.value.map(item => {
     module: item.module,
     badge: item.status,
     questionCount: item.questions?.length ?? 0,
+    created: item.createdAt ?? 'Not set',
     updated: item.dueDate || 'Not set',
     submissionCount: item.submissionsCount ?? 0,
     submissions: item.submissions ?? [],
@@ -215,7 +232,6 @@ function handleSaved(mode: 'created' | 'updated') {
   closeForm()
 }
 
-<<<<<<< HEAD
 function formatSubmissionAnswers(answers: Record<string, string>) {
   const values = Object.values(answers).filter(Boolean)
   return values.length ? values.join(' / ') : 'No answer text'
@@ -231,6 +247,7 @@ function matchesAssessmentSearch(item: Quiz | Activity) {
     item.category,
     item.week,
     'type' in item ? item.type : item.status,
+    item.createdAt,
     'dueDate' in item ? item.dueDate : item.date,
     ...submissions.flatMap(submission => [
       submission.studentName,
@@ -238,7 +255,8 @@ function matchesAssessmentSearch(item: Quiz | Activity) {
       formatSubmissionAnswers(submission.answers),
     ]),
   ].some(value => String(value ?? '').toLowerCase().includes(normalizedSearch.value))
-=======
+}
+
 async function deleteItem(item: Quiz | Activity) {
   if (!confirm(`Delete "${item.title}"?`)) return
   successMessage.value = ''
@@ -255,7 +273,6 @@ async function deleteItem(item: Quiz | Activity) {
   } finally {
     deletingId.value = ''
   }
->>>>>>> f99820c2a9f52096d745c228f19d693b9767d948
 }
 </script>
 

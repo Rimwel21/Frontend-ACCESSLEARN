@@ -83,6 +83,7 @@ interface AssessmentSettings {
   classId?: number | null
   moduleId?: number | null
   topicId?: number | null
+  createdAt?: string | null
   category?: string | null
   week?: string | null
   timeLimit?: string | null
@@ -770,17 +771,6 @@ export const useTeacherStore = defineStore('teacher', () => {
     }
   }
 
-<<<<<<< HEAD
-  async function deleteActivity(id: string) {
-    const auth = useAuthStore()
-    const original = activities.value
-    activities.value = activities.value.filter(a => a.id !== id)
-    if (!auth.token) return
-
-    try {
-      await apiFetch(`/teacher/assessments/${id}`, { method: 'DELETE', token: auth.token })
-      await fetchDashboardSummary()
-=======
   async function deleteQuiz(id: string) {
     const auth = useAuthStore()
     const original = quizzes.value
@@ -814,7 +804,7 @@ export const useTeacherStore = defineStore('teacher', () => {
         token: auth.token,
       })
       await fetchRecentActivities()
->>>>>>> f99820c2a9f52096d745c228f19d693b9767d948
+      await fetchDashboardSummary()
     } catch (err) {
       activities.value = original
       activityError.value = err instanceof Error ? err.message : 'Unable to delete activity'
