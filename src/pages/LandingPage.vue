@@ -138,7 +138,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="pb-0 pt-1">
+        <div class="-mx-4 -mb-4 bg-surface px-4 py-3 sm:-mx-5 sm:-mb-5 sm:px-5 lg:-mx-8 lg:-mb-4 lg:px-8">
           <div class="system-footer mx-auto flex max-w-4xl flex-col items-center justify-center gap-1 text-center text-[10px] font-bold text-ink-soft sm:flex-row sm:flex-wrap sm:gap-x-3 sm:gap-y-1">
             <span>&copy; {{ new Date().getFullYear() }} ACCESSLearn Inc. | Philippine Schools Initiative</span>
             <span class="hidden text-ink-soft sm:inline" aria-hidden="true">|</span>
