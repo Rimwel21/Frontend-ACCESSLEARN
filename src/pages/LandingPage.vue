@@ -76,11 +76,11 @@
         <!-- Hero Banner -->
         <div class="relative w-full max-w-[1120px] mx-auto rounded-[20px] gradient-brand shadow-xl overflow-hidden">
           <div class="grid items-stretch lg:grid-cols-[minmax(260px,0.78fr)_minmax(0,1fr)]">
-            <div class="flex items-end justify-center bg-white/14 p-3 sm:p-5 lg:min-h-[260px] xl:min-h-[285px] lg:p-0">
+            <div class="flex items-center justify-center bg-white/14 px-4 pt-4 sm:px-5 sm:pt-5 lg:min-h-[260px] xl:min-h-[285px] lg:p-0">
               <img
                 src="@/assets/hero_illustration.png"
                 alt="Students learning"
-                class="h-auto max-h-[190px] w-full max-w-[300px] object-contain drop-shadow-2xl sm:max-h-[230px] sm:max-w-[360px] lg:h-full lg:max-h-[285px] lg:max-w-[440px]"
+                class="aspect-[4/3] w-full max-w-[min(78vw,320px)] rounded-t-sm object-contain drop-shadow-2xl sm:max-w-[min(62vw,380px)] lg:aspect-auto lg:h-full lg:max-h-[285px] lg:max-w-[440px] lg:rounded-none"
               />
             </div>
 
