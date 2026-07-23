@@ -73,34 +73,51 @@
       <button class="btn-primary mt-5" @click="openForm()">Add {{ title }}</button>
     </div>
 
-    <div v-else class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-      <article v-for="item in filteredCards" :key="item.id" class="card p-5">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h2 class="font-display text-lg font-bold">{{ item.title }}</h2>
-            <p class="mt-1 line-clamp-2 text-sm text-ink-soft">{{ item.description }}</p>
+    <div v-else class="card overflow-hidden">
+      <div class="hidden grid-cols-[minmax(240px,1.35fr)_minmax(160px,0.9fr)_90px_110px_110px_120px] gap-4 border-b border-gray-100 bg-surface px-5 py-3 text-xs font-semibold uppercase tracking-wide text-ink-soft lg:grid">
+        <div>{{ title }}</div>
+        <div>{{ props.kind === 'quiz' ? 'Learning Material' : 'Type' }}</div>
+        <div>Questions</div>
+        <div>Created</div>
+        <div>{{ props.kind === 'quiz' ? 'Updated' : 'Due' }}</div>
+        <div class="text-right">Actions</div>
+      </div>
+      <article
+        v-for="item in filteredCards"
+        :key="item.id"
+        class="grid gap-3 border-b border-gray-100 px-5 py-4 transition-colors last:border-b-0 hover:bg-gray-50/70 lg:grid-cols-[minmax(240px,1.35fr)_minmax(160px,0.9fr)_90px_110px_110px_120px] lg:items-center"
+      >
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="truncate font-display text-base font-bold">{{ item.title }}</h2>
+            <span class="badge-blue badge">{{ item.badge }}</span>
           </div>
-          <span class="badge-blue badge">{{ item.badge }}</span>
-        </div>
-        <dl class="mt-4 grid gap-2 text-xs text-ink-soft">
-          <div class="flex justify-between gap-3"><dt class="font-bold">{{ props.kind === 'quiz' ? 'Module' : 'Type' }}</dt><dd>{{ item.module || 'Not set' }}</dd></div>
-          <div class="flex justify-between gap-3"><dt class="font-bold">Questions</dt><dd>{{ item.questionCount }}</dd></div>
-          <div class="flex justify-between gap-3"><dt class="font-bold">{{ props.kind === 'quiz' ? 'Updated' : 'Due' }}</dt><dd>{{ item.updated }}</dd></div>
-          <div v-if="props.kind === 'activity'" class="flex justify-between gap-3"><dt class="font-bold">Submissions</dt><dd>{{ item.submissionCount }}</dd></div>
-        </dl>
-        <div v-if="props.kind === 'activity' && item.submissions.length" class="mt-4 border-t border-gray-100 pt-3">
-          <div class="mb-2 text-[11px] font-bold uppercase tracking-wide text-ink-soft">Submitted by</div>
-          <div class="grid gap-1.5">
-            <div v-for="submission in item.submissions" :key="submission.id" class="text-xs">
+          <p class="mt-1 line-clamp-2 text-sm text-ink-soft">{{ item.description }}</p>
+          <div v-if="props.kind === 'activity' && item.submissions.length" class="mt-2 grid gap-1 border-t border-gray-100 pt-2 text-xs">
+            <div class="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Submitted by</div>
+            <div v-for="submission in item.submissions" :key="submission.id" class="min-w-0">
               <div class="flex items-center justify-between gap-3">
-                <span class="truncate font-semibold">{{ submission.studentName }}</span>
-                <span class="font-mono">{{ submission.score ?? 0 }}/{{ submission.total ?? 0 }}</span>
+                <span class="truncate font-medium">{{ submission.studentName }}</span>
+                <span class="font-mono text-ink-soft">{{ submission.score ?? 0 }}/{{ submission.total ?? 0 }}</span>
               </div>
               <div class="mt-0.5 truncate font-mono text-[11px] text-ink-soft">{{ formatSubmissionAnswers(submission.answers) }}</div>
             </div>
           </div>
         </div>
-        <div class="mt-4 flex justify-end">
+        <div class="text-sm text-ink-soft">
+          <span class="font-semibold lg:hidden">{{ props.kind === 'quiz' ? 'Learning Material: ' : 'Type: ' }}</span>{{ item.module || 'Not set' }}
+        </div>
+        <div class="text-sm text-ink-soft">
+          <span class="font-semibold lg:hidden">Questions: </span>{{ item.questionCount }}
+        </div>
+        <div class="text-sm text-ink-soft">
+          <span class="font-semibold lg:hidden">Created: </span>{{ item.created }}
+        </div>
+        <div class="text-sm text-ink-soft">
+          <span class="font-semibold lg:hidden">{{ props.kind === 'quiz' ? 'Updated: ' : 'Due: ' }}</span>{{ item.updated }}
+          <div v-if="props.kind === 'activity'" class="mt-1 text-xs">Submissions {{ item.submissionCount }}</div>
+        </div>
+        <div class="flex justify-start lg:justify-end">
           <button class="figma-button" type="button" @click="openForm(item.source)">Edit</button>
         </div>
       </article>
@@ -156,6 +173,7 @@ const filteredCards = computed(() => filteredItems.value.map(item => {
       module: item.module,
       badge: item.type,
       questionCount: item.questions?.length ?? 0,
+      created: item.createdAt ?? 'Not set',
       updated: item.date,
       submissionCount: 0,
       submissions: [],
@@ -170,6 +188,7 @@ const filteredCards = computed(() => filteredItems.value.map(item => {
     module: item.module,
     badge: item.status,
     questionCount: item.questions?.length ?? 0,
+    created: item.createdAt ?? 'Not set',
     updated: item.dueDate || 'Not set',
     submissionCount: item.submissionsCount ?? 0,
     submissions: item.submissions ?? [],
@@ -217,6 +236,7 @@ function matchesAssessmentSearch(item: Quiz | Activity) {
     item.module,
     item.category,
     item.week,
+    item.createdAt,
     'type' in item ? item.type : item.status,
     'dueDate' in item ? item.dueDate : item.date,
     ...submissions.flatMap(submission => [

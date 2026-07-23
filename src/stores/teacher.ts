@@ -90,6 +90,7 @@ interface AssessmentSettings {
   shuffleQuestions?: boolean
   showAnswersAfterSubmission?: boolean
   dueAt?: string | null
+  createdAt?: string | null
   questions?: AssessmentQuestion[]
   submissionsCount?: number
   submissions?: ActivitySubmission[]
@@ -939,6 +940,7 @@ function mapQuizResponse(assessment: TeacherAssessmentResponse, availableModules
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,
     dueAt: assessment.due_at ?? null,
+    createdAt: assessment.created_at ? new Date(assessment.created_at).toLocaleDateString() : null,
     type: assessment.category ?? 'Quiz',
     difficulty: 'Medium',
     date: new Date(assessment.updated_at).toLocaleDateString(),
@@ -963,6 +965,7 @@ function mapActivityResponse(assessment: TeacherAssessmentResponse): Activity {
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,
     dueAt: assessment.due_at ?? null,
+    createdAt: assessment.created_at ? new Date(assessment.created_at).toLocaleDateString() : null,
     dueDate: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString() : '',
     dueTime: assessment.time_limit ?? '',
     status: (assessment.submissions_count ?? submissions.length) > 0 ? 'Finished' : 'Not Started',

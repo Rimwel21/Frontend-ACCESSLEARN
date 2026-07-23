@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-screen overflow-hidden bg-surface">
+  <div class="teacher-ui flex h-screen overflow-hidden bg-surface">
     <aside class="z-10 flex w-[200px] min-w-[200px] flex-col border-r border-gray-100 bg-white shadow-sm">
       <div class="border-b border-gray-100 bg-brand-blue-soft px-5 py-5">
         <div class="font-display text-2xl font-bold tracking-tight text-brand-blue">Learnify</div>
