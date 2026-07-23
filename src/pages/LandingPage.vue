@@ -2,10 +2,13 @@
   <div class="flex flex-col lg:flex-row min-h-screen bg-surface font-body w-full">
     
     <!-- Mobile Header (Visible only on small screens) -->
-    <header class="lg:hidden flex items-center justify-between p-4 border-b border-brand-teal/30 bg-white z-50">
-      <div class="flex items-center gap-2">
-        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-blue font-sans font-black text-white text-xs">AL</div>
-        <span class="font-display text-lg font-bold text-ink">ACCESSLearn</span>
+    <header class="lg:hidden flex items-center justify-between gap-3 p-3 border-b border-brand-teal/30 bg-white z-50">
+      <div class="min-w-0">
+        <img
+          src="@/assets/signhear_logo.svg"
+          alt="SIGNHEAR - Sign Language Integrated Guidance for Hearing Education and Accessible Resources"
+          class="h-12 w-auto max-w-[min(68vw,220px)] object-contain object-left"
+        />
       </div>
       <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="text-ink-soft hover:text-ink">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -23,17 +26,12 @@
     <aside class="hidden lg:flex w-[260px] bg-surface/60 border-r border-brand-teal/30 flex-col justify-between shrink-0 relative z-20 shadow-[4px_0_24px_rgba(10,123,121,0.04)]">
       <div>
         <!-- Logo Area -->
-        <div class="flex flex-col items-center pt-10 pb-8 px-6 text-center">
-          <div class="mb-3 text-brand-blue">
-            <svg class="w-20 h-20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M50 15C38 15 30 25 30 35C30 45 40 50 50 55C60 50 70 45 70 35C70 25 62 15 50 15Z" fill="#FFA726"/>
-              <path d="M30 40C20 40 15 48 15 55C15 62 22 68 30 70C35 71 42 68 50 62C58 68 65 71 70 70C78 68 85 62 85 55C85 48 80 40 70 40C64 40 58 43 50 48C42 43 36 40 30 40Z" fill="#29B6F6"/>
-              <path d="M50 60C40 68 35 75 35 85H65C65 75 60 68 50 60Z" fill="#1565FF"/>
-              <path d="M50 75L10 85V90H90V85L50 75Z" fill="#1A237E"/>
-            </svg>
-          </div>
-          <h1 class="font-display font-black text-2xl text-ink leading-tight">ACCESSLearn</h1>
-          <p class="text-[10px] font-bold text-ink-soft mt-1 uppercase tracking-widest">Inclusive Classroom</p>
+        <div class="flex flex-col items-center px-5 pb-7 pt-8 text-center">
+          <img
+            src="@/assets/signhear_logo.svg"
+            alt="SIGNHEAR - Sign Language Integrated Guidance for Hearing Education and Accessible Resources"
+            class="h-auto w-full max-w-[190px] object-contain"
+          />
         </div>
 
         <!-- Navigation -->

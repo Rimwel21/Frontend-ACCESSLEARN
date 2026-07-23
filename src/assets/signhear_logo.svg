@@ -1,0 +1,53 @@
+<svg width="900" height="760" viewBox="0 0 900 760" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">SIGNHEAR logo</title>
+  <desc id="desc">Sign language education logo with hand, book, accessibility icons, and SIGNHEAR wordmark.</desc>
+  <rect width="900" height="760" rx="28" fill="white"/>
+  <path d="M215 198C297 73 484 38 637 86" stroke="#0B63CE" stroke-width="24" stroke-linecap="round"/>
+  <path d="M686 142C737 198 767 270 768 345" stroke="#1689E8" stroke-width="24" stroke-linecap="round"/>
+  <path d="M782 373C770 444 731 511 670 559" stroke="#12A865" stroke-width="24" stroke-linecap="round"/>
+  <path d="M184 283C164 351 169 426 200 493" stroke="#10AE71" stroke-width="24" stroke-linecap="round"/>
+
+  <path d="M267 420C343 386 414 399 450 456C486 399 557 386 633 420L691 501C605 464 523 468 450 521C377 468 295 464 209 501L267 420Z" fill="white" stroke="#0A52C7" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M267 420C343 386 414 399 450 456V521C377 468 295 464 209 501L267 420Z" fill="#1F9DF2" opacity=".9"/>
+  <path d="M633 420C557 386 486 399 450 456V521C523 468 605 464 691 501L633 420Z" fill="#18A85F" opacity=".9"/>
+
+  <path d="M431 416L405 278C398 240 451 230 456 270L470 342L476 274C480 235 533 238 529 279L520 352L547 304C565 271 610 296 594 330L548 430C536 456 506 476 475 475L447 474C437 459 432 439 431 416Z" fill="#FFD58B" stroke="#092C8B" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M434 418L412 285" stroke="#FFB07A" stroke-width="8" stroke-linecap="round"/>
+  <path d="M493 292L485 356" stroke="#FFB07A" stroke-width="8" stroke-linecap="round"/>
+  <path d="M528 378C557 358 587 352 608 373" stroke="#092C8B" stroke-width="12" stroke-linecap="round"/>
+  <path d="M391 469H488L493 533H384L391 469Z" fill="#0DBD67" stroke="#092C8B" stroke-width="12" stroke-linejoin="round"/>
+
+  <path d="M160 228C160 191 190 162 227 162C264 162 294 191 294 228C294 267 260 296 221 293L174 323L184 282C169 269 160 250 160 228Z" fill="#1389E8"/>
+  <path d="M210 218C223 198 252 210 252 232C252 250 232 260 225 271C218 260 197 250 197 232C197 224 202 219 210 218Z" fill="white"/>
+  <path d="M625 230C625 195 656 168 696 168C736 168 767 195 767 230C767 267 736 294 696 294C684 294 672 292 662 288L625 315L632 278C627 264 625 248 625 230Z" fill="#FF8A00"/>
+  <circle cx="672" cy="231" r="10" fill="white"/>
+  <circle cx="698" cy="231" r="10" fill="white"/>
+  <circle cx="724" cy="231" r="10" fill="white"/>
+
+  <path d="M627 110L759 78L847 135L730 160L627 110Z" fill="#071B80"/>
+  <path d="M724 158L808 139L796 204L712 224L724 158Z" fill="#0D4AAE"/>
+  <path d="M828 139V221" stroke="#F4B400" stroke-width="10" stroke-linecap="round"/>
+  <path d="M812 236C820 217 836 217 844 236L828 266L812 236Z" fill="#F4B400"/>
+
+  <path d="M232 354C258 318 304 318 331 354" stroke="#0A52C7" stroke-width="14" stroke-linecap="round"/>
+  <path d="M258 376C273 354 303 354 318 376" stroke="#0A52C7" stroke-width="14" stroke-linecap="round"/>
+  <path d="M220 430L336 314" stroke="#092C8B" stroke-width="16" stroke-linecap="round"/>
+  <path d="M346 374C363 390 371 408 372 428" stroke="#F4B400" stroke-width="10" stroke-linecap="round"/>
+  <path d="M376 349C401 375 414 404 415 438" stroke="#F4B400" stroke-width="10" stroke-linecap="round"/>
+
+  <rect x="572" y="318" width="165" height="122" rx="12" fill="#E8F7FF" stroke="#092C8B" stroke-width="12"/>
+  <circle cx="634" cy="373" r="29" fill="#13AD69"/>
+  <path d="M590 421C600 393 625 385 652 397C671 406 682 418 688 433H590V421Z" fill="#13AD69"/>
+  <path d="M684 367L716 336" stroke="white" stroke-width="12" stroke-linecap="round"/>
+
+  <path d="M116 552H784" stroke="#D6DCE8" stroke-width="20" stroke-linecap="round"/>
+  <text x="450" y="620" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="120" font-weight="900" letter-spacing="2">
+    <tspan fill="#0B63CE">SIGN</tspan><tspan fill="#0AAA61">HEAR</tspan>
+  </text>
+  <text x="450" y="686" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="700">
+    <tspan fill="#0B63CE">Sign Language Integrated Guidance for</tspan>
+  </text>
+  <text x="450" y="728" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="700">
+    <tspan fill="#FF7A00">Hearing</tspan><tspan fill="#0A2A7A"> Education and </tspan><tspan fill="#0AAA61">Accessible</tspan><tspan fill="#0B63CE"> Resources</tspan>
+  </text>
+</svg>
