@@ -69,66 +69,66 @@
     <main class="flex-1 flex flex-col relative grid-bg h-full lg:overflow-y-auto overflow-x-hidden">
       
       <!-- Content Area -->
-      <div class="flex min-h-full w-full max-w-[1120px] flex-1 flex-col justify-between gap-4 p-4 sm:p-5 lg:mx-auto lg:px-7 lg:py-5">
-        <div class="space-y-3 lg:space-y-4">
+      <div class="flex min-h-full w-full max-w-[1280px] flex-1 flex-col justify-between gap-4 p-4 sm:p-5 lg:mx-auto lg:px-8 lg:py-6">
+        <div class="space-y-4 lg:space-y-5">
         
         <!-- Hero Banner -->
-        <div class="relative w-full max-w-[980px] mx-auto rounded-[14px] gradient-brand shadow-xl overflow-hidden">
-          <div class="grid items-stretch lg:grid-cols-[minmax(260px,0.78fr)_minmax(0,1fr)]">
-            <div class="flex items-center justify-center bg-white/14 px-4 pt-4 sm:px-5 sm:pt-5 lg:min-h-[235px] xl:min-h-[250px] lg:p-0">
+        <div class="relative w-full max-w-[1160px] mx-auto rounded-[16px] gradient-brand shadow-xl overflow-hidden">
+          <div class="grid items-stretch lg:grid-cols-[minmax(300px,0.82fr)_minmax(0,1fr)]">
+            <div class="flex items-center justify-center bg-white/14 px-4 pt-4 sm:px-5 sm:pt-5 lg:min-h-[285px] xl:min-h-[310px] lg:p-0">
               <img
                 src="@/assets/hero_illustration.png"
                 alt="Students learning"
-                class="aspect-[4/3] w-full max-w-[min(78vw,300px)] rounded-t-sm object-contain drop-shadow-2xl sm:max-w-[min(62vw,350px)] lg:aspect-auto lg:h-full lg:max-h-[250px] lg:max-w-[375px] lg:rounded-none"
+                class="aspect-[4/3] w-full max-w-[min(78vw,300px)] rounded-t-sm object-contain drop-shadow-2xl sm:max-w-[min(62vw,350px)] lg:aspect-auto lg:h-full lg:max-h-[310px] lg:max-w-[430px] lg:rounded-none"
               />
             </div>
 
-            <div class="flex min-w-0 flex-col justify-center px-6 py-7 text-white sm:px-8 sm:py-8 lg:px-9 xl:px-10">
-              <h2 class="font-display text-2xl sm:text-3xl lg:text-[30px] xl:text-[32px] font-extrabold mb-3 leading-[1.16] w-full text-shadow-sm tracking-tight text-white">
+            <div class="flex min-w-0 flex-col justify-center px-6 py-7 text-white sm:px-8 sm:py-8 lg:px-10 xl:px-12">
+              <h2 class="font-display text-2xl sm:text-3xl lg:text-[34px] xl:text-[40px] font-extrabold mb-4 leading-[1.16] w-full text-shadow-sm tracking-tight text-white">
                 Learning that adapts to every child, every ability, every classroom.
               </h2>
-              <p class="text-surface text-[12px] sm:text-[13px] mb-5 max-w-[520px] font-medium leading-relaxed">
+              <p class="text-surface text-[13px] sm:text-sm mb-7 max-w-[620px] font-medium leading-relaxed">
                 AccessLearn combines audio lessons, sign-language videos, subtitles, and adaptive quizzes to create equitable learning in Philippine schools.
               </p>
               <div class="flex justify-center sm:justify-start">
-                <RouterLink to="/portal" class="bg-brand-amber text-white px-8 py-2.5 rounded-full font-bold text-xs shadow-lg transition-all hover:scale-105 text-center min-w-36 hover:bg-gradient-to-r hover:from-brand-amber hover:to-brand-rose hover:shadow-[0_0_20px_rgba(244,163,99,0.4)]">Get Started</RouterLink>
+                <RouterLink to="/portal" class="bg-brand-amber text-white px-9 py-3 rounded-full font-bold text-sm shadow-lg transition-all hover:scale-105 text-center min-w-40 hover:bg-gradient-to-r hover:from-brand-amber hover:to-brand-rose hover:shadow-[0_0_20px_rgba(244,163,99,0.4)]">Get Started</RouterLink>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Feature Cards -->
-        <section id="features" class="relative z-20 mx-auto w-full max-w-[1020px] space-y-2 xl:-mt-3" aria-labelledby="features-title">
+        <section id="features" class="relative z-20 mx-auto w-full max-w-[1160px] space-y-3" aria-labelledby="features-title">
           <div>
-            <h2 id="features-title" class="font-display text-xl font-black leading-none text-ink">Features</h2>
+            <h2 id="features-title" class="font-display text-2xl font-black leading-none text-ink">Features</h2>
           </div>
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:gap-4">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:gap-5">
           <!-- Card 1 -->
-          <div class="bg-white rounded-xl p-4 lg:p-4 flex min-h-[168px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
+          <div class="bg-white rounded-xl p-4 lg:p-5 flex min-h-[210px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">🧏💬</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Sign & Captions</h3>
             <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">For hearing support learners.<br/> Each module includes sign‑language videos, subtitles, and transcript toggles.</p>
           </div>
           <!-- Card 2 -->
-          <div class="bg-white rounded-xl p-4 lg:p-4 flex min-h-[168px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
+          <div class="bg-white rounded-xl p-4 lg:p-5 flex min-h-[210px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">🎯📚</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Adaptive Activities</h3>
             <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Personalized interactive tasks.<br/> Adjust to each learner’s progress, ensuring engagement and mastery of skills.</p>
           </div>
           <!-- Card 3 -->
-          <div class="bg-white rounded-xl p-4 lg:p-4 flex min-h-[168px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
+          <div class="bg-white rounded-xl p-4 lg:p-5 flex min-h-[210px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">✅⚙️</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Adaptive Quizzes</h3>
             <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Smart assessments.<br/> Adapt difficulty based on performance, guiding learners toward review or advancement.</p>
           </div>
           <!-- Card 4 -->
-          <div class="bg-white rounded-xl p-4 lg:p-4 flex min-h-[168px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
+          <div class="bg-white rounded-xl p-4 lg:p-5 flex min-h-[210px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">👩🏫📊</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Teacher Dashboard</h3>
             <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Class insights.<br/> Track progress, scores, and upload new inclusive lessons.</p>
           </div>
           <!-- Card 5 -->
-          <div class="bg-white rounded-xl p-4 lg:p-4 flex min-h-[168px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group sm:col-span-2 lg:col-span-1">
+          <div class="bg-white rounded-xl p-4 lg:p-5 flex min-h-[210px] flex-col items-center text-center shadow-card border border-brand-teal/30 hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all group sm:col-span-2 lg:col-span-1">
             <div class="text-3xl lg:text-4xl mb-3 h-12 flex items-center justify-center group-hover:scale-110 transition-transform">☁️💾</div>
             <h3 class="font-bold text-ink text-[13px] lg:text-sm mb-2 leading-tight">Offline‑Ready</h3>
             <p class="text-[10px] lg:text-[11px] text-ink-soft leading-relaxed font-medium">Low bandwidth support.<br/> Download lesson briefs for classrooms with limited connectivity.</p>
