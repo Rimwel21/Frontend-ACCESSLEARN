@@ -4,12 +4,20 @@
     <!-- Top Navbar -->
     <header class="bg-white border-b border-gray-100 px-5 sm:px-8 py-3.5 flex items-center justify-between shadow-[0_1px_12px_rgba(0,0,0,0.04)]">
       <div class="flex items-center gap-3 group">
-        <!-- Triple-click the AL badge to access admin login -->
-        <div
-          class="h-9 w-9 rounded-full bg-brand-blue flex items-center justify-center font-black text-white text-sm shadow-md group-hover:scale-105 transition-transform cursor-pointer select-none"
+        <!-- Triple-click the logo badge to access admin login -->
+        <button
+          type="button"
+          class="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-md ring-1 ring-brand-teal/20 transition-transform hover:scale-105"
           @click="handleLogoClick"
           title="SIGNHEAR"
-        >AL</div>
+          aria-label="SIGNHEAR"
+        >
+          <img
+            src="@/assets/signhear_icon_logo.png"
+            alt=""
+            class="h-10 w-10 rounded-full object-contain"
+          />
+        </button>
         <RouterLink to="/" class="leading-none">
           <p class="font-display font-bold text-sm text-ink">SIGNHEAR</p>
           <p class="text-[9px] font-extrabold text-brand-blue uppercase tracking-widest">Inclusive E-Learning</p>
