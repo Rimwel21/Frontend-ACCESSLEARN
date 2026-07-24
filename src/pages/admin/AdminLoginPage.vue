@@ -6,11 +6,12 @@
       </RouterLink>
       
       <div class="mb-8 mt-4 flex items-center gap-3">
-        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-lg ring-1 ring-brand-teal/20">
+        <div class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-brand-teal/20">
           <img
             src="@/assets/signhear_icon_logo.png"
             alt="SIGNHEAR"
-            class="h-14 w-14 object-contain"
+            class="h-full w-full object-contain"
+            style="transform: scale(1.85)"
           />
         </div>
         <div>

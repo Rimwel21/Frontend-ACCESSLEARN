@@ -7,7 +7,7 @@
         <!-- Triple-click the logo badge to access admin login -->
         <button
           type="button"
-          class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md ring-1 ring-brand-teal/20 transition-transform hover:scale-105 sm:h-16 sm:w-16"
+          class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-brand-teal/20 transition-transform hover:scale-105 sm:h-16 sm:w-16"
           @click="handleLogoClick"
           title="SIGNHEAR"
           aria-label="SIGNHEAR"
@@ -15,7 +15,8 @@
           <img
             src="@/assets/signhear_icon_logo.png"
             alt=""
-            class="h-12 w-12 object-contain sm:h-14 sm:w-14"
+            class="h-full w-full object-contain"
+            style="transform: scale(1.85)"
           />
         </button>
         <RouterLink to="/" class="leading-none">
