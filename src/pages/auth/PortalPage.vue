@@ -8,10 +8,10 @@
         <div
           class="h-9 w-9 rounded-full bg-brand-blue flex items-center justify-center font-black text-white text-sm shadow-md group-hover:scale-105 transition-transform cursor-pointer select-none"
           @click="handleLogoClick"
-          title="ACCESSLearn"
+          title="SIGNHEAR"
         >AL</div>
         <RouterLink to="/" class="leading-none">
-          <p class="font-display font-bold text-sm text-ink">ACCESSLearn</p>
+          <p class="font-display font-bold text-sm text-ink">SIGNHEAR</p>
           <p class="text-[9px] font-extrabold text-brand-blue uppercase tracking-widest">Inclusive E-Learning</p>
         </RouterLink>
       </div>
