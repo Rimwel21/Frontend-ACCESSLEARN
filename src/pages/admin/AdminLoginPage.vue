@@ -6,17 +6,23 @@
       </RouterLink>
       
       <div class="mb-8 mt-4 flex items-center gap-3">
-        <div class="h-12 w-12 bg-brand-blue rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg">AL</div>
+        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-lg ring-1 ring-brand-teal/20">
+          <img
+            src="@/assets/signhear_icon_logo.png"
+            alt="SIGNHEAR"
+            class="h-14 w-14 object-contain"
+          />
+        </div>
         <div>
           <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-blue">Security Gateway</p>
-          <h1 class="font-display text-2xl font-bold text-ink">Omni Admin Login</h1>
+          <h1 class="font-display text-2xl font-bold text-ink">SIGNHEAR Admin Login</h1>
         </div>
       </div>
 
       <form class="form-stack" @submit.prevent="handleLogin">
         <div>
           <label class="field-label" for="email">Admin Email</label>
-          <input id="email" v-model.trim="email" class="input-field mt-1.5" type="email" placeholder="admin@accesslearn.edu.ph" required />
+          <input id="email" v-model.trim="email" class="input-field mt-1.5" type="email" placeholder="admin@signhear.edu.ph" required />
         </div>
 
         <div>

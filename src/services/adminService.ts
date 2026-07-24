@@ -41,7 +41,7 @@ export const adminService = {
           page: 1,
           per_page: 10,
           items: [
-             { id: 1, full_name: 'Admin User', email: 'admin@accesslearn.edu.ph', role: 'admin', account_status: 'active', created_at: new Date().toISOString() },
+             { id: 1, full_name: 'Admin User', email: 'admin@signhear.edu.ph', role: 'admin', account_status: 'active', created_at: new Date().toISOString() },
              { id: 2, full_name: 'Mock Teacher', email: 'teacher@test.com', role: 'teacher', account_status: 'pending', created_at: new Date().toISOString() }
           ]
        } as any

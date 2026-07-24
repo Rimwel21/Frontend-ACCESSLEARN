@@ -95,7 +95,7 @@
                   Learning that adapts to every child, every ability, every classroom.
                 </h1>
                 <p class="mb-4 max-w-[620px] text-xs leading-relaxed text-white/90 lg:text-[14px]">
-                  AccessLearn combines audio lessons, sign-language videos, subtitles, and adaptive quizzes to create equitable learning in Philippine schools.
+                  SIGNHEAR combines audio lessons, sign-language videos, subtitles, and adaptive quizzes to create equitable learning in Philippine schools.
                 </p>
                 <div class="flex justify-center sm:justify-start">
                   <RouterLink to="/portal" class="min-w-[144px] rounded-full bg-[#f59e5b] px-6 py-2.5 text-center text-sm font-bold text-white shadow-[0_4px_12px_rgba(245,158,91,0.25)] transition-all hover:scale-[1.03] hover:bg-[#e08a47]">
@@ -126,7 +126,7 @@
         <!-- Footer -->
         <footer class="mt-auto pb-3 pt-6">
           <div class="mx-auto flex flex-col items-center justify-center gap-1.5 text-center text-[11px] font-semibold text-[#2b7668] sm:flex-row sm:flex-wrap sm:gap-x-3">
-            <span>&copy; {{ new Date().getFullYear() }} ACCESSLearn Inc. | Philippine Schools Initiative</span>
+            <span>&copy; {{ new Date().getFullYear() }} SIGNHEAR Inc. | Philippine Schools Initiative</span>
             <span class="hidden sm:inline text-[#2b7668]/45">|</span>
             <span class="inline-flex items-center gap-2">
               <span class="rounded bg-[#0a7b79] px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">WCAG 2.2</span>
