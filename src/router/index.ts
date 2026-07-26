@@ -10,6 +10,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/admin/login', name: 'AdminLogin', component: () => import('@/pages/admin/AdminLoginPage.vue') },
   { path: '/profile/setup', name: 'ProfileSetup', component: () => import('@/pages/auth/ProfileSetupPage.vue'), meta: { requiresAuth: true } },
   { path: '/forbidden', name: 'Forbidden', component: () => import('@/pages/auth/ForbiddenPage.vue') },
+  { path: '/offline-required', name: 'OfflineRequired', component: () => import('@/pages/auth/OfflineRequiredPage.vue') },
 
   {
     path: '/teacher',
@@ -47,6 +48,8 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: '', redirect: '/admin/dashboard' },
       { path: 'dashboard', name: 'AdminDashboard', component: () => import('@/pages/admin/DashboardPage.vue') },
+      { path: 'sections', name: 'AdminSections', component: () => import('@/pages/admin/SectionManagementPage.vue') },
+      { path: 'audit-log', name: 'AdminAuditLog', component: () => import('@/pages/admin/AuditLogPage.vue') },
     ],
   },
 
@@ -69,6 +72,10 @@ export const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore()
+
+  if (!navigator.onLine && (to.path.startsWith('/teacher') || to.path.startsWith('/admin'))) {
+    return { path: '/offline-required' }
+  }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { path: '/forbidden' }

@@ -1,6 +1,6 @@
 <template>
   <main class="min-h-screen bg-[#f0f2f8] flex items-center justify-center px-4 py-10">
-    <div class="w-full max-w-md bg-white rounded-[24px] shadow-[0_8px_40px_rgba(15,23,42,0.10)] p-8">
+    <div class="w-full max-w-2xl bg-white rounded-[24px] shadow-[0_8px_40px_rgba(15,23,42,0.10)] p-8">
 
       <!-- Back link -->
       <RouterLink to="/portal" class="inline-flex items-center gap-1.5 text-sm font-bold text-brand-blue hover:text-blue-700 transition-colors mb-6">
@@ -26,21 +26,48 @@
                 <input id="student-name" v-model.trim="studentFullName" class="input-field mt-2" type="text" placeholder="Juan Dela Cruz" required />
               </div>
               <div>
-                <label class="field-label" for="student-id">Student ID</label>
-                <input id="student-id" v-model.trim="studentId" class="input-field mt-2" type="text" placeholder="e.g. 20240001" required />
+                <label class="field-label" for="student-username">Username</label>
+                <input id="student-username" v-model.trim="studentUsername" class="input-field mt-2" type="text" placeholder="juan2026" minlength="5" maxlength="50" required />
+              </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="field-label" for="student-email">Email</label>
+                <input id="student-email" v-model.trim="studentEmail" class="input-field mt-2" type="email" placeholder="student@school.edu" required />
+              </div>
+              <div>
+                <label class="field-label" for="student-lrn">Student LRN</label>
+                <input id="student-lrn" v-model.trim="studentLrn" class="input-field mt-2" type="text" inputmode="numeric" placeholder="109290120032" minlength="12" maxlength="12" required />
               </div>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
               <div>
                 <label class="field-label" for="grade-level">Grade level</label>
-                <input id="grade-level" v-model.trim="studentGradeLevel" class="input-field mt-2" type="text" placeholder="Grade 1" required />
+                <select id="grade-level" v-model.number="studentGradeLevelId" class="input-field mt-2" required>
+                  <option :value="null" disabled>Select grade level</option>
+                  <option v-for="gradeLevel in gradeLevels" :key="gradeLevel.id" :value="gradeLevel.id">{{ gradeLevel.name }}</option>
+                </select>
               </div>
               <div>
-                <label class="field-label" for="student-email">School email</label>
-                <input id="student-email" v-model.trim="studentEmail" class="input-field mt-2" type="email" placeholder="student@school.edu" required />
+                <label class="field-label" for="student-section">Section</label>
+                <select id="student-section" v-model.number="studentSectionId" class="input-field mt-2" :disabled="!studentGradeLevelId || sectionsLoading" required>
+                  <option :value="null" disabled>{{ sectionsLoading ? 'Loading sections...' : 'Select section' }}</option>
+                  <option v-for="section in sections" :key="section.id" :value="section.id">{{ section.name }}</option>
+                </select>
               </div>
             </div>
+
+            <fieldset class="rounded-2xl border border-brand-blue/20 p-4">
+              <legend class="field-label px-2">Accessibility Profile</legend>
+              <div class="mt-2 grid gap-3 sm:grid-cols-2">
+                <label v-for="option in accessibilityOptions" :key="option" class="flex items-center gap-2 text-sm font-bold text-ink">
+                  <input v-model="studentAccessibilityProfile" type="radio" name="student-accessibility-profile" :value="option" class="h-4 w-4 accent-brand-blue" required />
+                  {{ option }}
+                </label>
+              </div>
+            </fieldset>
 
             <div>
               <label class="field-label" for="student-password">Password</label>
@@ -207,6 +234,12 @@
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import {
+  fetchPublicGradeLevelOptions,
+  fetchPublicSectionOptions,
+  type GradeLevelOption,
+  type SectionOption,
+} from '@/lib/gradeSections'
 
 type Role = 'student' | 'teacher'
 
@@ -225,10 +258,17 @@ const validationError = ref('')
 const verifiedEmailRef = ref(localStorage.getItem('teacher_verified_email') || '')
 
 const studentFullName = ref('')
-const studentId = ref('')
-const studentGradeLevel = ref('')
+const studentUsername = ref('')
 const studentEmail = ref('')
+const studentLrn = ref('')
+const studentGradeLevelId = ref<number | null>(null)
+const studentSectionId = ref<number | null>(null)
+const studentAccessibilityProfile = ref('')
 const studentConfirmPassword = ref('')
+const gradeLevels = ref<GradeLevelOption[]>([])
+const sections = ref<SectionOption[]>([])
+const academicLoading = ref(false)
+const sectionsLoading = ref(false)
 const teacherFullName = ref('')
 const teacherId = ref('')
 const teacherSubject = ref('')
@@ -263,6 +303,33 @@ function statusClass(type: string) {
   if (type === 'error') return 'status-error'
   if (type === 'info') return 'status-warning'
   return ''
+}
+
+const accessibilityOptions = ['Regular Student', 'Hearing Impaired Student']
+
+async function loadGradeLevels() {
+  academicLoading.value = true
+  try {
+    gradeLevels.value = await fetchPublicGradeLevelOptions()
+  } catch (err) {
+    validationError.value = err instanceof Error ? err.message : 'Unable to load grade levels.'
+  } finally {
+    academicLoading.value = false
+  }
+}
+
+async function loadSections(gradeLevelId: number) {
+  sectionsLoading.value = true
+  sections.value = []
+  studentSectionId.value = null
+
+  try {
+    sections.value = await fetchPublicSectionOptions(gradeLevelId)
+  } catch (err) {
+    validationError.value = err instanceof Error ? err.message : 'Unable to load sections.'
+  } finally {
+    sectionsLoading.value = false
+  }
 }
 
 
@@ -465,6 +532,16 @@ watch(email, (newValue) => {
   }
 })
 
+watch(studentGradeLevelId, (gradeLevelId) => {
+  if (gradeLevelId) {
+    loadSections(gradeLevelId)
+    return
+  }
+
+  sections.value = []
+  studentSectionId.value = null
+})
+
 
 async function submitStudentRegister() {
   validationError.value = ''
@@ -476,19 +553,39 @@ async function submitStudentRegister() {
     return
   }
 
-  if (!studentId.value.trim()) {
-    validationError.value = 'Please enter your student ID.'
+  if (!studentUsername.value.trim()) {
+    validationError.value = 'Please enter your username.'
     return
   }
 
-  if (!studentGradeLevel.value.trim()) {
-    validationError.value = 'Please choose a grade level.'
+  if (!/^[A-Za-z0-9-]{5,50}$/.test(studentUsername.value.trim())) {
+    validationError.value = 'Username must be 5-50 characters and use only letters, numbers, or hyphens.'
     return
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(studentEmail.value.trim())) {
-    validationError.value = 'Enter a valid school email address.'
+    validationError.value = 'Enter a valid email address.'
+    return
+  }
+
+  if (!/^\d{12}$/.test(studentLrn.value.trim())) {
+    validationError.value = 'Student LRN must be exactly 12 digits.'
+    return
+  }
+
+  if (!studentGradeLevelId.value) {
+    validationError.value = 'Please choose a grade level.'
+    return
+  }
+
+  if (!studentSectionId.value) {
+    validationError.value = 'Please choose a section.'
+    return
+  }
+
+  if (!studentAccessibilityProfile.value) {
+    validationError.value = 'Please choose an accessibility profile.'
     return
   }
 
@@ -506,15 +603,24 @@ async function submitStudentRegister() {
     await auth.register({
       role: 'student',
       email: studentEmail.value.trim(),
-      username: studentId.value.trim(),
+      username: studentUsername.value.trim(),
       password: password.value,
+      full_name: studentFullName.value.trim(),
+      student_lrn: studentLrn.value.trim(),
+      grade_level_id: studentGradeLevelId.value,
+      section_id: studentSectionId.value,
+      accessibility_profile: studentAccessibilityProfile.value,
     })
 
     message.value = 'Your student account was created. You can now sign in.'
     studentFullName.value = ''
-    studentId.value = ''
-    studentGradeLevel.value = ''
+    studentUsername.value = ''
     studentEmail.value = ''
+    studentLrn.value = ''
+    studentGradeLevelId.value = null
+    studentSectionId.value = null
+    studentAccessibilityProfile.value = ''
+    sections.value = []
     studentConfirmPassword.value = ''
     password.value = ''
   } catch {
@@ -776,6 +882,10 @@ async function submitTeacherRegister() {
 }
 
 onMounted(() => {
+  if (role.value === 'student') {
+    loadGradeLevels()
+  }
+
   if (role.value === 'teacher') {
     restoreOtpSession()
   }

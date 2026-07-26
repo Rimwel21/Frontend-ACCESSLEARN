@@ -21,7 +21,7 @@
 
         <div>
           <label class="field-label" :for="role === 'teacher' ? 'email' : 'account'">
-            {{ role === 'teacher' ? 'Email' : 'Student ID or email' }}
+            {{ role === 'teacher' ? 'Email' : 'Username or email' }}
           </label>
           <input
             :id="role === 'teacher' ? 'email' : 'account'"
@@ -29,7 +29,7 @@
             class="input-field mt-2"
             :type="role === 'teacher' ? 'email' : 'text'"
             :autocomplete="role === 'teacher' ? 'email' : 'username'"
-            :placeholder="role === 'teacher' ? 'teacher@school.edu' : 'Enter student ID or email'"
+            :placeholder="role === 'teacher' ? 'teacher@school.edu' : 'Enter username or email'"
             minlength="3" maxlength="60" required
           />
         </div>

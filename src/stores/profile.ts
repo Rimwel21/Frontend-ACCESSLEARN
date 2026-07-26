@@ -21,6 +21,7 @@ interface SectionRef {
 export interface StudentProfile {
   id: number
   name: string
+  student_lrn: string | null
   age: number | null
   sex: UserSex | null
   grade_level: GradeLevelRef | null
@@ -31,6 +32,8 @@ export interface StudentProfile {
   guardians_name: string | null
   guardians_contact_no: string | null
   address: string | null
+  accessibility_profile: string | null
+  learning_preferences: string | null
   created_at: string
   updated_at: string
 }
@@ -70,7 +73,7 @@ export const useProfileStore = defineStore('profile', () => {
   const saving = ref(false)
   const error = ref('')
 
-  const displayName = computed(() => profile.value?.name ?? 'ACCESS Learn user')
+  const displayName = computed(() => profile.value?.name ?? 'SIGNHEAR user')
   const initial = computed(() => displayName.value.charAt(0).toUpperCase())
 
   async function fetchProfile() {

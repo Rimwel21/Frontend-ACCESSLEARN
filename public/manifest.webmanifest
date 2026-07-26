@@ -1,0 +1,45 @@
+{
+  "name": "SIGNHEAR Inclusive E-Learning",
+  "short_name": "SIGNHEAR",
+  "description": "Accessible and inclusive offline-ready learning for Philippine schools.",
+  "start_url": "/student/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#d8f4ea",
+  "theme_color": "#007f7a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Student Dashboard",
+      "short_name": "Dashboard",
+      "url": "/student/dashboard",
+      "description": "Open student learning dashboard"
+    },
+    {
+      "name": "Activities",
+      "short_name": "Activities",
+      "url": "/student/activities",
+      "description": "Open assigned activities"
+    },
+    {
+      "name": "Sign Alphabet",
+      "short_name": "Sign Alphabet",
+      "url": "/student/activities/handsign",
+      "description": "Open sign language learning"
+    }
+  ]
+}

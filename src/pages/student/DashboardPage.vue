@@ -41,12 +41,11 @@
                 <div v-else class="grid h-12 w-12 place-items-center rounded-full border-[2px] border-brand-teal bg-brand-blue font-black text-white">{{ profile.initial }}</div>
                 <div class="min-w-0">
                   <div class="truncate font-black">{{ profile.displayName }}</div>
-                  <div class="truncate font-mono text-[10px] text-ink-soft">{{ auth.accountIdentity || 'Student account' }}</div>
+                  <div class="truncate font-mono text-[10px] text-ink-soft">Student account</div>
                 </div>
               </div>
               <dl class="mt-3 grid gap-2 text-xs">
                 <div class="flex justify-between gap-3"><dt class="font-black text-ink-soft">Role</dt><dd class="font-bold">Student</dd></div>
-                <div class="flex justify-between gap-3"><dt class="font-black text-ink-soft">Email</dt><dd class="truncate font-bold">{{ studentEmail }}</dd></div>
                 <div class="flex justify-between gap-3"><dt class="font-black text-ink-soft">Type</dt><dd class="truncate font-bold">{{ studentType }}</dd></div>
               </dl>
               <div class="mt-4 grid grid-cols-2 gap-2">
@@ -193,8 +192,7 @@ const calendarYear = computed(() => viewedDate.value.getFullYear())
 const calendarDays = computed(() => new Date(calendarYear.value, viewedDate.value.getMonth() + 1, 0).getDate())
 const calendarLeadingBlanks = computed(() => new Date(calendarYear.value, viewedDate.value.getMonth(), 1).getDay())
 
-const studentEmail = computed(() => auth.accountIdentity.includes('@') ? auth.accountIdentity : 'Not provided')
-const welcomeName = computed(() => profile.profile?.name ?? (auth.accountIdentity || 'Student'))
+const welcomeName = computed(() => profile.profile?.name ?? 'Student')
 const studentType = computed(() => {
   const data = profile.profile
   return data && 'student_type' in data ? data.student_type : 'Not provided'

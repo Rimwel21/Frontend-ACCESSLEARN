@@ -9,6 +9,11 @@ interface RegisterPayload {
   email?: string | null
   password: string
   role: Exclude<Role, 'admin'>
+  full_name?: string
+  student_lrn?: string
+  grade_level_id?: number
+  section_id?: number
+  accessibility_profile?: string
 }
 
 export interface LoginPayload {

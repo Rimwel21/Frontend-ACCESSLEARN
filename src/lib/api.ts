@@ -1,3 +1,5 @@
+import { cacheApiResponse, getCachedApiResponse } from '@/lib/offlineDb'
+
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
 
 export class ApiError extends Error {
@@ -49,6 +51,8 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}) {
       cache: options.cache ?? 'no-store',
     })
   } catch (err) {
+    const cached = await getOfflineCachedResponse<T>(path, options)
+    if (cached) return cached
     throw new ApiError(err instanceof Error ? err.message : 'Network request failed', 0)
   }
 
@@ -65,5 +69,27 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}) {
     return null as T
   }
 
-  return await response.json() as T
+  const data = await response.json() as T
+  if (shouldCacheApiResponse(path, options)) {
+    await cacheApiResponse(apiCacheKey(path), data).catch(() => null)
+  }
+
+  return data
+}
+
+function shouldCacheApiResponse(path: string, options: ApiOptions) {
+  const method = (options.method ?? 'GET').toUpperCase()
+  if (method !== 'GET') return false
+  return path.startsWith('/student/modules')
+    || path.startsWith('/student/activities')
+    || path.startsWith('/profile')
+}
+
+function apiCacheKey(path: string) {
+  return `GET:${path}`
+}
+
+async function getOfflineCachedResponse<T>(path: string, options: ApiOptions) {
+  if (!shouldCacheApiResponse(path, options)) return null
+  return await getCachedApiResponse<T>(apiCacheKey(path)).catch(() => null)
 }

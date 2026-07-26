@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { apiFetch } from '@/lib/api'
+import { ApiError, apiFetch } from '@/lib/api'
+import { queueStudentMutation } from '@/lib/offlineSync'
 import { useAuthStore } from '@/stores/auth'
 
 export interface LearningTopic {
@@ -126,8 +127,17 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   async function fetchProgress(id: string | number) {
     const auth = useAuthStore()
     if (!auth.token) return
-    progress.value = await apiFetch<ProgressResponse>(`/student/modules/${id}/progress`, { token: auth.token })
-    progressByModule.value[Number(id)] = progress.value
+    try {
+      progress.value = await apiFetch<ProgressResponse>(`/student/modules/${id}/progress`, { token: auth.token })
+      progressByModule.value[Number(id)] = progress.value
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 0) {
+        progress.value = progressByModule.value[Number(id)] ?? buildProgressFromModule(currentModule.value)
+        progressByModule.value[Number(id)] = progress.value
+        return
+      }
+      throw err
+    }
   }
 
   async function fetchAllProgress() {
@@ -143,27 +153,48 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   async function markTopic(moduleId: string | number, topicId: number, status: 'started' | 'in_progress' | 'completed') {
     const auth = useAuthStore()
     if (!auth.token) return
-    progress.value = await apiFetch<ProgressResponse>(`/student/modules/${moduleId}/topics/${topicId}/progress`, {
-      method: 'POST',
-      token: auth.token,
-      body: JSON.stringify({ status }),
-    })
-    progressByModule.value[Number(moduleId)] = progress.value
-    if (status === 'completed') await fetchDeadlines()
+    const path = `/student/modules/${moduleId}/topics/${topicId}/progress`
+    try {
+      progress.value = await apiFetch<ProgressResponse>(path, {
+        method: 'POST',
+        token: auth.token,
+        body: JSON.stringify({ status }),
+      })
+      progressByModule.value[Number(moduleId)] = progress.value
+      if (status === 'completed') await fetchDeadlines()
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 0) throw err
+      await queueStudentMutation(path, 'POST', { status }, auth.token)
+      progress.value = applyLocalTopicProgress(Number(moduleId), topicId, status)
+      progressByModule.value[Number(moduleId)] = progress.value
+      await fetchDeadlines()
+    }
   }
 
   async function submitQuiz(moduleId: string | number, quizId: number, answers: Record<string, string>) {
     const auth = useAuthStore()
     if (!auth.token) return null
-    const result = await apiFetch<{ score: number; total: number; progress: ProgressResponse }>(`/student/modules/${moduleId}/quizzes/${quizId}/submit`, {
-      method: 'POST',
-      token: auth.token,
-      body: JSON.stringify({ answers }),
-    })
-    progress.value = result.progress
-    progressByModule.value[Number(moduleId)] = progress.value
-    await fetchDeadlines()
-    return result
+    const path = `/student/modules/${moduleId}/quizzes/${quizId}/submit`
+    try {
+      const result = await apiFetch<{ score: number; total: number; progress: ProgressResponse }>(path, {
+        method: 'POST',
+        token: auth.token,
+        body: JSON.stringify({ answers }),
+      })
+      progress.value = result.progress
+      progressByModule.value[Number(moduleId)] = progress.value
+      await fetchDeadlines()
+      return result
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 0) throw err
+      await queueStudentMutation(path, 'POST', { answers }, auth.token)
+      const quiz = currentModule.value?.assessments.find(item => item.id === quizId)
+      const result = gradeAssessment(quiz, answers)
+      progress.value = applyLocalQuizProgress(Number(moduleId), quizId)
+      progressByModule.value[Number(moduleId)] = progress.value
+      await fetchDeadlines()
+      return { ...result, progress: progress.value, offline: true }
+    }
   }
 
   async function fetchActivities() {
@@ -213,11 +244,19 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   async function submitActivity(activityId: string | number, answers: Record<string, string>) {
     const auth = useAuthStore()
     if (!auth.token) return null
-    const result = await apiFetch<{ score: number; total: number }>(`/student/activities/${activityId}/submit`, {
-      method: 'POST',
-      token: auth.token,
-      body: JSON.stringify({ answers }),
-    })
+    const path = `/student/activities/${activityId}/submit`
+    let result: { score: number; total: number }
+    try {
+      result = await apiFetch<{ score: number; total: number }>(path, {
+        method: 'POST',
+        token: auth.token,
+        body: JSON.stringify({ answers }),
+      })
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 0) throw err
+      await queueStudentMutation(path, 'POST', { answers }, auth.token)
+      result = gradeAssessment(currentActivity.value, answers)
+    }
     const completedAt = new Date().toISOString()
     activities.value = activities.value.map(activity => activity.id === Number(activityId)
       ? {
@@ -239,6 +278,74 @@ export const useStudentContentStore = defineStore('studentContent', () => {
     }
     await fetchDeadlines()
     return result
+  }
+
+  function buildProgressFromModule(module: StudentModule | null): ProgressResponse {
+    return {
+      completed_topic_ids: [],
+      completed_quiz_ids: [],
+      total_topics: module?.topics.length ?? 0,
+      completed_topics: 0,
+      total_quizzes: module?.assessments.filter(item => item.assessment_type === 'quiz').length ?? 0,
+      completed_quizzes: 0,
+      percent: 0,
+    }
+  }
+
+  function applyLocalTopicProgress(moduleId: number, topicId: number, status: 'started' | 'in_progress' | 'completed') {
+    const module = currentModule.value?.id === moduleId
+      ? currentModule.value
+      : modules.value.find(item => item.id === moduleId) ?? null
+    const base = progressByModule.value[moduleId] ?? buildProgressFromModule(module)
+    const completedTopicIds = new Set(base.completed_topic_ids)
+    if (status === 'completed') completedTopicIds.add(topicId)
+
+    return normalizeProgress({
+      ...base,
+      total_topics: module?.topics.length ?? base.total_topics,
+      total_quizzes: module?.assessments.filter(item => item.assessment_type === 'quiz').length ?? base.total_quizzes,
+      completed_topic_ids: [...completedTopicIds],
+    })
+  }
+
+  function applyLocalQuizProgress(moduleId: number, quizId: number) {
+    const module = currentModule.value?.id === moduleId
+      ? currentModule.value
+      : modules.value.find(item => item.id === moduleId) ?? null
+    const base = progressByModule.value[moduleId] ?? buildProgressFromModule(module)
+    const completedQuizIds = new Set(base.completed_quiz_ids)
+    completedQuizIds.add(quizId)
+
+    return normalizeProgress({
+      ...base,
+      total_topics: module?.topics.length ?? base.total_topics,
+      total_quizzes: module?.assessments.filter(item => item.assessment_type === 'quiz').length ?? base.total_quizzes,
+      completed_quiz_ids: [...completedQuizIds],
+    })
+  }
+
+  function normalizeProgress(item: ProgressResponse): ProgressResponse {
+    const total = item.total_topics + item.total_quizzes
+    const completedTopics = item.completed_topic_ids.length
+    const completedQuizzes = item.completed_quiz_ids.length
+    const completed = completedTopics + completedQuizzes
+    return {
+      ...item,
+      completed_topics: completedTopics,
+      completed_quizzes: completedQuizzes,
+      percent: total ? Math.round((completed / total) * 100) : 0,
+    }
+  }
+
+  function gradeAssessment(assessment: StudentAssessment | null | undefined, answers: Record<string, string>) {
+    const questions = assessment?.questions ?? []
+    const total = questions.length
+    const score = questions.reduce((sum, question, index) => {
+      const expected = String(question.answer ?? '').trim().toLowerCase()
+      const submitted = String(answers[String(index)] ?? '').trim().toLowerCase()
+      return expected && submitted === expected ? sum + 1 : sum
+    }, 0)
+    return { score, total }
   }
 
   async function fetchDeadlines() {

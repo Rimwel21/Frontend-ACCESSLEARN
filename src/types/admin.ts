@@ -29,10 +29,14 @@ export interface TeacherInviteOut {
 export interface SectionOut {
     id: number;
     name: string;
-    grade_level: string;
+    grade_level?: string;
+    grade_level_id?: number;
+    grade_level_name?: string;
     status: string;
     teacher_id?: number;
+    teacher_name?: string;
     student_count: number;
+    current_count?: number;
 }
 
 export interface AuditLogOut {
@@ -41,6 +45,13 @@ export interface AuditLogOut {
     role?: string;
     module: string;
     action: string;
+    affected_record?: string | null;
+    reason?: string | null;
+    ip_address?: string | null;
+    browser?: string | null;
+    os_name?: string | null;
+    device_type?: string | null;
+    location?: string | null;
     status: string;
     created_at: string;
 }

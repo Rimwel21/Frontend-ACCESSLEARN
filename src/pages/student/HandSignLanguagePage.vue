@@ -4,7 +4,7 @@
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 class="font-display text-[28px] font-black text-white">Activity Viewer</h1>
-          <p class="font-mono text-[11px] font-bold uppercase tracking-widest text-white">{{ activeActivity?.title || 'Standard and sign language modes' }}</p>
+          <p class="font-mono text-[11px] font-bold uppercase tracking-widest text-white">{{ activeActivity?.title || 'Sign Language Alphabet Reference' }}</p>
         </div>
         <button
           type="button"
@@ -19,17 +19,25 @@
 
     <div class="grid gap-5 px-7 py-6 xl:grid-cols-[minmax(0,1fr)_330px]">
       <div class="space-y-5">
-        <SignLanguageToggle v-model="signLanguageMode" :disabled="isActivityCompleted" />
+        <SignLanguageToggle v-if="activeActivity" v-model="signLanguageMode" :disabled="isActivityCompleted" />
 
         <section v-if="content.loading" class="border-[3px] border-black bg-white p-5 text-sm font-black" style="box-shadow:4px 4px 0 #000">
           Loading activity...
         </section>
 
-        <section v-else-if="content.error || !activeActivity" class="border-[3px] border-black bg-red-50 p-5 text-sm font-black text-red-700" style="box-shadow:4px 4px 0 #000">
+        <section v-else-if="content.error || (!activeActivity && !isAlphabetOnly)" class="border-[3px] border-black bg-red-50 p-5 text-sm font-black text-red-700" style="box-shadow:4px 4px 0 #000">
           {{ content.error || 'Activity not found.' }}
         </section>
 
-        <section v-else class="border-[3px] border-black bg-[#FFE135] p-5" style="box-shadow:4px 4px 0 #000">
+        <section v-else-if="isAlphabetOnly" class="border-[3px] border-black bg-[#FFE135] p-5" style="box-shadow:4px 4px 0 #000">
+          <div class="font-mono text-[10px] font-black uppercase tracking-widest">Offline-ready reference</div>
+          <h2 class="mt-2 font-display text-xl font-black">Sign Language Alphabet</h2>
+          <p class="mt-2 text-sm font-bold text-gray-700">
+            Review the alphabet hand signs using the reference chart. This page remains available offline after it has been opened once.
+          </p>
+        </section>
+
+        <section v-else-if="activeActivity" class="border-[3px] border-black bg-[#FFE135] p-5" style="box-shadow:4px 4px 0 #000">
           <div class="font-mono text-[10px] font-black uppercase tracking-widest">Question {{ activeQuestionIndex + 1 }} of {{ activeActivity.questions.length }}</div>
           <h2 class="mt-2 font-display text-xl font-black">{{ activeQuestion?.prompt }}</h2>
           <p class="mt-2 text-sm font-bold text-gray-700">{{ activeActivity.description }}</p>
@@ -131,7 +139,8 @@
               <dd class="text-right font-bold">{{ scoreLabel }}</dd>
             </div>
           </dl>
-          <p v-if="submitMessage" class="mt-4 border-[3px] border-black bg-[#D6E4FF] px-3 py-2 text-xs font-black">{{ submitMessage }}</p>
+          <p v-if="isAlphabetOnly" class="mt-4 border-[3px] border-black bg-[#D6E4FF] px-3 py-2 text-xs font-black">Available offline after first visit.</p>
+          <p v-else-if="submitMessage" class="mt-4 border-[3px] border-black bg-[#D6E4FF] px-3 py-2 text-xs font-black">{{ submitMessage }}</p>
         </section>
       </aside>
     </div>
@@ -211,6 +220,7 @@ const resultPopup = ref<{
 } | null>(null)
 
 const activityId = computed(() => route.query.activityId ? Number(route.query.activityId) : null)
+const isAlphabetOnly = computed(() => !activityId.value)
 const activeActivity = computed(() => content.currentActivity)
 const activeQuestion = computed(() => activeActivity.value?.questions[activeQuestionIndex.value] ?? null)
 const isHearingImpaired = computed(() => {
