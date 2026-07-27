@@ -1,10 +1,10 @@
 <template>
   <div class="min-h-screen bg-surface">
-    <div class="border-b-[3px] border-brand-teal bg-gradient-to-r from-brand-blue to-brand-teal px-8 py-6 shadow-card">
-      <h1 class="font-display text-[28px] font-black text-white">Activity</h1>
+    <div class="border-b-[3px] border-brand-teal bg-gradient-to-r from-brand-blue to-brand-teal px-4 py-5 shadow-card sm:px-8 sm:py-6">
+      <h1 class="font-display text-2xl font-black text-white sm:text-[28px]">Activities</h1>
     </div>
 
-    <div class="px-7 py-6">
+    <div class="px-4 py-5 sm:px-7 sm:py-6">
       <div class="grid items-start gap-5 xl:grid-cols-[1fr_240px]">
         <div>
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -32,7 +32,7 @@
             <div
               v-for="act in activities"
               :key="act.id"
-              class="flex cursor-pointer items-center gap-4 border-[3px] border-brand-teal bg-white p-4 shadow-card transition-all hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover"
+              class="flex cursor-pointer flex-wrap items-center gap-3 border-[3px] border-brand-teal bg-white p-4 shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover sm:flex-nowrap sm:gap-4"
               @click="openActivity(act)"
             >
               <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center border-[3px] border-brand-teal bg-brand-blue-soft text-xs font-black text-brand-blue">
@@ -45,16 +45,15 @@
                 <div class="mt-1 font-mono text-[10px] font-bold text-ink-soft">{{ act.category || 'Activity' }}</div>
               </div>
 
-              <div class="flex-shrink-0 text-right">
-                <div class="font-mono text-[11px] font-bold text-ink">{{ act.category || 'Activity' }}</div>
-                <div class="font-mono text-[10px] text-ink-soft">{{ act.timeLimit || 'No time limit' }}</div>
+              <div class="flex items-center gap-3 ml-auto">
+                <div class="text-right">
+                  <div class="font-mono text-[11px] font-bold text-ink">{{ act.timeLimit || 'No time limit' }}</div>
+                </div>
+                <span :class="['border-[2px] border-brand-teal px-2.5 py-1.5 font-mono text-[10px] font-black', statusStyle(act.status)]">
+                  {{ act.status }}
+                </span>
+                <svg class="h-4 w-4 flex-shrink-0 text-ink-soft" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
               </div>
-
-              <span :class="['flex-shrink-0 border-[2px] border-brand-teal px-2.5 py-1.5 font-mono text-[10px] font-black', statusStyle(act.status)]">
-                {{ act.status }}
-              </span>
-
-              <span class="flex-shrink-0 text-lg font-black">&gt;</span>
             </div>
           </div>
         </div>

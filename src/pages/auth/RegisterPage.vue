@@ -31,16 +31,13 @@
               </div>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label class="field-label" for="student-email">Email</label>
-                <input id="student-email" v-model.trim="studentEmail" class="input-field mt-2" type="email" placeholder="student@school.edu" required />
-              </div>
+            <div>
               <div>
                 <label class="field-label" for="student-lrn">Student LRN</label>
                 <input id="student-lrn" v-model.trim="studentLrn" class="input-field mt-2" type="text" inputmode="numeric" placeholder="109290120032" minlength="12" maxlength="12" required />
               </div>
             </div>
+
 
             <div class="grid gap-4 sm:grid-cols-2">
               <div>
@@ -56,6 +53,17 @@
                   <option :value="null" disabled>{{ sectionsLoading ? 'Loading sections...' : 'Select section' }}</option>
                   <option v-for="section in sections" :key="section.id" :value="section.id">{{ section.name }}</option>
                 </select>
+              </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="field-label" for="student-guardian-name">Guardian&apos;s Name <span class="text-ink-soft font-normal">(optional)</span></label>
+                <input id="student-guardian-name" v-model.trim="studentGuardiansName" class="input-field mt-2" type="text" placeholder="Maria Dela Cruz" maxlength="100" />
+              </div>
+              <div>
+                <label class="field-label" for="student-guardian-contact">Guardian&apos;s Contact No. <span class="text-ink-soft font-normal">(optional)</span></label>
+                <input id="student-guardian-contact" v-model.trim="studentGuardiansContact" class="input-field mt-2" type="tel" placeholder="09XXXXXXXXX" maxlength="20" />
               </div>
             </div>
 
@@ -81,6 +89,16 @@
               <label class="field-label" for="student-confirm">Confirm password</label>
               <input id="student-confirm" v-model="studentConfirmPassword" class="input-field mt-2" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required />
             </div>
+
+            <div>
+              <label class="field-label" for="student-profile-image">Profile Image</label>
+              <input id="student-profile-image" class="input-field mt-2" type="file" accept="image/png,image/jpeg,image/webp" @change="onStudentProfileImageSelect" />
+              <div v-if="studentImagePreview" class="mt-2 flex items-center gap-4 p-2 bg-slate-50 rounded-lg">
+                <img :src="studentImagePreview" alt="Profile Image preview" class="h-16 w-16 rounded-full object-cover" />
+                <span class="text-xs text-ink-soft">Selected profile image preview</span>
+              </div>
+            </div>
+
 
             <p v-if="message" class="status-success" role="status">{{ message }}</p>
             <p v-if="validationError" class="status-error" role="alert">{{ validationError }}</p>
@@ -259,12 +277,33 @@ const verifiedEmailRef = ref(localStorage.getItem('teacher_verified_email') || '
 
 const studentFullName = ref('')
 const studentUsername = ref('')
-const studentEmail = ref('')
 const studentLrn = ref('')
 const studentGradeLevelId = ref<number | null>(null)
 const studentSectionId = ref<number | null>(null)
 const studentAccessibilityProfile = ref('')
 const studentConfirmPassword = ref('')
+const studentGuardiansName = ref('')
+const studentGuardiansContact = ref('')
+
+const studentImagePreview = ref('')
+const studentImageBase64 = ref<string | null>(null)
+
+function onStudentProfileImageSelect(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0] ?? null
+  if (!file) {
+    studentImagePreview.value = ''
+    studentImageBase64.value = null
+    return
+  }
+  studentImagePreview.value = URL.createObjectURL(file)
+  const reader = new FileReader()
+  reader.onload = () => {
+    studentImageBase64.value = reader.result as string
+  }
+  reader.readAsDataURL(file)
+}
+
 const gradeLevels = ref<GradeLevelOption[]>([])
 const sections = ref<SectionOption[]>([])
 const academicLoading = ref(false)
@@ -563,12 +602,6 @@ async function submitStudentRegister() {
     return
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(studentEmail.value.trim())) {
-    validationError.value = 'Enter a valid email address.'
-    return
-  }
-
   if (!/^\d{12}$/.test(studentLrn.value.trim())) {
     validationError.value = 'Student LRN must be exactly 12 digits.'
     return
@@ -602,7 +635,6 @@ async function submitStudentRegister() {
   try {
     await auth.register({
       role: 'student',
-      email: studentEmail.value.trim(),
       username: studentUsername.value.trim(),
       password: password.value,
       full_name: studentFullName.value.trim(),
@@ -610,12 +642,14 @@ async function submitStudentRegister() {
       grade_level_id: studentGradeLevelId.value,
       section_id: studentSectionId.value,
       accessibility_profile: studentAccessibilityProfile.value,
+      profile_image: studentImageBase64.value,
+      guardians_name: studentGuardiansName.value.trim() || null,
+      guardians_contact_no: studentGuardiansContact.value.trim() || null,
     })
 
     message.value = 'Your student account was created. You can now sign in.'
     studentFullName.value = ''
     studentUsername.value = ''
-    studentEmail.value = ''
     studentLrn.value = ''
     studentGradeLevelId.value = null
     studentSectionId.value = null
@@ -623,9 +657,14 @@ async function submitStudentRegister() {
     sections.value = []
     studentConfirmPassword.value = ''
     password.value = ''
+    studentImagePreview.value = ''
+    studentImageBase64.value = null
+    studentGuardiansName.value = ''
+    studentGuardiansContact.value = ''
   } catch {
     // auth store owns the visible error
   }
+
 }
 
 async function handleRequestOtp() {

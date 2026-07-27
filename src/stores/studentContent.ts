@@ -69,6 +69,16 @@ interface ProgressResponse {
   percent: number
 }
 
+interface QuizStartResponse {
+  started_at: string | null
+  time_limit_seconds: number | null
+  expired: boolean
+  completed: boolean
+  score?: number | null
+  total?: number | null
+  progress?: ProgressResponse
+}
+
 export const useStudentContentStore = defineStore('studentContent', () => {
   const modules = ref<StudentModule[]>([])
   const activities = ref<StudentAssessment[]>([])
@@ -183,6 +193,7 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       })
       progress.value = result.progress
       progressByModule.value[Number(moduleId)] = progress.value
+      markModuleAssessmentCompleted(moduleId, quizId, result.score, result.total)
       await fetchDeadlines()
       return result
     } catch (err) {
@@ -192,9 +203,38 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       const result = gradeAssessment(quiz, answers)
       progress.value = applyLocalQuizProgress(Number(moduleId), quizId)
       progressByModule.value[Number(moduleId)] = progress.value
+      markModuleAssessmentCompleted(moduleId, quizId, result.score, result.total)
       await fetchDeadlines()
       return { ...result, progress: progress.value, offline: true }
     }
+  }
+
+  async function startQuiz(moduleId: string | number, quizId: number) {
+    const auth = useAuthStore()
+    if (!auth.token) return null
+    const result = await apiFetch<QuizStartResponse>(`/student/modules/${moduleId}/quizzes/${quizId}/start`, {
+      method: 'POST',
+      token: auth.token,
+    })
+    if (result.progress) {
+      progress.value = result.progress
+      progressByModule.value[Number(moduleId)] = progress.value
+    }
+    if (result.completed) {
+      markModuleAssessmentCompleted(moduleId, quizId, result.score ?? 0, result.total ?? 0)
+      await fetchDeadlines()
+    }
+    return result
+  }
+
+  async function saveQuizAnswers(moduleId: string | number, quizId: number, answers: Record<string, string>) {
+    const auth = useAuthStore()
+    if (!auth.token) return null
+    return apiFetch<{ detail: string }>(`/student/modules/${moduleId}/quizzes/${quizId}/answers`, {
+      method: 'POST',
+      token: auth.token,
+      body: JSON.stringify({ answers }),
+    })
   }
 
   async function fetchActivities() {
@@ -389,9 +429,25 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       .sort((a, b) => new Date(a.due_at).getTime() - new Date(b.due_at).getTime())
   }
 
+  function markModuleAssessmentCompleted(moduleId: string | number, assessmentId: number, score: number, total: number) {
+    if (currentModule.value?.id !== Number(moduleId)) return
+    currentModule.value = {
+      ...currentModule.value,
+      assessments: currentModule.value.assessments.map(assessment => assessment.id === assessmentId
+        ? {
+            ...assessment,
+            student_status: 'completed',
+            student_score: score,
+            student_total: total,
+            student_completed_at: new Date().toISOString(),
+          }
+        : assessment),
+    }
+  }
+
   return {
     modules, activities, currentActivity, currentModule, deadlines, progress, progressByModule, sortedTopics, loading, error,
     fetchModules, fetchModule, fetchActivities, fetchActivity, fetchProgress, fetchAllProgress,
-    fetchDeadlines, markTopic, submitQuiz, submitAssessment, submitActivity,
+    fetchDeadlines, markTopic, startQuiz, saveQuizAnswers, submitQuiz, submitAssessment, submitActivity,
   }
 })

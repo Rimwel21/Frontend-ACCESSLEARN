@@ -133,6 +133,8 @@ interface ClassStudent {
   name: string
   username?: string | null
   email?: string | null
+  guardiansName?: string | null
+  guardiansContactNo?: string | null
   gradeLevel: string
   section: string
   createdAt?: string | null
@@ -157,6 +159,8 @@ interface ClassStudentResponse {
   name: string
   username?: string | null
   email?: string | null
+  guardians_name?: string | null
+  guardians_contact_no?: string | null
   grade_level: { id: number; name: string }
   section: { id: number; name: string; grade_level_id: number }
   created_at?: string | null
@@ -276,6 +280,7 @@ export const useTeacherStore = defineStore('teacher', () => {
   const students = ref<StudentRow[]>([])
 
   const classes = ref<ClassInfo[]>([])
+  const availableClasses = ref<ClassInfo[]>([])
   const selectedClassId = ref<string | null>(null)
 
   const selectedClass = computed(() => classes.value.find(c => c.id === selectedClassId.value) ?? null)
@@ -311,7 +316,8 @@ export const useTeacherStore = defineStore('teacher', () => {
     className: string
     subject: string
     gradeLevelId: number
-    sectionId: number
+    sectionId?: number | null
+    section?: string | null
     schoolYear?: string | null
   }) {
     const auth = useAuthStore()
@@ -327,7 +333,8 @@ export const useTeacherStore = defineStore('teacher', () => {
           class_name: payload.className,
           subject: payload.subject,
           grade_level_id: payload.gradeLevelId,
-          section_id: payload.sectionId,
+          section_id: payload.sectionId ?? null,
+          section: payload.section ?? null,
           school_year: payload.schoolYear || null,
         }),
       })
@@ -603,7 +610,6 @@ export const useTeacherStore = defineStore('teacher', () => {
     description: string
     activityType: string
     week: string
-    timeLimit: string
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
@@ -629,7 +635,6 @@ export const useTeacherStore = defineStore('teacher', () => {
         description: string
         activityType?: string
         week?: string
-        timeLimit?: string
         attemptsAllowed?: number
         shuffleQuestions?: boolean
         showAnswersAfterSubmission?: boolean
@@ -649,7 +654,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           description: formPayload.description,
           category: formPayload.activityType ?? 'Activity',
           week: formPayload.week ?? '',
-          time_limit: formPayload.timeLimit ?? '',
+          time_limit: null,
           attempts_allowed: formPayload.attemptsAllowed ?? 1,
           shuffle_questions: formPayload.shuffleQuestions ?? true,
           show_answers_after_submission: formPayload.showAnswersAfterSubmission ?? true,
@@ -727,7 +732,6 @@ export const useTeacherStore = defineStore('teacher', () => {
     description: string
     activityType: string
     week: string
-    timeLimit: string
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
@@ -751,7 +755,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           description: payload.description,
           category: payload.activityType,
           week: payload.week,
-          time_limit: payload.timeLimit,
+          time_limit: null,
           attempts_allowed: payload.attemptsAllowed,
           shuffle_questions: payload.shuffleQuestions,
           show_answers_after_submission: payload.showAnswersAfterSubmission,
@@ -812,14 +816,68 @@ export const useTeacherStore = defineStore('teacher', () => {
     }
   }
 
+  async function fetchAvailableClasses() {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    classesLoading.value = true
+    classError.value = ''
+    try {
+      const data = await apiFetch<TeacherClassResponse[]>('/teacher/sections/available', { token: auth.token })
+      availableClasses.value = data.map(mapClassResponse)
+    } catch (err) {
+      classError.value = err instanceof Error ? err.message : 'Unable to load available sections'
+    } finally {
+      classesLoading.value = false
+    }
+  }
+
+  async function selectClassAction(sectionId: string) {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    classSaving.value = true
+    classError.value = ''
+    try {
+      await apiFetch<TeacherClassResponse>(`/teacher/sections/${sectionId}/select`, {
+        method: 'POST',
+        token: auth.token,
+      })
+      await fetchClasses()
+      await fetchAvailableClasses()
+    } catch (err) {
+      classError.value = err instanceof Error ? err.message : 'Unable to select section'
+    } finally {
+      classSaving.value = false
+    }
+  }
+
+  async function unselectClassAction(sectionId: string) {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    classSaving.value = true
+    classError.value = ''
+    try {
+      await apiFetch<TeacherClassResponse>(`/teacher/sections/${sectionId}/unselect`, {
+        method: 'POST',
+        token: auth.token,
+      })
+      await fetchClasses()
+      await fetchAvailableClasses()
+    } catch (err) {
+      classError.value = err instanceof Error ? err.message : 'Unable to unselect section'
+    } finally {
+      classSaving.value = false
+    }
+  }
+
   return {
     teacherName, modules, performers, recentActivities, students, quizzes, activities, dashboardSummary,
-    classes, selectedClassId, selectedClass, hasClasses,
+    classes, availableClasses, selectedClassId, selectedClass, hasClasses,
     modulesLoading, moduleSaving, moduleError, quizSaving, quizError, activitySaving, activityError,
     classesLoading, classSaving, classError, classStudents, classStudentsLoading,
     publishedModules, unpublishedModules, atRiskStudents,
     fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchAssessments, addQuiz, updateQuiz, deleteQuiz, addActivity, updateActivity, deleteActivity,
     fetchClasses, addClass, selectClass, deleteClass, fetchClassStudents,
+    fetchAvailableClasses, selectClassAction, unselectClassAction,
   }
 })
 
@@ -843,6 +901,8 @@ function mapClassStudentResponse(student: ClassStudentResponse): ClassStudent {
     name: student.name,
     username: student.username,
     email: student.email,
+    guardiansName: student.guardians_name,
+    guardiansContactNo: student.guardians_contact_no,
     gradeLevel: student.grade_level?.name ?? '',
     section: student.section?.name ?? '',
     createdAt: student.created_at ? new Date(student.created_at).toLocaleDateString() : null,
@@ -985,14 +1045,14 @@ function mapActivityResponse(assessment: TeacherAssessmentResponse): Activity {
     topicId: assessment.topic_id,
     category: assessment.category,
     week: assessment.week,
-    timeLimit: assessment.time_limit,
+    timeLimit: null,
     attemptsAllowed: assessment.attempts_allowed,
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,
     dueAt: assessment.due_at ?? null,
     createdAt: assessment.created_at ? new Date(assessment.created_at).toLocaleDateString() : null,
     dueDate: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString() : '',
-    dueTime: assessment.time_limit ?? '',
+    dueTime: '',
     status: (assessment.submissions_count ?? submissions.length) > 0 ? 'Finished' : 'Not Started',
     questions: assessment.questions,
     submissionsCount: assessment.submissions_count ?? submissions.length,

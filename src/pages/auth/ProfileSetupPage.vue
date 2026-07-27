@@ -53,18 +53,11 @@
                 <option value="hearing impaired">Hearing Impaired</option>
               </select>
             </div>
-            <div>
-              <label class="field-label" for="guardian">Guardian Name</label>
-              <input id="guardian" v-model.trim="studentForm.guardians_name" class="input-field" />
-            </div>
-            <div>
-              <label class="field-label" for="guardian-contact">Guardian Contact</label>
-              <input id="guardian-contact" v-model.trim="studentForm.guardians_contact_no" class="input-field" />
-            </div>
             <div class="md:col-span-2">
               <label class="field-label" for="student-address">Address</label>
               <textarea id="student-address" v-model.trim="studentForm.address" class="input-field min-h-24 resize-y" />
             </div>
+
           </template>
 
           <template v-else>

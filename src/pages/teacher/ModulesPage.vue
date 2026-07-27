@@ -14,7 +14,7 @@
           <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-blue text-xs font-black text-white">LM</span>
           <div>
             <div class="font-display text-sm font-bold text-ink">Learning Materials</div>
-            <div class="text-xs font-semibold text-ink-soft">Upload PDFs for student lessons</div>
+            <div class="text-xs font-semibold text-ink-soft">Upload PDF or DOCX files for student lessons</div>
           </div>
         </div>
       </RouterLink>
@@ -155,7 +155,7 @@
               <section class="figma-panel flex min-h-72 flex-col justify-between">
                 <div>
                   <h3 class="figma-card-title mb-1">Upload File</h3>
-                  <p class="text-xs font-semibold text-ink-soft">PDF files are parsed into readable topics after saving.</p>
+                  <p class="text-xs font-semibold text-ink-soft">PDF and DOCX files are parsed into readable topics after saving.</p>
                 </div>
                 <label
                   :class="[
@@ -167,11 +167,11 @@
                   @dragleave.prevent="isDraggingFile = false"
                   @drop.prevent="onFileDrop"
                 >
-                  <input class="sr-only" type="file" accept=".pdf" @change="onFileChange" />
-                  <span class="text-sm font-bold">{{ editingMaterialId ? 'Choose a new file to replace the current upload' : 'Drop your PDF here' }}</span>
+                  <input class="sr-only" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" @change="onFileChange" />
+                  <span class="text-sm font-bold">{{ editingMaterialId ? 'Choose a new file to replace the current upload' : 'Drop your PDF or DOCX here' }}</span>
                   <span class="figma-button">Browse File</span>
                   <span v-if="fileName" class="max-w-full truncate text-xs font-semibold text-ink-soft">{{ fileName }}</span>
-                  <span v-else class="text-xs font-semibold text-ink-soft">PDF only</span>
+                  <span v-else class="text-xs font-semibold text-ink-soft">PDF or DOCX only</span>
                 </label>
               </section>
             </div>
@@ -223,8 +223,8 @@ import { useRouter } from 'vue-router'
 import { learningWeekOptions } from '@/constants/learning'
 import { useTeacherStore } from '@/stores/teacher'
 
-const allowedExtensions = ['.pdf']
-const contentTypeOptions = ['PDF']
+const allowedExtensions = ['.pdf', '.docx']
+const contentTypeOptions = ['PDF', 'DOCX']
 const store = useTeacherStore()
 const router = useRouter()
 const search = ref('')
@@ -326,13 +326,14 @@ function setSelectedFile(file: File | null, input?: HTMLInputElement) {
   const lowerName = file.name.toLowerCase()
   const isAllowed = allowedExtensions.some(extension => lowerName.endsWith(extension))
   if (!isAllowed) {
-    formError.value = 'Unsupported file type. Upload PDF files only.'
+    formError.value = 'Unsupported file type. Upload PDF or DOCX files only.'
     if (input) input.value = ''
     return
   }
 
   selectedFile.value = file
   fileName.value = file.name
+  form.value.contentType = lowerName.endsWith('.docx') ? 'DOCX' : 'PDF'
   formError.value = ''
 }
 
@@ -346,7 +347,7 @@ async function submitMaterial() {
   }
 
   if (!editingMaterialId.value && !selectedFile.value) {
-    formError.value = 'Please select a PDF file.'
+    formError.value = 'Please select a PDF or DOCX file.'
     return
   }
 

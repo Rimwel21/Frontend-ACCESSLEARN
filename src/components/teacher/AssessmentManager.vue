@@ -17,10 +17,9 @@
         ]"
       >
         <div class="flex items-center gap-3">
-          <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-blue text-xs font-black text-white">LM</span>
           <div>
             <div class="font-display text-sm font-bold text-ink">Learning Materials</div>
-            <div class="text-xs font-semibold text-ink-soft">Upload PDFs for student lessons</div>
+            <div class="text-xs font-semibold text-ink-soft">Upload PDF or DOCX files for student lessons</div>
           </div>
         </div>
       </RouterLink>
