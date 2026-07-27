@@ -106,6 +106,9 @@
             <div class="font-mono text-[10px] font-black uppercase tracking-widest">Quiz</div>
             <h2 class="mt-1 font-display text-2xl font-black">{{ activeQuiz.title }}</h2>
             <p class="mt-2 text-sm text-gray-700">{{ activeQuiz.description }}</p>
+            <p v-if="quizTimerLabel" class="mt-3 font-mono text-[11px] font-black uppercase tracking-widest">
+              Time Remaining: {{ quizTimerLabel }}
+            </p>
           </div>
 
           <div v-if="quizResult" class="border-[3px] border-black bg-green-50 p-4 font-black text-green-800" style="box-shadow:4px 4px 0 #000">
@@ -115,12 +118,12 @@
           <div v-for="(question, index) in activeQuiz.questions" :key="index" class="border-[3px] border-black bg-white p-5" style="box-shadow:4px 4px 0 #000">
             <label class="block text-sm font-black">Question {{ index + 1 }}</label>
             <p class="mt-1 text-sm text-gray-700">{{ question.prompt }}</p>
-            <input v-model="quizAnswers[String(index)]" class="mt-3 w-full border-[2px] border-black px-3 py-2 text-sm outline-none focus:bg-[#D6E4FF]" placeholder="Your answer" />
+            <input v-model="quizAnswers[String(index)]" class="mt-3 w-full border-[2px] border-black px-3 py-2 text-sm outline-none focus:bg-[#D6E4FF] disabled:opacity-60" :disabled="quizLocked" placeholder="Your answer" @input="saveActiveQuizAnswers" />
           </div>
 
           <div class="flex justify-end">
-            <button class="border-[3px] border-black bg-[#1565FF] px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px]" style="box-shadow:4px 4px 0 #000" @click="submitActiveQuiz">
-              Submit Quiz
+            <button class="border-[3px] border-black bg-[#1565FF] px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px] disabled:opacity-60" :disabled="quizLocked || quizSubmitting" style="box-shadow:4px 4px 0 #000" @click="submitActiveQuiz()">
+              {{ quizSubmitting ? 'Submitting...' : quizLocked ? 'Submitted' : 'Submit Quiz' }}
             </button>
           </div>
         </article>
@@ -164,11 +167,42 @@
         </article>
       </section>
     </main>
+
+    <Teleport to="body">
+      <div
+        v-if="pendingQuizId"
+        class="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4"
+        @click.self="cancelQuizStart"
+      >
+        <section class="w-full max-w-sm border-[3px] border-black bg-white p-5" style="box-shadow:6px 6px 0 #000">
+          <h2 class="font-display text-xl font-black">Start Quiz?</h2>
+          <p class="mt-3 text-sm font-bold text-gray-700">Once you start this quiz, the timer will begin immediately. Make sure you are ready before continuing.</p>
+          <div class="mt-5 flex justify-end gap-3">
+            <button
+              type="button"
+              class="border-[3px] border-black bg-white px-4 py-2.5 text-xs font-black"
+              style="box-shadow:3px 3px 0 #000"
+              @click="cancelQuizStart"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="border-[3px] border-black bg-[#1565FF] px-4 py-2.5 text-xs font-black text-white"
+              style="box-shadow:3px 3px 0 #000"
+              @click="confirmQuizStart"
+            >
+              Start Quiz
+            </button>
+          </div>
+        </section>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { API_BASE_URL } from '@/lib/api'
 import { useStudentContentStore } from '@/stores/studentContent'
@@ -177,8 +211,13 @@ const route = useRoute()
 const content = useStudentContentStore()
 const activeTopicId = ref<number | null>(null)
 const activeQuizId = ref<number | null>(null)
+const pendingQuizId = ref<number | null>(null)
 const quizAnswers = ref<Record<string, string>>({})
 const quizResult = ref<{ score: number; total: number } | null>(null)
+const quizRemainingSeconds = ref<number | null>(null)
+const quizSubmitting = ref(false)
+const quizTimeExpired = ref(false)
+let quizTimer: number | null = null
 
 const moduleId = computed(() => String(route.params.moduleId))
 const moduleData = computed(() => content.currentModule)
@@ -194,10 +233,19 @@ const quizUnlocked = computed(() => topics.value.length > 0 && progress.value.co
 const isIntroActive = computed(() => !activeTopicId.value && !activeQuizId.value)
 const headerTitle = computed(() => activeQuiz.value?.title || activeTopic.value?.title || moduleData.value?.title || 'Learning Content')
 const headerDescription = computed(() => activeQuiz.value?.description || activeTopic.value?.description || moduleData.value?.description || 'Module description')
+const quizLocked = computed(() => Boolean(quizResult.value) || quizTimeExpired.value || activeQuiz.value?.student_status === 'completed')
+const quizTimerLabel = computed(() => {
+  if (quizRemainingSeconds.value === null) return ''
+  return formatQuizTime(quizRemainingSeconds.value)
+})
 
 onMounted(async () => {
   await content.fetchModule(moduleId.value)
   activeTopicId.value = null
+})
+
+onBeforeUnmount(() => {
+  clearQuizTimer()
 })
 
 watch(topics, value => {
@@ -207,6 +255,9 @@ watch(topics, value => {
 async function selectTopic(topicId: number) {
   const index = topics.value.findIndex(topic => topic.id === topicId)
   if (index < 0 || !isTopicUnlocked(index)) return
+  clearQuizTimer()
+  quizTimeExpired.value = false
+  pendingQuizId.value = null
   activeQuizId.value = null
   quizResult.value = null
   activeTopicId.value = topicId
@@ -222,17 +273,43 @@ function isTopicUnlocked(index: number) {
 }
 
 function selectIntro() {
+  clearQuizTimer()
+  quizTimeExpired.value = false
+  pendingQuizId.value = null
   activeTopicId.value = null
   activeQuizId.value = null
   quizResult.value = null
 }
 
-function selectQuiz(quizId: number) {
+async function selectQuiz(quizId: number) {
   if (!quizUnlocked.value) return
+  pendingQuizId.value = quizId
+}
+
+function cancelQuizStart() {
+  pendingQuizId.value = null
+}
+
+async function confirmQuizStart() {
+  if (!pendingQuizId.value) return
+  const quizId = pendingQuizId.value
+  pendingQuizId.value = null
+  clearQuizTimer()
+  quizTimeExpired.value = false
   activeQuizId.value = quizId
   activeTopicId.value = null
   quizAnswers.value = {}
   quizResult.value = null
+  const timer = await content.startQuiz(moduleId.value, quizId).catch(() => null)
+  if (!timer) return
+  if (timer.completed) {
+    quizTimeExpired.value = timer.expired
+    quizResult.value = { score: timer.score ?? 0, total: timer.total ?? 0 }
+    return
+  }
+  if (timer.started_at && timer.time_limit_seconds) {
+    startQuizTimer(timer.started_at, timer.time_limit_seconds)
+  }
 }
 
 async function goPrevious() {
@@ -253,22 +330,72 @@ async function goNext() {
   if (!activeTopic.value) return
   await content.markTopic(moduleId.value, activeTopic.value.id, 'completed')
   if (activeIndex.value >= topics.value.length - 1) {
-    if (quizzes.value.length) selectQuiz(quizzes.value[0].id)
+    if (quizzes.value.length) await selectQuiz(quizzes.value[0].id)
     return
   }
   const next = topics.value[activeIndex.value + 1]
   await selectTopic(next.id)
 }
 
-async function submitActiveQuiz() {
+async function submitActiveQuiz(autoSubmit = false) {
   if (!activeQuiz.value) return
-  const result = await content.submitQuiz(moduleId.value, activeQuiz.value.id, quizAnswers.value)
-  if (result) quizResult.value = { score: result.score, total: result.total }
+  if (quizSubmitting.value || (quizLocked.value && !autoSubmit)) return
+  quizSubmitting.value = true
+  try {
+    const result = await content.submitQuiz(moduleId.value, activeQuiz.value.id, quizAnswers.value)
+    if (result) quizResult.value = { score: result.score, total: result.total }
+    clearQuizTimer()
+  } finally {
+    quizSubmitting.value = false
+  }
+}
+
+function saveActiveQuizAnswers() {
+  if (!activeQuiz.value || quizLocked.value) return
+  void content.saveQuizAnswers(moduleId.value, activeQuiz.value.id, quizAnswers.value).catch(() => null)
 }
 
 function assetUrl(url?: string | null) {
   if (!url) return ''
   if (url.startsWith('http')) return url
   return `${API_BASE_URL}${url}`
+}
+
+function startQuizTimer(startedAt: string, limitSeconds: number) {
+  const startedMs = new Date(startedAt).getTime()
+  if (Number.isNaN(startedMs) || limitSeconds <= 0) return
+
+  const updateRemaining = () => {
+    const elapsedSeconds = Math.floor((Date.now() - startedMs) / 1000)
+    const remaining = Math.max(0, limitSeconds - elapsedSeconds)
+    quizRemainingSeconds.value = remaining
+    if (remaining === 0) {
+      clearQuizTimer()
+      quizTimeExpired.value = true
+      void submitActiveQuiz(true)
+    }
+  }
+
+  updateRemaining()
+  if (quizRemainingSeconds.value === 0) return
+  quizTimer = window.setInterval(updateRemaining, 1000)
+}
+
+function clearQuizTimer() {
+  if (quizTimer !== null) {
+    window.clearInterval(quizTimer)
+    quizTimer = null
+  }
+  quizRemainingSeconds.value = null
+}
+
+function formatQuizTime(seconds: number) {
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const remainingSeconds = seconds % 60
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
+  }
+  return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`
 }
 </script>

@@ -63,7 +63,7 @@
               </div>
             </td>
             <td class="table-td font-mono text-xs">
-              <div>{{ s.activitiesCompleted }}/{{ s.activitiesTotal }}</div>
+              <div>{{ s.activitiesCompleted }} / {{ s.activitiesTotal }}</div>
               <div class="mt-1 text-[11px] text-ink-soft">{{ s.activityPercent }}%</div>
             </td>
             <td class="table-td font-mono text-xs">{{ s.quizActivity }}</td>

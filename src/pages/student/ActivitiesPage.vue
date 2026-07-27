@@ -49,7 +49,6 @@
 
               <div class="flex-shrink-0 text-right">
                 <div class="font-mono text-[11px] font-bold text-gray-700">{{ act.category || 'Activity' }}</div>
-                <div class="font-mono text-[10px] text-gray-500">{{ act.timeLimit || 'No time limit' }}</div>
               </div>
 
               <span :class="['flex-shrink-0 border-[2px] border-black px-2.5 py-1.5 font-mono text-[10px] font-black', statusStyle(act.status)]">
@@ -105,7 +104,6 @@ interface ActivityRow {
   title: string
   description: string
   category?: string | null
-  timeLimit?: string | null
   status: ActivityStatus
 }
 
@@ -117,7 +115,6 @@ const activities = computed<ActivityRow[]>(() => content.activities.map(assessme
   title: assessment.title,
   description: assessment.description,
   category: assessment.category,
-  timeLimit: assessment.time_limit,
   status: assessment.student_status === 'completed' ? 'Finished' : 'Not Started',
 })))
 
