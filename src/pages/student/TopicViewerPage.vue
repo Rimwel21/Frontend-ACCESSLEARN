@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-screen bg-white">
-    <aside class="flex w-[220px] min-w-[220px] flex-col border-r-[3px] border-black bg-white">
-      <RouterLink to="/student/dashboard" class="mx-3 mb-2 mt-3 flex items-center gap-2 border-[3px] border-black px-3 py-2 text-xs font-black text-black no-underline transition-colors hover:bg-[#FFE135]" style="box-shadow:3px 3px 0 #000">
+    <aside class="flex w-[220px] min-w-[220px] flex-col border-r-[3px] border-brand-teal bg-white">
+      <RouterLink to="/student/dashboard" class="mx-3 mb-2 mt-3 flex items-center gap-2 border-[3px] border-brand-teal px-3 py-2 text-xs font-black text-ink no-underline transition-colors hover:bg-brand-amber">
         Go Back
       </RouterLink>
 
@@ -11,7 +11,7 @@
       </div>
 
       <div class="px-3.5 py-2">
-        <div class="h-[8px] overflow-hidden border-[2px] border-black bg-gray-200">
+        <div class="h-[8px] overflow-hidden border-[2px] border-brand-teal bg-gray-200">
           <div class="h-full bg-green-500 transition-all" :style="{ width: progress.percent + '%' }" />
         </div>
         <div class="mt-1 font-mono text-[10px] text-gray-500">{{ progress.percent }}% Progress</div>
@@ -20,10 +20,10 @@
       <div class="flex-1 space-y-2 overflow-y-auto px-3 py-2">
         <button
           :class="[
-            'flex w-full items-center gap-2.5 border-[2px] border-black px-3 py-2.5 text-left text-[13px] font-bold transition-all',
-            isIntroActive ? 'bg-[#1565FF] text-white' : 'bg-white hover:bg-[#D6E4FF]'
+            'flex w-full items-center gap-2.5 border-[2px] border-brand-teal px-3 py-2.5 text-left text-[13px] font-bold transition-all',
+            isIntroActive ? 'bg-brand-blue text-white' : 'bg-white hover:bg-brand-blue-soft'
           ]"
-          style="box-shadow:2px 2px 0 #000"
+         
           @click="selectIntro"
         >
           <span class="grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-current bg-white" />
@@ -35,14 +35,14 @@
           :key="topic.id"
           :disabled="!isTopicUnlocked(index)"
           :class="[
-            'flex w-full items-center gap-2.5 border-[2px] border-black px-3 py-2.5 text-left text-[13px] font-bold transition-all',
-            activeTopic?.id === topic.id ? 'bg-[#1565FF] text-white' : 'bg-white hover:bg-[#D6E4FF]',
+            'flex w-full items-center gap-2.5 border-[2px] border-brand-teal px-3 py-2.5 text-left text-[13px] font-bold transition-all',
+            activeTopic?.id === topic.id ? 'bg-brand-blue text-white' : 'bg-white hover:bg-brand-blue-soft',
             !isTopicUnlocked(index) ? 'cursor-not-allowed opacity-50 hover:bg-white' : ''
           ]"
           :style="isTopicUnlocked(index) ? 'box-shadow:2px 2px 0 #000' : ''"
           @click="selectTopic(topic.id)"
         >
-          <span :class="['grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-black text-[10px] font-black', completedIds.has(topic.id) ? 'bg-green-500 text-white' : 'bg-white text-black']">
+          <span :class="['grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-brand-teal text-[10px] font-black', completedIds.has(topic.id) ? 'bg-green-500 text-white' : 'bg-white text-ink']">
             {{ completedIds.has(topic.id) ? 'OK' : isTopicUnlocked(index) ? '' : 'L' }}
           </span>
           <span class="truncate">{{ topic.title || `Topic ${index + 1}` }}</span>
@@ -53,14 +53,14 @@
           :key="`quiz-${quiz.id}`"
           :disabled="!quizUnlocked"
           :class="[
-            'flex w-full items-center gap-2.5 border-[2px] border-black px-3 py-2.5 text-left text-[12px] font-bold uppercase tracking-wide transition-all',
-            activeQuiz?.id === quiz.id ? 'bg-[#FFE135] text-black' : 'bg-white hover:bg-[#FFE135]',
+            'flex w-full items-center gap-2.5 border-[2px] border-brand-teal px-3 py-2.5 text-left text-[12px] font-bold uppercase tracking-wide transition-all',
+            activeQuiz?.id === quiz.id ? 'bg-brand-amber text-ink' : 'bg-white hover:bg-brand-amber',
             !quizUnlocked ? 'cursor-not-allowed opacity-45' : ''
           ]"
           :style="quizUnlocked ? 'box-shadow:2px 2px 0 #000' : ''"
           @click="selectQuiz(quiz.id)"
         >
-          <span :class="['grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-black text-[10px] font-black', completedQuizIds.has(quiz.id) ? 'bg-green-500 text-white' : 'bg-white text-black']">
+          <span :class="['grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-brand-teal text-[10px] font-black', completedQuizIds.has(quiz.id) ? 'bg-green-500 text-white' : 'bg-white text-ink']">
             {{ completedQuizIds.has(quiz.id) ? 'OK' : 'Q' }}
           </span>
           <span class="truncate">{{ quiz.title }}</span>
@@ -69,7 +69,7 @@
     </aside>
 
     <main class="flex min-w-0 flex-1 flex-col">
-      <header class="flex items-center justify-between border-b-[3px] border-black bg-[#7B8FF0] px-8 py-6">
+      <header class="flex items-center justify-between border-b-[3px] border-brand-teal bg-brand-teal px-8 py-6">
         <div>
           <h1 class="font-display text-[32px] font-black leading-tight text-white">{{ headerTitle }}</h1>
           <p class="mt-1.5 font-display text-[13px] font-bold text-white/85">{{ headerDescription }}</p>
@@ -78,9 +78,9 @@
       </header>
 
       <section class="flex-1 overflow-y-auto bg-white p-7">
-        <div v-if="content.loading" class="border-[3px] border-black bg-white p-8 text-center font-black" style="box-shadow:4px 4px 0 #000">Loading learning content...</div>
-        <div v-else-if="content.error" class="border-[3px] border-black bg-red-50 p-8 text-center font-black text-red-700" style="box-shadow:4px 4px 0 #000">{{ content.error }}</div>
-        <div v-else-if="topics.length === 0 && !isIntroActive" class="border-[3px] border-black bg-white p-10 text-center" style="box-shadow:5px 5px 0 #000">
+        <div v-if="content.loading" class="border-[3px] border-brand-teal bg-white p-8 text-center font-black">Loading learning content...</div>
+        <div v-else-if="content.error" class="border-[3px] border-brand-teal bg-red-50 p-8 text-center font-black text-red-700">{{ content.error }}</div>
+        <div v-else-if="topics.length === 0 && !isIntroActive" class="border-[3px] border-brand-teal bg-white p-10 text-center">
           <h2 class="font-display text-xl font-black">No learning materials are available for this module yet.</h2>
           <p class="mt-2 text-sm text-gray-500">Please check again after your teacher publishes content.</p>
         </div>
@@ -91,8 +91,8 @@
           </div>
           <div class="flex justify-end pt-4">
             <button
-              class="border-[3px] border-black bg-[#1565FF] px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px] disabled:opacity-50"
-              style="box-shadow:4px 4px 0 #000"
+              class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px] disabled:opacity-50"
+             
               :disabled="topics.length === 0"
               @click="goNext"
             >
@@ -102,24 +102,24 @@
         </article>
 
         <article v-else-if="activeQuiz" class="space-y-5">
-          <div class="border-[3px] border-black bg-[#FFE135] p-5" style="box-shadow:5px 5px 0 #000">
+          <div class="border-[3px] border-brand-teal bg-brand-amber p-5">
             <div class="font-mono text-[10px] font-black uppercase tracking-widest">Quiz</div>
             <h2 class="mt-1 font-display text-2xl font-black">{{ activeQuiz.title }}</h2>
             <p class="mt-2 text-sm text-gray-700">{{ activeQuiz.description }}</p>
           </div>
 
-          <div v-if="quizResult" class="border-[3px] border-black bg-green-50 p-4 font-black text-green-800" style="box-shadow:4px 4px 0 #000">
+          <div v-if="quizResult" class="border-[3px] border-brand-teal bg-green-50 p-4 font-black text-green-800">
             Score: {{ quizResult.score }} / {{ quizResult.total }}
           </div>
 
-          <div v-for="(question, index) in activeQuiz.questions" :key="index" class="border-[3px] border-black bg-white p-5" style="box-shadow:4px 4px 0 #000">
+          <div v-for="(question, index) in activeQuiz.questions" :key="index" class="border-[3px] border-brand-teal bg-white p-5">
             <label class="block text-sm font-black">Question {{ index + 1 }}</label>
             <p class="mt-1 text-sm text-gray-700">{{ question.prompt }}</p>
-            <input v-model="quizAnswers[String(index)]" class="mt-3 w-full border-[2px] border-black px-3 py-2 text-sm outline-none focus:bg-[#D6E4FF]" placeholder="Your answer" />
+            <input v-model="quizAnswers[String(index)]" class="mt-3 w-full border-[2px] border-brand-teal px-3 py-2 text-sm outline-none focus:bg-brand-blue-soft" placeholder="Your answer" />
           </div>
 
           <div class="flex justify-end">
-            <button class="border-[3px] border-black bg-[#1565FF] px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px]" style="box-shadow:4px 4px 0 #000" @click="submitActiveQuiz">
+            <button class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px]" @click="submitActiveQuiz">
               Submit Quiz
             </button>
           </div>
@@ -146,16 +146,16 @@
 
           <div class="flex items-center justify-between pt-4">
             <button
-              class="border-[3px] border-black bg-white px-5 py-2.5 text-sm font-black transition-all hover:-translate-x-[1px] hover:-translate-y-[1px]"
-              style="box-shadow:3px 3px 0 #000"
+              class="border-[3px] border-brand-teal bg-white px-5 py-2.5 text-sm font-black transition-all hover:-translate-x-[1px] hover:-translate-y-[1px]"
+             
               @click="goPrevious"
             >
               Previous
             </button>
             <span class="font-mono text-xs text-gray-400">Topic {{ activeIndex + 1 }} of {{ topics.length }}</span>
             <button
-              class="border-[3px] border-black bg-[#1565FF] px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px]"
-              style="box-shadow:4px 4px 0 #000"
+              class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px]"
+             
               @click="goNext"
             >
               {{ activeIndex === topics.length - 1 ? 'Finish Module' : 'Next Topic' }}

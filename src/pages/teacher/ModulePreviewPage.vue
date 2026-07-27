@@ -1,17 +1,17 @@
 <template>
   <div class="min-h-screen bg-white">
-    <div class="border-b-[3px] border-black bg-[#7B8FF0] px-8 py-6">
-      <button class="mb-4 border-[3px] border-black bg-white px-4 py-2 text-xs font-black" style="box-shadow:3px 3px 0 #000" @click="router.push('/teacher/modules')">Back</button>
+    <div class="border-b-[3px] border-brand-teal bg-brand-teal px-8 py-6">
+      <button class="mb-4 border-[3px] border-brand-teal bg-white px-4 py-2 text-xs font-black" @click="router.push('/teacher/modules')">Back</button>
       <h1 class="font-display text-[32px] font-black text-white">{{ headerTitle }}</h1>
       <p class="mt-1 text-sm font-bold text-white/85">{{ headerDescription }}</p>
     </div>
 
     <div class="grid min-h-[calc(100vh-150px)] grid-cols-1 lg:grid-cols-[220px_1fr]">
-      <aside class="border-b-[3px] border-black bg-white p-3 lg:border-b-0 lg:border-r-[3px]">
+      <aside class="border-b-[3px] border-brand-teal bg-white p-3 lg:border-b-0 lg:border-r-[3px]">
         <div class="mb-3 font-mono text-[10px] uppercase tracking-widest text-gray-500">Student Preview</div>
         <button
-          :class="['mb-2 flex w-full items-center gap-2 border-[2px] border-black px-3 py-2.5 text-left text-xs font-black', isIntroActive ? 'bg-[#1565FF] text-white' : 'bg-white']"
-          style="box-shadow:2px 2px 0 #000"
+          :class="['mb-2 flex w-full items-center gap-2 border-[2px] border-brand-teal px-3 py-2.5 text-left text-xs font-black', isIntroActive ? 'bg-brand-blue text-white' : 'bg-white']"
+         
           @click="activeTopicId = null"
         >
           <span class="h-4 w-4 rounded-full border-[2px] border-current bg-white" />
@@ -20,8 +20,8 @@
         <button
           v-for="(topic, index) in topics"
           :key="topic.id"
-          :class="['mb-2 flex w-full items-center gap-2 border-[2px] border-black px-3 py-2.5 text-left text-xs font-black', activeTopic?.id === topic.id ? 'bg-[#1565FF] text-white' : 'bg-white']"
-          style="box-shadow:2px 2px 0 #000"
+          :class="['mb-2 flex w-full items-center gap-2 border-[2px] border-brand-teal px-3 py-2.5 text-left text-xs font-black', activeTopic?.id === topic.id ? 'bg-brand-blue text-white' : 'bg-white']"
+         
           @click="activeTopicId = topic.id"
         >
           <span class="h-4 w-4 rounded-full border-[2px] border-current bg-white" />
@@ -30,20 +30,20 @@
         <div
           v-for="quiz in quizzes"
           :key="`quiz-${quiz.id}`"
-          class="mb-2 flex w-full items-center gap-2 border-[2px] border-black bg-gray-50 px-3 py-2.5 text-left text-xs font-black uppercase tracking-wide opacity-70"
+          class="mb-2 flex w-full items-center gap-2 border-[2px] border-brand-teal bg-gray-50 px-3 py-2.5 text-left text-xs font-black uppercase tracking-wide opacity-70"
         >
-          <span class="grid h-4 w-4 place-items-center rounded-full border-[2px] border-black text-[9px]">Q</span>
+          <span class="grid h-4 w-4 place-items-center rounded-full border-[2px] border-brand-teal text-[9px]">Q</span>
           {{ quiz.title }}
         </div>
       </aside>
 
       <main class="overflow-y-auto p-7">
-        <div v-if="loading" class="border-[3px] border-black p-8 text-center font-black" style="box-shadow:4px 4px 0 #000">Loading preview...</div>
-        <div v-else-if="error" class="border-[3px] border-black bg-red-50 p-8 text-center font-black text-red-700" style="box-shadow:4px 4px 0 #000">{{ error }}</div>
+        <div v-if="loading" class="border-[3px] border-brand-teal p-8 text-center font-black">Loading preview...</div>
+        <div v-else-if="error" class="border-[3px] border-brand-teal bg-red-50 p-8 text-center font-black text-red-700">{{ error }}</div>
         <article v-else-if="isIntroActive" class="rounded-lg border-[2px] border-gray-200 bg-white p-6 text-sm leading-7 text-gray-700">
           {{ moduleData?.description || 'Introduction content will be available here.' }}
         </article>
-        <div v-else-if="!activeTopic" class="border-[3px] border-black p-8 text-center" style="box-shadow:4px 4px 0 #000">
+        <div v-else-if="!activeTopic" class="border-[3px] border-brand-teal p-8 text-center">
           <h2 class="font-display text-xl font-black">No generated topics yet.</h2>
           <p class="mt-2 text-sm text-gray-500">Upload or replace the learning material file to generate student content.</p>
         </div>

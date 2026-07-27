@@ -1,5 +1,5 @@
 <template>
-  <div v-if="prediction" :class="['border-[3px] border-black px-3 py-2 text-xs font-black', thresholdMet ? 'bg-[#FFE135]' : 'bg-white']">
+  <div v-if="prediction" :class="['border-[3px] border-brand-teal px-3 py-2 text-xs font-black', thresholdMet ? 'bg-brand-amber' : 'bg-white']">
     {{ prediction }} {{ confidencePercent }}%
   </div>
 </template>

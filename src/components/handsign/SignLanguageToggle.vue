@@ -1,10 +1,10 @@
 <template>
   <label
     :class="[
-      'flex items-center justify-between gap-4 border-[3px] border-black bg-white p-4',
+      'flex items-center justify-between gap-4 border-[3px] border-brand-teal bg-white p-4',
       disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
     ]"
-    style="box-shadow:4px 4px 0 #000"
+   
   >
     <span>
       <span class="block text-sm font-black">Sign Language Mode</span>
@@ -13,14 +13,14 @@
     <input v-model="enabled" type="checkbox" class="sr-only" :disabled="disabled" />
     <span
       :class="[
-        'relative h-8 w-16 flex-shrink-0 border-[3px] border-black transition-colors',
-        enabled ? 'bg-[#FFE135]' : 'bg-gray-200',
+        'relative h-8 w-16 flex-shrink-0 border-[3px] border-brand-teal transition-colors',
+        enabled ? 'bg-brand-amber' : 'bg-gray-200',
       ]"
       aria-hidden="true"
     >
       <span
         :class="[
-          'absolute top-1 h-4 w-4 border-[2px] border-black bg-white transition-transform',
+          'absolute top-1 h-4 w-4 border-[2px] border-brand-teal bg-white transition-transform',
           enabled ? 'translate-x-9' : 'translate-x-1',
         ]"
       />

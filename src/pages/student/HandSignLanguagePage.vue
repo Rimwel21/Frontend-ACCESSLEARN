@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-white">
-    <div class="border-b-[3px] border-black bg-[#1565FF] px-8 py-6">
+    <div class="border-b-[3px] border-brand-teal bg-brand-blue px-8 py-6">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 class="font-display text-[28px] font-black text-white">Activity Viewer</h1>
@@ -8,8 +8,8 @@
         </div>
         <button
           type="button"
-          class="border-[3px] border-black bg-white px-4 py-2 text-xs font-black"
-          style="box-shadow:3px 3px 0 #000"
+          class="border-[3px] border-brand-teal bg-white px-4 py-2 text-xs font-black"
+         
           @click="router.push('/student/activities')"
         >
           Back
@@ -21,15 +21,15 @@
       <div class="space-y-5">
         <SignLanguageToggle v-if="activeActivity" v-model="signLanguageMode" :disabled="isActivityCompleted" />
 
-        <section v-if="content.loading" class="border-[3px] border-black bg-white p-5 text-sm font-black" style="box-shadow:4px 4px 0 #000">
+        <section v-if="content.loading" class="border-[3px] border-brand-teal bg-white p-5 text-sm font-black">
           Loading activity...
         </section>
 
-        <section v-else-if="content.error || (!activeActivity && !isAlphabetOnly)" class="border-[3px] border-black bg-red-50 p-5 text-sm font-black text-red-700" style="box-shadow:4px 4px 0 #000">
+        <section v-else-if="content.error || (!activeActivity && !isAlphabetOnly)" class="border-[3px] border-brand-teal bg-red-50 p-5 text-sm font-black text-red-700">
           {{ content.error || 'Activity not found.' }}
         </section>
 
-        <section v-else-if="isAlphabetOnly" class="border-[3px] border-black bg-[#FFE135] p-5" style="box-shadow:4px 4px 0 #000">
+        <section v-else-if="isAlphabetOnly" class="border-[3px] border-brand-teal bg-brand-amber p-5">
           <div class="font-mono text-[10px] font-black uppercase tracking-widest">Offline-ready reference</div>
           <h2 class="mt-2 font-display text-xl font-black">Sign Language Alphabet</h2>
           <p class="mt-2 text-sm font-bold text-gray-700">
@@ -37,7 +37,7 @@
           </p>
         </section>
 
-        <section v-else-if="activeActivity" class="border-[3px] border-black bg-[#FFE135] p-5" style="box-shadow:4px 4px 0 #000">
+        <section v-else-if="activeActivity" class="border-[3px] border-brand-teal bg-brand-amber p-5">
           <div class="font-mono text-[10px] font-black uppercase tracking-widest">Question {{ activeQuestionIndex + 1 }} of {{ activeActivity.questions.length }}</div>
           <h2 class="mt-2 font-display text-xl font-black">{{ activeQuestion?.prompt }}</h2>
           <p class="mt-2 text-sm font-bold text-gray-700">{{ activeActivity.description }}</p>
@@ -69,17 +69,17 @@
             v-for="(_, index) in activeActivity.questions"
             :key="index"
             :class="[
-              'border-[3px] border-black px-3 py-2 text-xs font-black',
-              activeQuestionIndex === index ? 'bg-[#1565FF] text-white' : answers[String(index)] ? 'bg-green-200 text-black' : 'bg-white text-black'
+              'border-[3px] border-brand-teal px-3 py-2 text-xs font-black',
+              activeQuestionIndex === index ? 'bg-brand-blue text-white' : answers[String(index)] ? 'bg-green-200 text-ink' : 'bg-white text-ink'
             ]"
-            style="box-shadow:3px 3px 0 #000"
+           
             @click="selectQuestion(index)"
           >
             Q{{ index + 1 }}
           </button>
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-3 border-[3px] border-black bg-white p-4" style="box-shadow:4px 4px 0 #000">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-[3px] border-brand-teal bg-white p-4">
           <CameraControls
             v-if="signLanguageMode && !isActivityCompleted"
             :is-running="isRunning"
@@ -91,16 +91,16 @@
           <button
             v-if="activeActivity && activeQuestionIndex < activeActivity.questions.length - 1"
             type="button"
-            class="border-[3px] border-black bg-white px-5 py-2.5 text-xs font-black"
-            style="box-shadow:3px 3px 0 #000"
+            class="border-[3px] border-brand-teal bg-white px-5 py-2.5 text-xs font-black"
+           
             @click="nextQuestion"
           >
             Next Question
           </button>
           <button
             type="button"
-            class="border-[3px] border-black bg-[#FFE135] px-5 py-2.5 text-xs font-black disabled:cursor-not-allowed disabled:opacity-60"
-            style="box-shadow:3px 3px 0 #000"
+            class="border-[3px] border-brand-teal bg-brand-amber px-5 py-2.5 text-xs font-black disabled:cursor-not-allowed disabled:opacity-60"
+           
             :disabled="isActivityCompleted"
             @click="submitAnswer"
           >
@@ -110,16 +110,16 @@
       </div>
 
       <aside class="space-y-5">
-        <section class="border-[3px] border-black bg-white" style="box-shadow:5px 5px 0 #000">
-          <div class="border-b-[3px] border-black bg-[#FFE135] px-4 py-3">
+        <section class="border-[3px] border-brand-teal bg-white">
+          <div class="border-b-[3px] border-brand-teal bg-brand-amber px-4 py-3">
             <h2 class="font-display text-sm font-black uppercase tracking-widest">Reference</h2>
           </div>
           <div class="p-4">
-            <img :src="sampleSigns" alt="Reference chart for alphabet hand signs" class="w-full border-[3px] border-black bg-white object-contain" />
+            <img :src="sampleSigns" alt="Reference chart for alphabet hand signs" class="w-full border-[3px] border-brand-teal bg-white object-contain" />
           </div>
         </section>
 
-        <section class="border-[3px] border-black bg-white p-4" style="box-shadow:5px 5px 0 #000">
+        <section class="border-[3px] border-brand-teal bg-white p-4">
           <h2 class="font-display text-sm font-black uppercase tracking-widest">Mode</h2>
           <dl class="mt-3 space-y-2 text-xs">
             <div class="flex justify-between gap-3">
@@ -139,8 +139,8 @@
               <dd class="text-right font-bold">{{ scoreLabel }}</dd>
             </div>
           </dl>
-          <p v-if="isAlphabetOnly" class="mt-4 border-[3px] border-black bg-[#D6E4FF] px-3 py-2 text-xs font-black">Available offline after first visit.</p>
-          <p v-else-if="submitMessage" class="mt-4 border-[3px] border-black bg-[#D6E4FF] px-3 py-2 text-xs font-black">{{ submitMessage }}</p>
+          <p v-if="isAlphabetOnly" class="mt-4 border-[3px] border-brand-teal bg-brand-blue-soft px-3 py-2 text-xs font-black">Available offline after first visit.</p>
+          <p v-else-if="submitMessage" class="mt-4 border-[3px] border-brand-teal bg-brand-blue-soft px-3 py-2 text-xs font-black">{{ submitMessage }}</p>
         </section>
       </aside>
     </div>
@@ -151,11 +151,11 @@
         class="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4"
         @click.self="closeResultPopup"
       >
-        <section class="w-full max-w-sm border-[3px] border-black bg-white p-5" style="box-shadow:6px 6px 0 #000">
+        <section class="w-full max-w-sm border-[3px] border-brand-teal bg-white p-5">
           <div
             :class="[
-              'border-[3px] border-black px-4 py-3 font-display text-lg font-black uppercase tracking-widest',
-              resultPopup.isCorrect ? 'bg-green-200 text-black' : 'bg-[#FFE135] text-black'
+              'border-[3px] border-brand-teal px-4 py-3 font-display text-lg font-black uppercase tracking-widest',
+              resultPopup.isCorrect ? 'bg-green-200 text-ink' : 'bg-brand-amber text-ink'
             ]"
           >
             {{ resultPopup.title }}
@@ -163,8 +163,8 @@
           <p class="mt-4 text-sm font-bold text-gray-700">{{ resultPopup.message }}</p>
           <button
             type="button"
-            class="mt-5 w-full border-[3px] border-black bg-[#1565FF] px-4 py-2.5 text-xs font-black text-white"
-            style="box-shadow:3px 3px 0 #000"
+            class="mt-5 w-full border-[3px] border-brand-teal bg-brand-blue px-4 py-2.5 text-xs font-black text-white"
+           
             @click="closeResultPopup"
           >
             OK
