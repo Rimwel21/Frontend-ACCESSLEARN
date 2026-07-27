@@ -1,20 +1,20 @@
 <template>
   <div class="space-y-6">
-    <div class="gradient-brand rounded-2xl px-7 py-5 flex items-center justify-between gap-4">
+    <div class="gradient-brand rounded-2xl px-5 py-5 sm:px-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h2 class="font-display text-2xl font-bold text-white">Class Management</h2>
         <p class="text-white/75 text-sm mt-1">
           {{ store.selectedClass ? `${store.selectedClass.className} - ${store.selectedClass.subject}` : 'Create a class to get started' }}
         </p>
       </div>
-      <button @click="showAddClass = true" class="px-5 py-2.5 rounded-full border border-white/40 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold hover:bg-white/30 transition-all">
+      <button @click="showAddClass = true" class="w-full rounded-full border border-white/40 bg-white/20 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/30 sm:w-auto">
         New Class
       </button>
     </div>
 
     <div v-if="store.classesLoading" class="empty-state">Loading classes...</div>
 
-    <div v-else-if="!store.hasClasses" class="card p-14 flex flex-col items-center text-center">
+    <div v-else-if="!store.hasClasses" class="card flex flex-col items-center px-5 py-12 text-center sm:p-14">
       <h3 class="font-display text-xl font-bold mb-2">No classes yet</h3>
       <p class="text-sm text-ink-soft max-w-sm mb-6">Create your first class to start adding modules, activities, and quizzes for your students.</p>
       <button @click="showAddClass = true" class="btn-primary">Create Your First Class</button>
@@ -291,14 +291,18 @@ async function createClass() {
     return
   }
 
-  await store.addClass({
-    className: newClass.value.className,
-    subject: newClass.value.subject,
-    gradeLevelId: newClass.value.gradeLevelId,
-    sectionId: newClass.value.sectionId,
-    schoolYear: newClass.value.schoolYear || null,
-  })
-  closeClassModal()
+  try {
+    await store.addClass({
+      className: newClass.value.className,
+      subject: newClass.value.subject,
+      gradeLevelId: newClass.value.gradeLevelId,
+      sectionId: newClass.value.sectionId,
+      schoolYear: newClass.value.schoolYear || null,
+    })
+    closeClassModal()
+  } catch {
+    // Store owns the visible error message.
+  }
 }
 
 function closeClassModal() {

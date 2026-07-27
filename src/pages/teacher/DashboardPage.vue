@@ -1,15 +1,14 @@
 <template>
   <div class="space-y-6">
-    <div class="relative gradient-brand rounded-2xl p-8 flex items-center justify-between overflow-hidden">
+    <div class="relative gradient-brand rounded-2xl p-6 sm:p-8 overflow-hidden">
       <div class="absolute inset-0 opacity-5" style="background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:28px 28px;" />
-      <div class="relative z-10">
+      <div class="relative z-10 max-w-xl">
         <h1 class="font-display text-3xl font-bold text-white leading-tight mb-2">Welcome, {{ profile.displayName }}!</h1>
         <p class="text-white/75 text-sm max-w-sm leading-relaxed">Let's start the day by learning something new. You have {{ store.atRiskStudents.length }} students that may need attention.</p>
         <RouterLink to="/teacher/class" class="mt-4 inline-block px-5 py-2 rounded-full border border-white/40 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold hover:bg-white/30 transition-all">
           View Class Management
         </RouterLink>
       </div>
-      <div class="text-[64px] relative z-10" style="animation: float 4s ease-in-out infinite;">LMS</div>
     </div>
 
     <div class="grid gap-4 md:grid-cols-3">
@@ -36,60 +35,64 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-[1fr_240px] gap-5">
-      <div class="card">
-        <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+    <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_240px]">
+      <div class="card min-w-0 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-50 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span class="font-display font-semibold text-base">Student Progress</span>
-          <div class="flex items-center gap-2">
-            <select v-model="selectedProgressClassId" class="input-field h-8 min-w-40 py-1 text-xs" @change="loadDashboardSummary">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <select v-model="selectedProgressClassId" class="input-field h-9 min-w-0 py-1 text-xs sm:w-52" @change="loadDashboardSummary">
               <option value="">All classes</option>
               <option v-for="cls in store.classes" :key="cls.id" :value="cls.id">{{ cls.className }}</option>
             </select>
-            <RouterLink to="/teacher/class" class="text-xs font-semibold text-brand-blue bg-brand-blue-soft px-3 py-1.5 rounded-full hover:bg-brand-blue hover:text-white transition-all">See All</RouterLink>
+            <RouterLink to="/teacher/class" class="inline-flex h-9 items-center justify-center rounded-full bg-brand-blue px-4 text-xs font-semibold text-white transition-all hover:bg-brand-teal">
+              See All
+            </RouterLink>
           </div>
         </div>
-        <table class="w-full border-collapse">
-          <thead>
-            <tr>
-              <th class="table-th">Student</th>
-              <th class="table-th">Learning Material Progress</th>
-              <th class="table-th">Activity</th>
-              <th class="table-th">Quiz</th>
-              <th class="table-th">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="s in store.students" :key="s.studentId" class="hover:bg-gray-50 transition-colors">
-              <td class="table-td">
-                <div class="flex items-center gap-2.5">
-                  <div :class="`w-8 h-8 rounded-full bg-gradient-to-br ${s.avatarGradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`">{{ s.initials }}</div>
-                  <span class="text-[13px] font-medium">{{ s.studentName }}</span>
-                </div>
-              </td>
-              <td class="table-td w-40">
-                <div class="flex items-center gap-2.5">
-                  <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div :class="progressGradient(s.status)" class="h-full rounded-full transition-all" :style="{ width: s.overallPercent + '%' }" />
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[720px] border-collapse">
+            <thead>
+              <tr>
+                <th class="table-th">Student</th>
+                <th class="table-th">Learning Material Progress</th>
+                <th class="table-th">Activity</th>
+                <th class="table-th">Quiz</th>
+                <th class="table-th">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="s in store.students" :key="s.studentId" class="hover:bg-gray-50 transition-colors">
+                <td class="table-td">
+                  <div class="flex items-center gap-2.5">
+                    <div :class="`w-8 h-8 rounded-full bg-gradient-to-br ${s.avatarGradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`">{{ s.initials }}</div>
+                    <span class="text-[13px] font-medium">{{ s.studentName }}</span>
                   </div>
-                  <span class="font-mono text-[11px] text-ink-soft min-w-[34px] text-right">{{ s.overallPercent }}%</span>
-                </div>
-                <div v-if="s.learningMaterialsTotal" class="mt-1 font-mono text-[11px] text-ink-soft">
-                  {{ s.learningMaterialsCompleted }}/{{ s.learningMaterialsTotal }}
-                  <span v-if="s.learningMaterialsInProgress">, {{ s.learningMaterialsInProgress }} in progress</span>
-                </div>
-              </td>
-              <td class="table-td font-mono text-xs">
-                <div>{{ s.activitiesCompleted }}/{{ s.activitiesTotal }}</div>
-                <div class="mt-1 text-[11px] text-ink-soft">{{ s.activityPercent }}%</div>
-              </td>
-              <td class="table-td font-mono text-xs">{{ s.quizActivity }}</td>
-              <td class="table-td"><span :class="statusBadge(s.status)">{{ s.status }}</span></td>
-            </tr>
-            <tr v-if="store.students.length === 0">
-              <td colspan="5" class="table-td text-center text-ink-soft">No enrolled students yet.</td>
-            </tr>
-          </tbody>
-        </table>
+                </td>
+                <td class="table-td w-40">
+                  <div class="flex items-center gap-2.5">
+                    <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div :class="progressGradient(s.status)" class="h-full rounded-full transition-all" :style="{ width: s.overallPercent + '%' }" />
+                    </div>
+                    <span class="font-mono text-[11px] text-ink-soft min-w-[34px] text-right">{{ s.overallPercent }}%</span>
+                  </div>
+                  <div v-if="s.learningMaterialsTotal" class="mt-1 font-mono text-[11px] text-ink-soft">
+                    {{ s.learningMaterialsCompleted }}/{{ s.learningMaterialsTotal }}
+                    <span v-if="s.learningMaterialsInProgress">, {{ s.learningMaterialsInProgress }} in progress</span>
+                  </div>
+                </td>
+                <td class="table-td font-mono text-xs">
+                  <div>{{ s.activitiesCompleted }}/{{ s.activitiesTotal }}</div>
+                  <div class="mt-1 text-[11px] text-ink-soft">{{ s.activityPercent }}%</div>
+                </td>
+                <td class="table-td font-mono text-xs">{{ s.quizActivity }}</td>
+                <td class="table-td"><span :class="statusBadge(s.status)">{{ s.status }}</span></td>
+              </tr>
+              <tr v-if="store.students.length === 0">
+                <td colspan="5" class="table-td text-center text-ink-soft">No enrolled students yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div class="flex flex-col gap-4">
