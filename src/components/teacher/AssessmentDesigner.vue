@@ -75,9 +75,16 @@
             <p class="text-xs font-semibold text-ink-soft">Control attempt behavior and answer visibility.</p>
           </div>
           <div class="grid gap-3 sm:grid-cols-2">
-            <div>
+            <div v-if="props.kind === 'quiz'">
               <label class="figma-label" for="time-limit">Time Limit</label>
-              <input id="time-limit" v-model.trim="form.timeLimit" class="figma-input" />
+              <div class="grid grid-cols-[minmax(0,1fr)_120px] gap-2">
+                <input id="time-limit" v-model.number="form.timeLimitValue" class="figma-input" min="1" type="number" />
+                <select v-model="form.timeLimitUnit" class="figma-input">
+                  <option value="seconds">Seconds</option>
+                  <option value="minutes">Minutes</option>
+                  <option value="hours">Hours</option>
+                </select>
+              </div>
             </div>
             <div>
               <label class="figma-label" for="attempts">Attempts Allowed</label>
@@ -165,7 +172,8 @@ function blankForm() {
   category: '',
   week: '',
   dueDate: '',
-  timeLimit: '',
+  timeLimitValue: null as number | null,
+  timeLimitUnit: 'minutes' as 'seconds' | 'minutes' | 'hours',
   attemptsAllowed: 1,
   shuffleQuestions: true,
   showAnswersAfterSubmission: true,
@@ -232,6 +240,12 @@ async function saveAssessment() {
   }
 
   if (props.kind === 'quiz') {
+    const timeLimit = composeTimeLimit()
+    if (!timeLimit) {
+      error.value = 'Enter a valid quiz time limit greater than zero.'
+      return
+    }
+
     const payload = {
       title: form.value.title,
       classId: Number(form.value.classId),
@@ -240,7 +254,7 @@ async function saveAssessment() {
       description: form.value.description,
       quizType: form.value.category,
       week: form.value.week,
-      timeLimit: form.value.timeLimit,
+      timeLimit,
       attemptsAllowed: form.value.attemptsAllowed,
       shuffleQuestions: form.value.shuffleQuestions,
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
@@ -262,7 +276,6 @@ async function saveAssessment() {
       description: form.value.description,
       activityType: form.value.category,
       week: form.value.week,
-      timeLimit: form.value.timeLimit,
       attemptsAllowed: form.value.attemptsAllowed,
       shuffleQuestions: form.value.shuffleQuestions,
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
@@ -311,7 +324,7 @@ async function hydrateForm() {
     category: assessment.category ?? ('type' in assessment ? assessment.type : assessment.module) ?? '',
     week: assessment.week ?? '',
     dueDate: toDateInput(assessment.dueAt),
-    timeLimit: assessment.timeLimit ?? ('dueTime' in assessment ? assessment.dueTime : '') ?? '',
+    ...parseTimeLimit(assessment.timeLimit ?? ('dueTime' in assessment ? assessment.dueTime : '') ?? ''),
     attemptsAllowed: assessment.attemptsAllowed ?? 1,
     shuffleQuestions: assessment.shuffleQuestions ?? true,
     showAnswersAfterSubmission: assessment.showAnswersAfterSubmission ?? true,
@@ -347,5 +360,31 @@ function toDateInput(value?: string | null) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
   return date.toISOString().slice(0, 10)
+}
+
+function composeTimeLimit() {
+  const value = Number(form.value.timeLimitValue)
+  if (!Number.isInteger(value) || value <= 0) return ''
+  const unit = value === 1 ? form.value.timeLimitUnit.slice(0, -1) : form.value.timeLimitUnit
+  return `${value} ${unit}`
+}
+
+function parseTimeLimit(value?: string | null) {
+  const fallback = {
+    timeLimitValue: null as number | null,
+    timeLimitUnit: 'minutes' as 'seconds' | 'minutes' | 'hours',
+  }
+  if (!value) return fallback
+
+  const match = value.trim().toLowerCase().match(/^(\d+)\s*(second|seconds|minute|minutes|hour|hours|s|m|h)?$/)
+  if (!match) return fallback
+
+  const amount = Number(match[1])
+  if (!Number.isInteger(amount) || amount <= 0) return fallback
+
+  const unit = match[2] ?? 'minutes'
+  if (unit.startsWith('h')) return { timeLimitValue: amount, timeLimitUnit: 'hours' as const }
+  if (unit.startsWith('s')) return { timeLimitValue: amount, timeLimitUnit: 'seconds' as const }
+  return { timeLimitValue: amount, timeLimitUnit: 'minutes' as const }
 }
 </script>

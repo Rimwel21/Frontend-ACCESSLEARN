@@ -603,7 +603,6 @@ export const useTeacherStore = defineStore('teacher', () => {
     description: string
     activityType: string
     week: string
-    timeLimit: string
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
@@ -629,7 +628,6 @@ export const useTeacherStore = defineStore('teacher', () => {
         description: string
         activityType?: string
         week?: string
-        timeLimit?: string
         attemptsAllowed?: number
         shuffleQuestions?: boolean
         showAnswersAfterSubmission?: boolean
@@ -649,7 +647,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           description: formPayload.description,
           category: formPayload.activityType ?? 'Activity',
           week: formPayload.week ?? '',
-          time_limit: formPayload.timeLimit ?? '',
+          time_limit: null,
           attempts_allowed: formPayload.attemptsAllowed ?? 1,
           shuffle_questions: formPayload.shuffleQuestions ?? true,
           show_answers_after_submission: formPayload.showAnswersAfterSubmission ?? true,
@@ -727,7 +725,6 @@ export const useTeacherStore = defineStore('teacher', () => {
     description: string
     activityType: string
     week: string
-    timeLimit: string
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
@@ -751,7 +748,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           description: payload.description,
           category: payload.activityType,
           week: payload.week,
-          time_limit: payload.timeLimit,
+          time_limit: null,
           attempts_allowed: payload.attemptsAllowed,
           shuffle_questions: payload.shuffleQuestions,
           show_answers_after_submission: payload.showAnswersAfterSubmission,
@@ -985,14 +982,14 @@ function mapActivityResponse(assessment: TeacherAssessmentResponse): Activity {
     topicId: assessment.topic_id,
     category: assessment.category,
     week: assessment.week,
-    timeLimit: assessment.time_limit,
+    timeLimit: null,
     attemptsAllowed: assessment.attempts_allowed,
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,
     dueAt: assessment.due_at ?? null,
     createdAt: assessment.created_at ? new Date(assessment.created_at).toLocaleDateString() : null,
     dueDate: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString() : '',
-    dueTime: assessment.time_limit ?? '',
+    dueTime: '',
     status: (assessment.submissions_count ?? submissions.length) > 0 ? 'Finished' : 'Not Started',
     questions: assessment.questions,
     submissionsCount: assessment.submissions_count ?? submissions.length,

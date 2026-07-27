@@ -1,9 +1,31 @@
 <template>
   <div class="flex min-h-screen bg-white">
-    <aside class="flex w-[220px] min-w-[220px] flex-col border-r-[3px] border-brand-teal bg-white">
-      <RouterLink to="/student/dashboard" class="mx-3 mb-2 mt-3 flex items-center gap-2 border-[3px] border-brand-teal px-3 py-2 text-xs font-black text-ink no-underline transition-colors hover:bg-brand-amber">
-        Go Back
-      </RouterLink>
+    <!-- Mobile overlay -->
+    <div
+      v-if="sidebarOpen"
+      class="fixed inset-0 z-20 bg-black/40 lg:hidden"
+      @click="sidebarOpen = false"
+    />
+
+    <!-- Sidebar -->
+    <aside
+      :class="[
+        'flex flex-col border-r-[3px] border-brand-teal bg-white transition-transform duration-300 z-30',
+        'fixed inset-y-0 left-0 w-[260px] lg:relative lg:w-[220px] lg:min-w-[220px] lg:translate-x-0',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      ]"
+    >
+      <!-- Sidebar top -->
+      <div class="flex items-center justify-between px-3 pt-3 pb-1 lg:block">
+        <RouterLink to="/student/dashboard" class="flex items-center gap-2 border-[3px] border-brand-teal px-3 py-2 text-xs font-black text-ink no-underline transition-colors hover:bg-brand-amber">
+          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          Go Back
+        </RouterLink>
+        <!-- Close sidebar button (mobile) -->
+        <button class="lg:hidden border-[2px] border-brand-teal p-1.5 text-ink" @click="sidebarOpen = false">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
 
       <div class="px-3.5 py-2">
         <div class="font-mono text-[10px] uppercase tracking-widest text-gray-500">Module {{ moduleId }}</div>
@@ -68,16 +90,41 @@
       </div>
     </aside>
 
-    <main class="flex min-w-0 flex-1 flex-col">
-      <header class="flex items-center justify-between border-b-[3px] border-brand-teal bg-brand-teal px-8 py-6">
-        <div>
-          <h1 class="font-display text-[32px] font-black leading-tight text-white">{{ headerTitle }}</h1>
-          <p class="mt-1.5 font-display text-[13px] font-bold text-white/85">{{ headerDescription }}</p>
+    <main class="flex min-w-0 flex-1 flex-col lg:ml-0">
+      <!-- Top bar -->
+      <header class="flex items-center gap-3 border-b-[3px] border-brand-teal bg-brand-teal px-4 py-4 sm:px-8 sm:py-5">
+        <!-- Mobile sidebar toggle -->
+        <button
+          class="flex-shrink-0 rounded border-[2px] border-white/40 bg-white/20 p-1.5 text-white transition hover:bg-white/30 lg:hidden"
+          @click="sidebarOpen = true"
+          aria-label="Open module navigation"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="min-w-0 flex-1">
+          <h1 class="truncate font-display text-xl font-black leading-tight text-white sm:text-[28px]">{{ headerTitle }}</h1>
+          <p class="mt-0.5 truncate font-display text-[12px] font-bold text-white/80 sm:text-[13px]">{{ headerDescription }}</p>
         </div>
-        <div class="text-5xl">LMS</div>
+        <!-- Timer badge (shown in header on all screens) -->
+        <div
+          v-if="quizTimerLabel"
+          :class="[
+            'flex flex-shrink-0 items-center gap-2 rounded-full border-[2px] px-3 py-1.5 font-mono text-[11px] font-black shadow transition-all',
+            quizRemainingSeconds !== null && quizRemainingSeconds <= 60
+              ? 'animate-pulse border-red-400 bg-red-50 text-red-600'
+              : 'border-white/50 bg-white/20 text-white'
+          ]"
+          title="Time remaining"
+        >
+          <svg class="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9"/>
+            <path stroke-linecap="round" d="M12 7v5l3 3"/>
+          </svg>
+          <span>{{ quizTimerLabel }}</span>
+        </div>
       </header>
 
-      <section class="flex-1 overflow-y-auto bg-white p-7">
+      <section class="flex-1 overflow-y-auto bg-white p-4 sm:p-7">
         <div v-if="content.loading" class="border-[3px] border-brand-teal bg-white p-8 text-center font-black">Loading learning content...</div>
         <div v-else-if="content.error" class="border-[3px] border-brand-teal bg-red-50 p-8 text-center font-black text-red-700">{{ content.error }}</div>
         <div v-else-if="topics.length === 0 && !isIntroActive" class="border-[3px] border-brand-teal bg-white p-10 text-center">
@@ -103,9 +150,30 @@
 
         <article v-else-if="activeQuiz" class="space-y-5">
           <div class="border-[3px] border-brand-teal bg-brand-amber p-5">
-            <div class="font-mono text-[10px] font-black uppercase tracking-widest">Quiz</div>
-            <h2 class="mt-1 font-display text-2xl font-black">{{ activeQuiz.title }}</h2>
-            <p class="mt-2 text-sm text-gray-700">{{ activeQuiz.description }}</p>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="font-mono text-[10px] font-black uppercase tracking-widest">Quiz</div>
+                <h2 class="mt-1 font-display text-xl font-black sm:text-2xl">{{ activeQuiz.title }}</h2>
+                <p class="mt-2 text-sm text-gray-700">{{ activeQuiz.description }}</p>
+              </div>
+              <!-- Inline timer badge (supplements header badge) -->
+              <div
+                v-if="quizTimerLabel"
+                :class="[
+                  'flex shrink-0 items-center gap-2 rounded-xl border-[2px] px-3.5 py-2 font-mono text-[12px] font-black shadow-sm',
+                  quizRemainingSeconds !== null && quizRemainingSeconds <= 60
+                    ? 'animate-pulse border-brand-rose bg-brand-rose/10 text-brand-rose'
+                    : 'border-brand-teal bg-white/70 text-ink'
+                ]"
+              >
+                <svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9"/>
+                  <path stroke-linecap="round" d="M12 7v5l3 3"/>
+                </svg>
+                <span>{{ quizTimerLabel }}</span>
+                <span class="hidden text-[10px] font-bold uppercase tracking-wide opacity-60 sm:block">remaining</span>
+              </div>
+            </div>
           </div>
 
           <div v-if="quizResult" class="border-[3px] border-brand-teal bg-green-50 p-4 font-black text-green-800">
@@ -115,12 +183,22 @@
           <div v-for="(question, index) in activeQuiz.questions" :key="index" class="border-[3px] border-brand-teal bg-white p-5">
             <label class="block text-sm font-black">Question {{ index + 1 }}</label>
             <p class="mt-1 text-sm text-gray-700">{{ question.prompt }}</p>
-            <input v-model="quizAnswers[String(index)]" class="mt-3 w-full border-[2px] border-brand-teal px-3 py-2 text-sm outline-none focus:bg-brand-blue-soft" placeholder="Your answer" />
+            <input
+              v-model="quizAnswers[String(index)]"
+              class="mt-3 w-full border-[2px] border-brand-teal px-3 py-2 text-sm outline-none focus:bg-brand-blue-soft disabled:opacity-60 disabled:cursor-not-allowed"
+              :disabled="quizLocked"
+              placeholder="Your answer"
+              @input="saveActiveQuizAnswers"
+            />
           </div>
 
           <div class="flex justify-end">
-            <button class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px]" @click="submitActiveQuiz">
-              Submit Quiz
+            <button
+              class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px] disabled:opacity-60 disabled:cursor-not-allowed"
+              :disabled="quizLocked || quizSubmitting"
+              @click="submitActiveQuiz()"
+            >
+              {{ quizSubmitting ? 'Submitting…' : quizLocked ? 'Submitted' : 'Submit Quiz' }}
             </button>
           </div>
         </article>
@@ -164,21 +242,57 @@
         </article>
       </section>
     </main>
+
+    <Teleport to="body">
+      <div
+        v-if="pendingQuizId"
+        class="fixed inset-0 z-50 grid place-items-center bg-black/50 px-4 backdrop-blur-sm"
+        @click.self="cancelQuizStart"
+      >
+        <section class="w-full max-w-sm border-[3px] border-brand-teal bg-white p-6 shadow-2xl">
+          <div class="mb-1 font-mono text-[10px] font-black uppercase tracking-widest text-brand-teal">Quiz Confirmation</div>
+          <h2 class="font-display text-xl font-black text-ink">Ready to Start?</h2>
+          <p class="mt-3 text-sm leading-relaxed text-gray-600">Once you begin, the timer starts immediately and cannot be paused. Ensure you have a stable connection before continuing.</p>
+          <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              class="w-full border-[3px] border-brand-teal bg-white px-5 py-2.5 text-xs font-black text-ink transition-all hover:bg-surface sm:w-auto"
+              @click="cancelQuizStart"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="w-full border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-xs font-black text-white transition-all hover:bg-brand-teal sm:w-auto"
+              @click="confirmQuizStart"
+            >
+              Start Quiz
+            </button>
+          </div>
+        </section>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { API_BASE_URL } from '@/lib/api'
 import { useStudentContentStore } from '@/stores/studentContent'
 
 const route = useRoute()
 const content = useStudentContentStore()
+const sidebarOpen = ref(false)
 const activeTopicId = ref<number | null>(null)
 const activeQuizId = ref<number | null>(null)
+const pendingQuizId = ref<number | null>(null)
 const quizAnswers = ref<Record<string, string>>({})
 const quizResult = ref<{ score: number; total: number } | null>(null)
+const quizRemainingSeconds = ref<number | null>(null)
+const quizSubmitting = ref(false)
+const quizTimeExpired = ref(false)
+let quizTimer: number | null = null
 
 const moduleId = computed(() => String(route.params.moduleId))
 const moduleData = computed(() => content.currentModule)
@@ -194,10 +308,19 @@ const quizUnlocked = computed(() => topics.value.length > 0 && progress.value.co
 const isIntroActive = computed(() => !activeTopicId.value && !activeQuizId.value)
 const headerTitle = computed(() => activeQuiz.value?.title || activeTopic.value?.title || moduleData.value?.title || 'Learning Content')
 const headerDescription = computed(() => activeQuiz.value?.description || activeTopic.value?.description || moduleData.value?.description || 'Module description')
+const quizLocked = computed(() => Boolean(quizResult.value) || quizTimeExpired.value || activeQuiz.value?.student_status === 'completed')
+const quizTimerLabel = computed(() => {
+  if (quizRemainingSeconds.value === null) return ''
+  return formatQuizTime(quizRemainingSeconds.value)
+})
 
 onMounted(async () => {
   await content.fetchModule(moduleId.value)
   activeTopicId.value = null
+})
+
+onBeforeUnmount(() => {
+  clearQuizTimer()
 })
 
 watch(topics, value => {
@@ -207,6 +330,9 @@ watch(topics, value => {
 async function selectTopic(topicId: number) {
   const index = topics.value.findIndex(topic => topic.id === topicId)
   if (index < 0 || !isTopicUnlocked(index)) return
+  clearQuizTimer()
+  quizTimeExpired.value = false
+  pendingQuizId.value = null
   activeQuizId.value = null
   quizResult.value = null
   activeTopicId.value = topicId
@@ -222,17 +348,43 @@ function isTopicUnlocked(index: number) {
 }
 
 function selectIntro() {
+  clearQuizTimer()
+  quizTimeExpired.value = false
+  pendingQuizId.value = null
   activeTopicId.value = null
   activeQuizId.value = null
   quizResult.value = null
 }
 
-function selectQuiz(quizId: number) {
+async function selectQuiz(quizId: number) {
   if (!quizUnlocked.value) return
+  pendingQuizId.value = quizId
+}
+
+function cancelQuizStart() {
+  pendingQuizId.value = null
+}
+
+async function confirmQuizStart() {
+  if (!pendingQuizId.value) return
+  const quizId = pendingQuizId.value
+  pendingQuizId.value = null
+  clearQuizTimer()
+  quizTimeExpired.value = false
   activeQuizId.value = quizId
   activeTopicId.value = null
   quizAnswers.value = {}
   quizResult.value = null
+  const timer = await content.startQuiz(moduleId.value, quizId).catch(() => null)
+  if (!timer) return
+  if (timer.completed) {
+    quizTimeExpired.value = timer.expired
+    quizResult.value = { score: timer.score ?? 0, total: timer.total ?? 0 }
+    return
+  }
+  if (timer.started_at && timer.time_limit_seconds) {
+    startQuizTimer(timer.started_at, timer.time_limit_seconds)
+  }
 }
 
 async function goPrevious() {
@@ -253,22 +405,72 @@ async function goNext() {
   if (!activeTopic.value) return
   await content.markTopic(moduleId.value, activeTopic.value.id, 'completed')
   if (activeIndex.value >= topics.value.length - 1) {
-    if (quizzes.value.length) selectQuiz(quizzes.value[0].id)
+    if (quizzes.value.length) await selectQuiz(quizzes.value[0].id)
     return
   }
   const next = topics.value[activeIndex.value + 1]
   await selectTopic(next.id)
 }
 
-async function submitActiveQuiz() {
+async function submitActiveQuiz(autoSubmit = false) {
   if (!activeQuiz.value) return
-  const result = await content.submitQuiz(moduleId.value, activeQuiz.value.id, quizAnswers.value)
-  if (result) quizResult.value = { score: result.score, total: result.total }
+  if (quizSubmitting.value || (quizLocked.value && !autoSubmit)) return
+  quizSubmitting.value = true
+  try {
+    const result = await content.submitQuiz(moduleId.value, activeQuiz.value.id, quizAnswers.value)
+    if (result) quizResult.value = { score: result.score, total: result.total }
+    clearQuizTimer()
+  } finally {
+    quizSubmitting.value = false
+  }
+}
+
+function saveActiveQuizAnswers() {
+  if (!activeQuiz.value || quizLocked.value) return
+  void content.saveQuizAnswers(moduleId.value, activeQuiz.value.id, quizAnswers.value).catch(() => null)
 }
 
 function assetUrl(url?: string | null) {
   if (!url) return ''
   if (url.startsWith('http')) return url
   return `${API_BASE_URL}${url}`
+}
+
+function startQuizTimer(startedAt: string, limitSeconds: number) {
+  const startedMs = new Date(startedAt).getTime()
+  if (Number.isNaN(startedMs) || limitSeconds <= 0) return
+
+  const updateRemaining = () => {
+    const elapsedSeconds = Math.floor((Date.now() - startedMs) / 1000)
+    const remaining = Math.max(0, limitSeconds - elapsedSeconds)
+    quizRemainingSeconds.value = remaining
+    if (remaining === 0) {
+      clearQuizTimer()
+      quizTimeExpired.value = true
+      void submitActiveQuiz(true)
+    }
+  }
+
+  updateRemaining()
+  if (quizRemainingSeconds.value === 0) return
+  quizTimer = window.setInterval(updateRemaining, 1000)
+}
+
+function clearQuizTimer() {
+  if (quizTimer !== null) {
+    window.clearInterval(quizTimer)
+    quizTimer = null
+  }
+  quizRemainingSeconds.value = null
+}
+
+function formatQuizTime(seconds: number) {
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const remainingSeconds = seconds % 60
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
+  }
+  return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`
 }
 </script>
