@@ -1,6 +1,6 @@
 <template>
   <div class="teacher-ui min-h-screen bg-surface lg:flex lg:h-screen lg:overflow-hidden">
-    <aside class="z-10 hidden w-[200px] min-w-[200px] flex-col border-r border-brand-teal/30 bg-surface/60 shadow-sm lg:flex">
+    <aside class="z-10 hidden w-[250px] min-w-[250px] flex-col border-r border-brand-teal/30 bg-surface/60 shadow-sm lg:flex">
       <div class="border-b border-brand-teal/30 bg-brand-blue-soft px-5 py-5">
         <div class="font-display text-2xl font-bold tracking-tight text-brand-blue">SIGNHEAR</div>
         <div class="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-ink-soft">Teacher</div>
@@ -17,20 +17,20 @@
         </div>
       </button>
 
-      <nav class="flex-1 px-2.5 py-1" aria-label="Teacher navigation">
+      <nav class="flex-1 px-3 py-1" aria-label="Teacher navigation">
         <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" custom v-slot="{ isActive, navigate }">
           <button
             type="button"
             @click="navigate"
             :class="[
-              'mb-0.5 flex w-full items-center gap-2.5 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left text-[13.5px] font-medium transition-all',
+              'mb-1 flex w-full items-center gap-3 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
               isActive
                 ? 'border-brand-amber bg-brand-blue/[0.12] text-brand-blue'
                 : 'border-transparent text-brand-blue/80 hover:translate-x-1 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
             ]"
           >
-            <span :class="['nav-icon-box', item.iconClass]" aria-hidden="true"></span>
-            {{ item.label }}
+            <span :class="['nav-icon-box shrink-0', item.iconClass]" aria-hidden="true"></span>
+            <span class="min-w-0 flex-1">{{ item.label }}</span>
           </button>
         </RouterLink>
       </nav>
@@ -67,14 +67,14 @@
               type="button"
               @click="() => { navigate(); menuOpen = false }"
               :class="[
-                'mb-0.5 flex w-full items-center gap-2.5 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left text-[13.5px] font-medium transition-all',
+              'mb-1 flex w-full items-center gap-3 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
                 isActive
                   ? 'border-brand-amber bg-brand-blue/[0.12] text-brand-blue'
                   : 'border-transparent text-brand-blue/80 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
               ]"
             >
-              <span :class="['nav-icon-box', item.iconClass]" aria-hidden="true"></span>
-              {{ item.label }}
+              <span :class="['nav-icon-box shrink-0', item.iconClass]" aria-hidden="true"></span>
+              <span class="min-w-0 flex-1">{{ item.label }}</span>
             </button>
           </RouterLink>
         </nav>
@@ -134,16 +134,19 @@ const profile = useProfileStore()
 const menuOpen = ref(false)
 
 const navItems = [
-  { to: '/teacher/dashboard', label: 'Home', iconClass: 'rounded-full' },
-  { to: '/teacher/class', label: 'Class Management', iconClass: 'rounded-sm' },
+  { to: '/teacher/dashboard',  label: 'Home',               iconClass: 'rounded-full' },
+  { to: '/teacher/class',      label: 'Class Management',   iconClass: 'rounded-sm'   },
+  { to: '/teacher/modules',    label: 'Learning Materials', iconClass: 'rounded-sm'   },
+  { to: '/teacher/quizzes',    label: 'Quizzes',            iconClass: 'rounded-sm'   },
+  { to: '/teacher/activities', label: 'Activities',         iconClass: 'rounded-sm'   },
 ]
 
 const titleMap: Record<string, string> = {
-  TeacherDashboard: 'Home',
-  ClassManagement: 'Class Management',
-  Modules: 'Learning Materials',
+  TeacherDashboard:  'Home',
+  ClassManagement:   'Class Management',
+  Modules:           'Learning Materials',
   TeacherActivities: 'Activities',
-  Quizzes: 'Quizzes / Activities',
+  Quizzes:           'Quizzes',
 }
 
 const currentTitle = computed(() => titleMap[route.name as string] ?? 'SIGNHEAR Teacher')

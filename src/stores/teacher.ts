@@ -133,6 +133,8 @@ interface ClassStudent {
   name: string
   username?: string | null
   email?: string | null
+  guardiansName?: string | null
+  guardiansContactNo?: string | null
   gradeLevel: string
   section: string
   createdAt?: string | null
@@ -157,6 +159,8 @@ interface ClassStudentResponse {
   name: string
   username?: string | null
   email?: string | null
+  guardians_name?: string | null
+  guardians_contact_no?: string | null
   grade_level: { id: number; name: string }
   section: { id: number; name: string; grade_level_id: number }
   created_at?: string | null
@@ -276,6 +280,7 @@ export const useTeacherStore = defineStore('teacher', () => {
   const students = ref<StudentRow[]>([])
 
   const classes = ref<ClassInfo[]>([])
+  const availableClasses = ref<ClassInfo[]>([])
   const selectedClassId = ref<string | null>(null)
 
   const selectedClass = computed(() => classes.value.find(c => c.id === selectedClassId.value) ?? null)
@@ -311,7 +316,8 @@ export const useTeacherStore = defineStore('teacher', () => {
     className: string
     subject: string
     gradeLevelId: number
-    sectionId: number
+    sectionId?: number | null
+    section?: string | null
     schoolYear?: string | null
   }) {
     const auth = useAuthStore()
@@ -327,7 +333,8 @@ export const useTeacherStore = defineStore('teacher', () => {
           class_name: payload.className,
           subject: payload.subject,
           grade_level_id: payload.gradeLevelId,
-          section_id: payload.sectionId,
+          section_id: payload.sectionId ?? null,
+          section: payload.section ?? null,
           school_year: payload.schoolYear || null,
         }),
       })
@@ -809,14 +816,68 @@ export const useTeacherStore = defineStore('teacher', () => {
     }
   }
 
+  async function fetchAvailableClasses() {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    classesLoading.value = true
+    classError.value = ''
+    try {
+      const data = await apiFetch<TeacherClassResponse[]>('/teacher/sections/available', { token: auth.token })
+      availableClasses.value = data.map(mapClassResponse)
+    } catch (err) {
+      classError.value = err instanceof Error ? err.message : 'Unable to load available sections'
+    } finally {
+      classesLoading.value = false
+    }
+  }
+
+  async function selectClassAction(sectionId: string) {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    classSaving.value = true
+    classError.value = ''
+    try {
+      await apiFetch<TeacherClassResponse>(`/teacher/sections/${sectionId}/select`, {
+        method: 'POST',
+        token: auth.token,
+      })
+      await fetchClasses()
+      await fetchAvailableClasses()
+    } catch (err) {
+      classError.value = err instanceof Error ? err.message : 'Unable to select section'
+    } finally {
+      classSaving.value = false
+    }
+  }
+
+  async function unselectClassAction(sectionId: string) {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    classSaving.value = true
+    classError.value = ''
+    try {
+      await apiFetch<TeacherClassResponse>(`/teacher/sections/${sectionId}/unselect`, {
+        method: 'POST',
+        token: auth.token,
+      })
+      await fetchClasses()
+      await fetchAvailableClasses()
+    } catch (err) {
+      classError.value = err instanceof Error ? err.message : 'Unable to unselect section'
+    } finally {
+      classSaving.value = false
+    }
+  }
+
   return {
     teacherName, modules, performers, recentActivities, students, quizzes, activities, dashboardSummary,
-    classes, selectedClassId, selectedClass, hasClasses,
+    classes, availableClasses, selectedClassId, selectedClass, hasClasses,
     modulesLoading, moduleSaving, moduleError, quizSaving, quizError, activitySaving, activityError,
     classesLoading, classSaving, classError, classStudents, classStudentsLoading,
     publishedModules, unpublishedModules, atRiskStudents,
     fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchAssessments, addQuiz, updateQuiz, deleteQuiz, addActivity, updateActivity, deleteActivity,
     fetchClasses, addClass, selectClass, deleteClass, fetchClassStudents,
+    fetchAvailableClasses, selectClassAction, unselectClassAction,
   }
 })
 
@@ -840,6 +901,8 @@ function mapClassStudentResponse(student: ClassStudentResponse): ClassStudent {
     name: student.name,
     username: student.username,
     email: student.email,
+    guardiansName: student.guardians_name,
+    guardiansContactNo: student.guardians_contact_no,
     gradeLevel: student.grade_level?.name ?? '',
     section: student.section?.name ?? '',
     createdAt: student.created_at ? new Date(student.created_at).toLocaleDateString() : null,

@@ -27,24 +27,26 @@
           <h3 class="font-display text-base font-semibold text-ink-soft">Your Classes</h3>
           <p v-if="store.classError" class="status-error">{{ store.classError }}</p>
         </div>
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
           <div
             v-for="cls in store.classes"
             :key="cls.id"
             @click="store.selectClass(cls.id)"
-            :class="['card-hover p-4 cursor-pointer relative border-2 transition-all', store.selectedClassId === cls.id ? 'border-brand-blue' : 'border-transparent']"
+            :class="['card-hover relative min-h-[142px] cursor-pointer border-2 p-4 transition-all', store.selectedClassId === cls.id ? 'border-brand-blue bg-brand-blue-soft/20' : 'border-transparent']"
           >
             <button @click.stop="confirmDeleteClass(cls.id)" class="absolute top-2 right-2 w-6 h-6 rounded-full hover:bg-rose-50 text-gray-300 hover:text-brand-rose flex items-center justify-center text-xs transition-all">x</button>
-            <div class="font-display font-bold text-sm pr-6">{{ cls.className }}</div>
+            <div class="mb-2 flex min-w-0 items-start justify-between gap-3 pr-5">
+              <div class="min-w-0 font-display text-sm font-bold text-ink">{{ cls.className }}</div>
+              <span v-if="store.selectedClassId === cls.id" class="shrink-0 rounded-full bg-brand-blue px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">Active</span>
+            </div>
             <div class="text-xs text-ink-soft mt-1">{{ cls.subject }}</div>
             <div class="text-xs text-ink-soft mt-1">{{ gradeLabel(cls.gradeLevel) }} - Section {{ cls.section }}</div>
             <div class="text-[11px] font-mono text-gray-400 mt-2">{{ cls.studentCount }} students</div>
-            <div v-if="store.selectedClassId === cls.id" class="absolute -top-2 -left-2 bg-brand-blue text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Active</div>
           </div>
 
           <button
             @click="showAddClass = true"
-            class="border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1.5 text-ink-soft hover:border-brand-blue hover:text-brand-blue hover:bg-brand-blue-soft/30 transition-all min-h-[120px]"
+            class="flex min-h-[142px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 text-ink-soft transition-all hover:border-brand-blue hover:bg-brand-blue-soft/30 hover:text-brand-blue"
           >
             <span class="text-xl font-bold">+</span>
             <span class="text-xs font-semibold">Add Class</span>
@@ -82,12 +84,14 @@
               <div v-if="store.classStudentsLoading" class="text-sm text-ink-soft">Loading students...</div>
               <div v-else-if="store.classStudents.length === 0" class="text-sm text-ink-soft">No matching students found yet.</div>
               <div v-else class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
+                <table class="w-full min-w-[980px] text-left text-xs">
                   <thead class="border-b border-gray-100 text-ink-soft">
                     <tr>
                       <th class="py-2 font-semibold">Name</th>
                       <th class="py-2 font-semibold">Student ID</th>
                       <th class="py-2 font-semibold">Email</th>
+                      <th class="py-2 font-semibold">Guardian</th>
+                      <th class="py-2 font-semibold">Contact</th>
                       <th class="py-2 font-semibold">Grade</th>
                       <th class="py-2 font-semibold">Section</th>
                       <th class="py-2 font-semibold">Registered</th>
@@ -98,6 +102,8 @@
                       <td class="py-2 font-semibold text-ink">{{ student.name }}</td>
                       <td class="py-2 text-ink-soft">{{ student.username || student.accountId }}</td>
                       <td class="py-2 text-ink-soft">{{ student.email || 'No email' }}</td>
+                      <td class="py-2 text-ink-soft">{{ student.guardiansName || 'Not set' }}</td>
+                      <td class="py-2 text-ink-soft">{{ student.guardiansContactNo || 'Not set' }}</td>
                       <td class="py-2 text-ink-soft">{{ gradeLabel(student.gradeLevel) }}</td>
                       <td class="py-2 text-ink-soft">{{ student.section }}</td>
                       <td class="py-2 text-ink-soft">{{ student.createdAt || 'Not available' }}</td>
@@ -150,7 +156,7 @@
             <div class="px-6 py-5 space-y-4">
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Class Name</label>
-                <input v-model.trim="newClass.className" class="input-field" placeholder="e.g. Grade 6 Mathematics" />
+                <input v-model.trim="newClass.className" class="input-field" placeholder="e.g. Grade 6 Science" />
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Subject</label>
@@ -161,17 +167,14 @@
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Grade Level</label>
-                <select v-model="newClass.gradeLevelId" class="input-field">
+                <select v-model.number="newClass.gradeLevelId" class="input-field">
                   <option :value="null">Select grade level...</option>
                   <option v-for="g in gradeLevels" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Section</label>
-                <select v-model="newClass.sectionId" class="input-field" :disabled="classSections.length === 0">
-                  <option :value="null">Select section...</option>
-                  <option v-for="section in classSections" :key="section.id" :value="section.id">{{ section.name }}</option>
-                </select>
+                <input v-model.trim="newClass.section" class="input-field" placeholder="e.g. A, Rizal, Sampaguita" />
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">School Year</label>
@@ -209,28 +212,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTeacherStore } from '@/stores/teacher'
-import {
-  fetchGradeLevelOptions,
-  fetchSectionOptions,
-  type GradeLevelOption,
-  type SectionOption,
-} from '@/lib/gradeSections'
+import { fetchGradeLevelOptions, type GradeLevelOption } from '@/lib/gradeSections'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const store = useTeacherStore()
-
-const subjectOptions = ['Science']
 const auth = useAuthStore()
 
+const subjectOptions = ['Science']
 const showAddClass = ref(false)
 const newClass = ref(defaultClassForm())
 const deleteTargetId = ref<string | null>(null)
 const gradeLevels = ref<GradeLevelOption[]>([])
-const classSections = ref<SectionOption[]>([])
 
 const classModules = computed(() => store.modules.filter(module => module.classId === Number(store.selectedClassId)))
 
@@ -265,9 +261,11 @@ const sections = computed(() => [
 ])
 
 onMounted(async () => {
-  await loadGradeLevels()
-  store.fetchClasses()
-  store.fetchModules()
+  await Promise.allSettled([
+    loadGradeLevels(),
+    store.fetchClasses(),
+    store.fetchModules(),
+  ])
 })
 
 function defaultClassForm() {
@@ -275,18 +273,13 @@ function defaultClassForm() {
     className: '',
     subject: '',
     gradeLevelId: null as number | null,
-    sectionId: null as number | null,
+    section: '',
     schoolYear: '',
   }
 }
 
-watch(() => newClass.value.gradeLevelId, async (gradeLevelId) => {
-  newClass.value.sectionId = null
-  await loadClassSections(gradeLevelId)
-})
-
 async function createClass() {
-  if (!newClass.value.className || !newClass.value.subject || !newClass.value.gradeLevelId || !newClass.value.sectionId) {
+  if (!newClass.value.className || !newClass.value.subject || !newClass.value.gradeLevelId || !newClass.value.section) {
     alert('Please complete the class details.')
     return
   }
@@ -296,7 +289,7 @@ async function createClass() {
       className: newClass.value.className,
       subject: newClass.value.subject,
       gradeLevelId: newClass.value.gradeLevelId,
-      sectionId: newClass.value.sectionId,
+      section: newClass.value.section,
       schoolYear: newClass.value.schoolYear || null,
     })
     closeClassModal()
@@ -326,15 +319,6 @@ function gradeLabel(value: string) {
 async function loadGradeLevels() {
   if (!auth.token) return
   gradeLevels.value = await fetchGradeLevelOptions(auth.token)
-}
-
-async function loadClassSections(gradeLevelId: number | null) {
-  if (!auth.token || !gradeLevelId) {
-    classSections.value = []
-    return
-  }
-
-  classSections.value = await fetchSectionOptions(gradeLevelId, auth.token)
 }
 </script>
 

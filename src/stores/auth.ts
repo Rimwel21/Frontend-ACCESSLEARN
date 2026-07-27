@@ -14,6 +14,9 @@ interface RegisterPayload {
   grade_level_id?: number
   section_id?: number
   accessibility_profile?: string
+  profile_image?: string | null
+  guardians_name?: string | null
+  guardians_contact_no?: string | null
 }
 
 export interface LoginPayload {
