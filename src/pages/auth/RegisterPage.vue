@@ -27,7 +27,8 @@
               </div>
               <div>
                 <label class="field-label" for="student-username">Username</label>
-                <input id="student-username" v-model.trim="studentUsername" class="input-field mt-2" type="text" placeholder="juan2026" minlength="5" maxlength="50" required />
+                <input id="student-username" v-model.trim="studentUsername" class="input-field mt-2" type="text" placeholder="juan2026" minlength="5" maxlength="50" autocomplete="username" required />
+                <p class="mt-1 text-[11px] font-semibold text-ink-soft">Students use this username to log in.</p>
               </div>
             </div>
 
