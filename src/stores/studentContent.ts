@@ -42,12 +42,18 @@ export interface StudentAssessment {
   category?: string | null
   week?: string | null
   time_limit?: string | null
+  time_limit_seconds?: number | null
   due_at?: string | null
   questions: Array<{ prompt: string; answer?: string | null }>
   student_status?: string | null
   student_score?: number | null
   student_total?: number | null
   student_completed_at?: string | null
+  student_started_at?: string | null
+  student_expires_at?: string | null
+  student_remaining_seconds?: number | null
+  student_submission_type?: string | null
+  student_answers?: Record<string, string>
 }
 
 export interface StudentDeadline {
@@ -72,10 +78,13 @@ interface ProgressResponse {
 interface QuizStartResponse {
   started_at: string | null
   time_limit_seconds: number | null
+  expires_at?: string | null
+  remaining_seconds?: number | null
   expired: boolean
   completed: boolean
   score?: number | null
   total?: number | null
+  submission_type?: string | null
   progress?: ProgressResponse
 }
 
@@ -186,7 +195,7 @@ export const useStudentContentStore = defineStore('studentContent', () => {
     if (!auth.token) return null
     const path = `/student/modules/${moduleId}/quizzes/${quizId}/submit`
     try {
-      const result = await apiFetch<{ score: number; total: number; progress: ProgressResponse }>(path, {
+      const result = await apiFetch<{ score: number; total: number; submission_type?: string | null; progress: ProgressResponse }>(path, {
         method: 'POST',
         token: auth.token,
         body: JSON.stringify({ answers }),
@@ -270,7 +279,7 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   async function submitAssessment(moduleId: string | number, assessmentId: number, answers: Record<string, string>) {
     const auth = useAuthStore()
     if (!auth.token) return null
-    const result = await apiFetch<{ score: number; total: number; progress: ProgressResponse }>(`/student/modules/${moduleId}/assessments/${assessmentId}/submit`, {
+      const result = await apiFetch<{ score: number; total: number; submission_type?: string | null; progress: ProgressResponse }>(`/student/modules/${moduleId}/assessments/${assessmentId}/submit`, {
       method: 'POST',
       token: auth.token,
       body: JSON.stringify({ answers }),
