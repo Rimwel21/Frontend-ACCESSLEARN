@@ -70,7 +70,7 @@
           </div>
         </div>
 
-        <div class="grid gap-5 xl:grid-cols-[1fr_230px]">
+        <div class="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_280px]">
           <div class="space-y-4">
             <div class="card p-5">
               <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -84,29 +84,31 @@
               <div v-if="store.classStudentsLoading" class="text-sm text-ink-soft">Loading students...</div>
               <div v-else-if="store.classStudents.length === 0" class="text-sm text-ink-soft">No matching students found yet.</div>
               <div v-else class="overflow-x-auto">
-                <table class="w-full min-w-[980px] text-left text-xs">
+                <table class="w-full min-w-[720px] text-left text-xs">
                   <thead class="border-b border-gray-100 text-ink-soft">
                     <tr>
-                      <th class="py-2 font-semibold">Name</th>
-                      <th class="py-2 font-semibold">Student ID</th>
-                      <th class="py-2 font-semibold">Email</th>
-                      <th class="py-2 font-semibold">Guardian</th>
-                      <th class="py-2 font-semibold">Contact</th>
-                      <th class="py-2 font-semibold">Grade</th>
-                      <th class="py-2 font-semibold">Section</th>
-                      <th class="py-2 font-semibold">Registered</th>
+                      <th class="px-2 py-2 font-semibold first:pl-0">Name</th>
+                      <th class="px-2 py-2 font-semibold">Student ID</th>
+                      <th class="px-2 py-2 font-semibold">Guardian</th>
+                      <th class="px-2 py-2 font-semibold">Contact</th>
+                      <th class="px-2 py-2 font-semibold">Grade</th>
+                      <th class="px-2 py-2 font-semibold">Section</th>
+                      <th class="px-2 py-2 font-semibold last:pr-0">Registered</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="student in store.classStudents" :key="student.id" class="border-b border-gray-50 last:border-0">
-                      <td class="py-2 font-semibold text-ink">{{ student.name }}</td>
-                      <td class="py-2 text-ink-soft">{{ student.username || student.accountId }}</td>
-                      <td class="py-2 text-ink-soft">{{ student.email || 'No email' }}</td>
-                      <td class="py-2 text-ink-soft">{{ student.guardiansName || 'Not set' }}</td>
-                      <td class="py-2 text-ink-soft">{{ student.guardiansContactNo || 'Not set' }}</td>
-                      <td class="py-2 text-ink-soft">{{ gradeLabel(student.gradeLevel) }}</td>
-                      <td class="py-2 text-ink-soft">{{ student.section }}</td>
-                      <td class="py-2 text-ink-soft">{{ student.createdAt || 'Not available' }}</td>
+                      <td class="max-w-[170px] px-2 py-2 font-semibold text-ink first:pl-0">
+                        <span class="block truncate" :title="student.name">{{ student.name }}</span>
+                      </td>
+                      <td class="px-2 py-2 text-ink-soft">{{ student.username || student.accountId }}</td>
+                      <td class="max-w-[170px] px-2 py-2 text-ink-soft">
+                        <span class="block truncate" :title="student.guardiansName || 'Not set'">{{ student.guardiansName || 'Not set' }}</span>
+                      </td>
+                      <td class="px-2 py-2 text-ink-soft">{{ student.guardiansContactNo || 'Not set' }}</td>
+                      <td class="px-2 py-2 text-ink-soft">{{ gradeLabel(student.gradeLevel) }}</td>
+                      <td class="px-2 py-2 text-ink-soft">{{ student.section }}</td>
+                      <td class="px-2 py-2 text-ink-soft last:pr-0">{{ student.createdAt || 'Not available' }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -130,13 +132,13 @@
             </div>
           </div>
 
-          <div class="space-y-4">
+          <div class="min-w-0 space-y-4">
             <div class="card p-4">
               <div class="font-display text-[13px] font-semibold mb-3">Quick Actions</div>
-              <div class="space-y-2">
-                <button @click="router.push('/teacher/modules')" class="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-brand-blue text-white text-[13px] font-semibold hover:-translate-y-0.5 hover:shadow-lg transition-all">Add Module</button>
-                <button @click="router.push('/teacher/quizzes')" class="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-xl gradient-violet text-white text-[13px] font-semibold hover:-translate-y-0.5 hover:shadow-lg transition-all">Create Quiz</button>
-                <button @click="router.push('/teacher/activities')" class="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-xl gradient-teal text-white text-[13px] font-semibold hover:-translate-y-0.5 hover:shadow-lg transition-all">Create Activity</button>
+              <div class="grid gap-2 sm:grid-cols-3 2xl:grid-cols-1">
+                <button @click="router.push('/teacher/modules')" class="flex min-h-11 w-full items-center justify-center rounded-xl bg-brand-blue px-4 py-2.5 text-center text-[13px] font-semibold leading-tight text-white transition-all hover:-translate-y-0.5 hover:shadow-lg">Add Module</button>
+                <button @click="router.push('/teacher/quizzes')" class="flex min-h-11 w-full items-center justify-center rounded-xl gradient-violet px-4 py-2.5 text-center text-[13px] font-semibold leading-tight text-white transition-all hover:-translate-y-0.5 hover:shadow-lg">Create Quiz</button>
+                <button @click="router.push('/teacher/activities')" class="flex min-h-11 w-full items-center justify-center rounded-xl gradient-teal px-4 py-2.5 text-center text-[13px] font-semibold leading-tight text-white transition-all hover:-translate-y-0.5 hover:shadow-lg">Create Activity</button>
               </div>
             </div>
           </div>

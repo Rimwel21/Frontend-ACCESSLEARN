@@ -130,6 +130,108 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function requestTeacherPasswordResetOtp(email: string) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      return await apiFetch<TeacherOtpResponse>('/otp/teacher/password-reset/request', {
+        method: 'POST',
+        body: JSON.stringify({ email, role: 'teacher' }),
+      })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to send password reset OTP'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function verifyTeacherPasswordResetOtp(email: string, otp: string) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      return await apiFetch<{ message: string }>('/otp/teacher/password-reset/verify', {
+        method: 'POST',
+        body: JSON.stringify({ email, otp, role: 'teacher' }),
+      })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'OTP verification failed'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function confirmTeacherPasswordReset(email: string, otp: string, newPassword: string) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      return await apiFetch<{ message: string }>('/otp/teacher/password-reset/confirm', {
+        method: 'POST',
+        body: JSON.stringify({ email, otp, new_password: newPassword, role: 'teacher' }),
+      })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Password reset failed'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function requestAdminPasswordResetOtp(email: string) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      return await apiFetch<{ message: string }>('/otp/admin/password-reset/request', {
+        method: 'POST',
+        body: JSON.stringify({ email, role: 'admin' }),
+      })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to send admin password reset OTP'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function verifyAdminPasswordResetOtp(email: string, otp: string) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      return await apiFetch<{ message: string }>('/otp/admin/password-reset/verify', {
+        method: 'POST',
+        body: JSON.stringify({ email, otp, role: 'admin' }),
+      })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Admin OTP verification failed'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function confirmAdminPasswordReset(email: string, otp: string, newPassword: string) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      return await apiFetch<{ message: string }>('/otp/admin/password-reset/confirm', {
+        method: 'POST',
+        body: JSON.stringify({ email, otp, new_password: newPassword, role: 'admin' }),
+      })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Admin password reset failed'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function register(payload: RegisterPayload) {
     loading.value = true
     error.value = ''
@@ -245,6 +347,12 @@ export const useAuthStore = defineStore('auth', () => {
     authorizationHeader,
     requestTeacherOtp,
     verifyTeacherOtp,
+    requestTeacherPasswordResetOtp,
+    verifyTeacherPasswordResetOtp,
+    confirmTeacherPasswordReset,
+    requestAdminPasswordResetOtp,
+    verifyAdminPasswordResetOtp,
+    confirmAdminPasswordReset,
     register,
     login,
     logout,

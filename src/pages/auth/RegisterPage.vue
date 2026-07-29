@@ -705,12 +705,17 @@ async function handleRequestOtp() {
 
     setTimeout(() => focusOtpDigit(0), 50)
 
-    if (otpResponse.delivery === 'failed' && otpResponse.debug_otp) {
-      fallbackOtp.value = otpResponse.debug_otp
+    if (otpResponse.delivery === 'failed') {
+      fallbackOtp.value = ''
+      isOtpInputsEnabled.value = false
+      isRequestButtonEnabled.value = true
+      step.value = 1
       requestStatus.value = {
-        message: `Email delivery failed. Use this development OTP: ${otpResponse.debug_otp}`,
-        type: 'info',
+        message: 'OTP email could not be delivered. Check the mail configuration and try again.',
+        type: 'error',
       }
+      verifyStatus.value = { message: '', type: '' }
+      return
     } else {
       requestStatus.value = {
         message: 'OTP sent. Check your email and enter the 6-digit code below.',
@@ -718,9 +723,7 @@ async function handleRequestOtp() {
       }
     }
     verifyStatus.value = {
-      message: fallbackOtp.value
-        ? `Enter development code ${fallbackOtp.value} before the timer ends.`
-        : 'Enter the code before the timer ends.',
+      message: 'Enter the code before the timer ends.',
       type: 'info',
     }
   } catch (err: any) {

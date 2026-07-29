@@ -100,10 +100,7 @@
           <span class="block h-0.5 w-5 rounded-full bg-current" aria-hidden="true"></span>
         </button>
         <span class="min-w-0 flex-1 font-display text-[18px] font-semibold text-ink">{{ currentTitle }}</span>
-        <div class="flex w-full items-center gap-2.5 sm:w-auto">
-          <div class="flex min-w-0 flex-1 items-center rounded-full border border-brand-teal bg-white px-4 py-2 transition-all focus-within:border-brand-blue focus-within:ring-2 focus-within:ring-brand-blue/25 sm:w-60 sm:flex-none md:w-72">
-            <input class="min-w-0 flex-1 border-0 bg-transparent font-body text-sm text-ink outline-none placeholder:text-ink-soft" placeholder="Search..." aria-label="Search" />
-          </div>
+        <div class="flex w-auto items-center gap-2.5">
           <button class="flex-shrink-0 rounded-full border border-brand-teal bg-white px-3 py-2 text-xs font-bold text-brand-blue transition-all hover:border-brand-amber hover:bg-brand-rose hover:text-white" @click="router.push('/profile/setup')">
             Profile
           </button>

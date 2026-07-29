@@ -14,10 +14,11 @@
         </select>
         <select v-model="filters.status" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand-blue" @change="fetchAccounts">
             <option value="">All Status</option>
-            <option value="pending">Pending Activation</option>
-            <option value="waiting">Waiting for Assignment</option>
+            <option value="pending_activation">Pending Activation</option>
+            <option value="waiting_assignment">Waiting for Assignment</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
+            <option value="suspended">Suspended / Blocked</option>
             <option value="archived">Archived</option>
         </select>
       </div>
@@ -76,12 +77,29 @@
                 {{ formatDate(user.created_at) }}
               </td>
               <td class="px-4 py-4 text-right">
-                <div class="flex items-center justify-end gap-2 transition-opacity">
-                  <button class="rounded-md border border-gray-200 bg-white p-1.5 transition-all hover:border-brand-blue hover:text-brand-blue" title="Edit Account Status" @click="openStatusModal(user)">
-                    ✏️
+                <div class="flex flex-wrap items-center justify-end gap-2 transition-opacity">
+                  <button
+                    v-if="user.account_status === 'suspended'"
+                    class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition-all hover:border-emerald-500 hover:bg-emerald-100"
+                    title="Unblock account"
+                    :disabled="loading"
+                    @click="setAccountStatus(user, 'active', 'Account unblocked by administrator')"
+                  >
+                    Unblock
                   </button>
-                  <button class="rounded-md border border-gray-200 bg-white p-1.5 transition-all hover:border-brand-rose hover:text-brand-rose" title="Delete Account" @click="confirmDelete(user)">
-                    🗑️
+                  <button
+                    class="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-ink-soft transition-all hover:border-brand-blue hover:text-brand-blue"
+                    title="Edit account status"
+                    @click="openStatusModal(user)"
+                  >
+                    Status
+                  </button>
+                  <button
+                    class="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-brand-rose transition-all hover:border-brand-rose hover:bg-rose-100"
+                    title="Remove account"
+                    @click="confirmDelete(user)"
+                  >
+                    Remove
                   </button>
                 </div>
               </td>
@@ -114,9 +132,10 @@
                    <select v-model="statusPayload.status" class="input-field mt-1">
                        <option value="active">Active</option>
                        <option value="inactive">Inactive</option>
+                       <option value="suspended">Suspended / Blocked</option>
                        <option value="archived">Archived</option>
-                       <option value="pending">Pending Activation</option>
-                       <option value="waiting">Waiting for Assignment</option>
+                       <option value="pending_activation">Pending Activation</option>
+                       <option value="waiting_assignment">Waiting for Assignment</option>
                    </select>
                 </div>
                 <div>
@@ -236,9 +255,18 @@ function openStatusModal(user: any) {
 async function submitStatus() {
     if (!activeUser.value) return
     try {
-        await adminService.updateAccountStatus(activeUser.value.id, statusPayload.value.status, statusPayload.value.reason)
+        await setAccountStatus(activeUser.value, statusPayload.value.status, statusPayload.value.reason, false)
         showStatusModal.value = false
+    } catch (err: any) {
+        alert(err.message)
+    }
+}
+
+async function setAccountStatus(user: any, status: string, reason = '', showAlert = true) {
+    try {
+        await adminService.updateAccountStatus(user.id, status, reason)
         fetchAccounts()
+        if (showAlert && status === 'active') alert('Account unblocked.')
     } catch (err: any) {
         alert(err.message)
     }
@@ -295,8 +323,10 @@ function getStatusClass(status: string) {
     switch (status) {
         case 'active': return 'badge-green'
         case 'inactive': return 'badge-amber'
+        case 'suspended': return 'badge-red'
         case 'archived': return 'badge-red'
-        case 'waiting': return 'badge-blue'
+        case 'waiting_assignment': return 'badge-blue'
+        case 'pending_activation': return 'badge-amber'
         default: return 'bg-gray-100 text-gray-600'
     }
 }

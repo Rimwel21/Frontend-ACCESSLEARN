@@ -32,6 +32,7 @@
                 v-model="studentForm.grade_level_id"
                 class="input-field"
                 required
+                :disabled="isExistingStudentProfile"
                 @change="handleStudentGradeChange"
               >
                 <option :value="null">Select grade</option>
@@ -40,14 +41,14 @@
             </div>
             <div>
               <label class="field-label" for="section">Section</label>
-              <select id="section" v-model="studentForm.section_id" class="input-field" required :disabled="studentSections.length === 0">
+              <select id="section" v-model="studentForm.section_id" class="input-field" required :disabled="isExistingStudentProfile || studentSections.length === 0">
                 <option :value="null">Select section</option>
                 <option v-for="section in studentSections" :key="section.id" :value="section.id">{{ section.name }}</option>
               </select>
             </div>
             <div>
               <label class="field-label" for="student-type">Student Type</label>
-              <select id="student-type" v-model="studentForm.student_type" class="input-field" required>
+              <select id="student-type" v-model="studentForm.student_type" class="input-field" required :disabled="isExistingStudentProfile">
                 <option value="">Select type</option>
                 <option value="regular">Regular</option>
                 <option value="hearing impaired">Hearing Impaired</option>
@@ -178,6 +179,7 @@ const teacherForm = ref({
 })
 
 const roleLabel = computed(() => auth.role === 'student' ? 'Student' : 'Teacher')
+const isExistingStudentProfile = computed(() => auth.role === 'student' && Boolean(profile.profile))
 
 onMounted(async () => {
   await loadGradeLevels()
@@ -246,7 +248,7 @@ async function submitProfile() {
     : teacherForm.value
 
   await profile.saveProfile(payload, imageFile.value)
-  message.value = 'Profile saved. Opening dashboard...'
+  message.value = profile.imageUploadWarning || 'Profile saved. Opening dashboard...'
 
   setTimeout(() => {
     router.push(auth.role === 'student' ? '/student/dashboard' : '/teacher/class')

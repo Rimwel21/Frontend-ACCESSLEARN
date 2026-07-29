@@ -72,6 +72,7 @@ export const useProfileStore = defineStore('profile', () => {
   const loading = ref(false)
   const saving = ref(false)
   const error = ref('')
+  const imageUploadWarning = ref('')
 
   const displayName = computed(() => profile.value?.name ?? 'SIGNHEAR user')
   const initial = computed(() => displayName.value.charAt(0).toUpperCase())
@@ -142,6 +143,7 @@ export const useProfileStore = defineStore('profile', () => {
 
     saving.value = true
     error.value = ''
+    imageUploadWarning.value = ''
 
     const exists = Boolean(profile.value)
     const method = exists ? 'PATCH' : 'POST'
@@ -158,7 +160,13 @@ export const useProfileStore = defineStore('profile', () => {
       auth.setProfileCompleted(true)
 
       if (imageFile) {
-        await uploadImage(imageFile)
+        try {
+          await uploadImage(imageFile)
+        } catch (err) {
+          imageUploadWarning.value = err instanceof Error
+            ? `Profile saved, but image upload failed: ${err.message}`
+            : 'Profile saved, but image upload failed.'
+        }
       }
 
       return profile.value
@@ -201,6 +209,7 @@ export const useProfileStore = defineStore('profile', () => {
     profile.value = null
     image.value = null
     error.value = ''
+    imageUploadWarning.value = ''
   }
 
   return {
@@ -209,6 +218,7 @@ export const useProfileStore = defineStore('profile', () => {
     loading,
     saving,
     error,
+    imageUploadWarning,
     displayName,
     initial,
     fetchProfile,

@@ -99,9 +99,6 @@
         <div class="card">
           <div class="px-4 pt-4 pb-3 border-b border-gray-50 font-display font-semibold text-[13px]">{{ calendarTitle }}</div>
           <div class="p-3">
-            <div class="flex justify-between items-center mb-2.5">
-              <span class="font-display text-xs font-semibold">{{ calendarMonthYear }}</span>
-            </div>
             <div class="grid grid-cols-7 gap-0.5 text-center">
               <div v-for="d in weekDays" :key="d" class="text-[8px] font-semibold text-ink-soft py-1">{{ d }}</div>
               <div v-for="blank in calendarLeadingBlanks" :key="`blank-${blank}`" />
@@ -140,7 +137,6 @@ const today = new Date()
 const selectedProgressClassId = ref('')
 const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const calendarTitle = computed(() => today.toLocaleString('default', { month: 'long', year: 'numeric' }))
-const calendarMonthYear = computed(() => today.toLocaleString('default', { month: 'short', year: 'numeric' }))
 const calendarDays = computed(() => new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate())
 const calendarLeadingBlanks = computed(() => {
   const sundayBased = new Date(today.getFullYear(), today.getMonth(), 1).getDay()

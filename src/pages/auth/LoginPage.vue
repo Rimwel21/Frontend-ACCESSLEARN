@@ -52,6 +52,65 @@
           </button>
         </div>
 
+        <div v-if="showPasswordReset" class="rounded-xl border border-brand-teal/30 bg-brand-teal/5 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="font-display text-base font-bold text-ink">Reset Teacher Password</h2>
+              <p class="mt-1 text-xs font-semibold text-ink-soft">Use the OTP sent to your teacher email.</p>
+            </div>
+            <button type="button" class="text-xs font-bold text-ink-soft hover:text-brand-rose" @click="closePasswordReset">Close</button>
+          </div>
+
+          <div class="mt-4 grid gap-3">
+            <div>
+              <label class="field-label" for="reset-email">Teacher Email</label>
+              <input id="reset-email" v-model.trim="resetEmail" class="input-field mt-1" type="email" autocomplete="email" required />
+            </div>
+
+            <button
+              type="button"
+              class="btn-secondary justify-center rounded-lg"
+              :disabled="auth.loading || resetStep !== 1"
+              @click="requestPasswordResetOtp"
+            >
+              {{ auth.loading && resetStep === 1 ? 'Sending OTP...' : 'Send OTP' }}
+            </button>
+
+            <div v-if="resetStep >= 2" class="grid gap-3">
+              <div>
+                <label class="field-label" for="reset-otp">OTP Code</label>
+                <input id="reset-otp" v-model.trim="resetOtp" class="input-field mt-1" inputmode="numeric" minlength="6" maxlength="6" placeholder="6-digit code" />
+              </div>
+              <button
+                v-if="resetStep === 2"
+                type="button"
+                class="btn-secondary justify-center rounded-lg"
+                :disabled="auth.loading"
+                @click="verifyPasswordResetOtp"
+              >
+                {{ auth.loading ? 'Verifying...' : 'Verify OTP' }}
+              </button>
+            </div>
+
+            <div v-if="resetStep >= 3" class="grid gap-3">
+              <div>
+                <label class="field-label" for="new-password">New Password</label>
+                <input id="new-password" v-model="newPassword" class="input-field mt-1" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+              </div>
+              <div>
+                <label class="field-label" for="confirm-password">Confirm New Password</label>
+                <input id="confirm-password" v-model="confirmPassword" class="input-field mt-1" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+              </div>
+              <button type="button" class="btn-primary justify-center rounded-lg" :disabled="auth.loading" @click="confirmPasswordReset">
+                {{ auth.loading ? 'Saving...' : 'Create New Password' }}
+              </button>
+            </div>
+
+            <p v-if="resetMessage" class="status-success" role="status">{{ resetMessage }}</p>
+            <p v-if="resetError" class="status-error" role="alert">{{ resetError }}</p>
+          </div>
+        </div>
+
         <div v-if="isPendingApproval" class="status-warning" role="status">
           <p class="font-bold">⏳ Account Pending Approval</p>
           <p class="mt-1 text-xs font-normal opacity-80">Your account is waiting for admin verification.</p>
@@ -63,7 +122,6 @@
         </div>
 
         <p v-else-if="auth.error" class="status-error" role="alert">{{ auth.error }}</p>
-        <p v-else-if="recoveryMessage" class="status-warning" role="status">{{ recoveryMessage }}</p>
 
         <button type="submit" class="btn-primary w-full justify-center rounded-xl py-3 mt-1 text-sm font-bold" :disabled="auth.loading">
           {{ auth.loading ? 'Signing in...' : 'Login' }}
@@ -96,20 +154,104 @@ const password = ref('')
 const showPassword = ref(false)
 const isPendingApproval = ref(false)
 const isBlocked = ref(false)
-const recoveryMessage = ref('')
+const showPasswordReset = ref(false)
+const resetStep = ref(1)
+const resetEmail = ref('')
+const resetOtp = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+const resetMessage = ref('')
+const resetError = ref('')
 
 const roleLabel = computed(() => role.value === 'teacher' ? 'Teacher' : 'Student')
 
 function handleForgotPassword() {
-  recoveryMessage.value = 'Please contact your school administrator or support team to reset your password.'
+  showPasswordReset.value = true
+  resetEmail.value = accountIdentityInput.value.includes('@') ? accountIdentityInput.value : resetEmail.value
+  resetMessage.value = ''
+  resetError.value = ''
   auth.error = ''
+}
+
+function closePasswordReset() {
+  showPasswordReset.value = false
+  resetStep.value = 1
+  resetOtp.value = ''
+  newPassword.value = ''
+  confirmPassword.value = ''
+  resetMessage.value = ''
+  resetError.value = ''
+}
+
+async function requestPasswordResetOtp() {
+  resetMessage.value = ''
+  resetError.value = ''
+  const email = resetEmail.value.trim()
+  if (!email) {
+    resetError.value = 'Enter your teacher email.'
+    return
+  }
+
+  try {
+    const data = await auth.requestTeacherPasswordResetOtp(email)
+    resetStep.value = 2
+    resetMessage.value = data.delivery === 'failed'
+      ? 'OTP email could not be delivered. Please check the mail configuration and try again.'
+      : data.message || 'OTP sent. Check your email.'
+  } catch (err) {
+    resetError.value = err instanceof Error ? err.message : 'Failed to send OTP.'
+  }
+}
+
+async function verifyPasswordResetOtp() {
+  resetMessage.value = ''
+  resetError.value = ''
+  if (!/^\d{6}$/.test(resetOtp.value)) {
+    resetError.value = 'OTP must be exactly 6 digits.'
+    return
+  }
+
+  try {
+    const data = await auth.verifyTeacherPasswordResetOtp(resetEmail.value.trim(), resetOtp.value)
+    resetStep.value = 3
+    resetMessage.value = data.message || 'OTP verified. Enter your new password.'
+  } catch (err) {
+    resetError.value = err instanceof Error ? err.message : 'OTP verification failed.'
+  }
+}
+
+async function confirmPasswordReset() {
+  resetMessage.value = ''
+  resetError.value = ''
+  if (newPassword.value.length < 8) {
+    resetError.value = 'Password must be at least 8 characters.'
+    return
+  }
+  if (newPassword.value !== confirmPassword.value) {
+    resetError.value = 'Passwords do not match.'
+    return
+  }
+
+  try {
+    const data = await auth.confirmTeacherPasswordReset(resetEmail.value.trim(), resetOtp.value, newPassword.value)
+    password.value = newPassword.value
+    accountIdentityInput.value = resetEmail.value.trim()
+    resetMessage.value = data.message || 'Password reset successfully.'
+    resetStep.value = 1
+    resetOtp.value = ''
+    newPassword.value = ''
+    confirmPassword.value = ''
+  } catch (err) {
+    resetError.value = err instanceof Error ? err.message : 'Password reset failed.'
+  }
 }
 
 async function submitLogin() {
   isPendingApproval.value = false
   isBlocked.value = false
   auth.error = ''
-  recoveryMessage.value = ''
+  resetMessage.value = ''
+  resetError.value = ''
   const accountIdentity = accountIdentityInput.value.trim()
   const isEmailLogin = accountIdentity.includes('@')
 

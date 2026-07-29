@@ -26,7 +26,14 @@
     </div>
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      <article v-for="stat in statCards" :key="stat.label" class="card-hover p-5">
+      <article
+        v-for="stat in statCards"
+        :key="stat.label"
+        :class="['card-hover p-5', stat.action ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-blue/30' : '']"
+        :tabindex="stat.action ? 0 : -1"
+        @click="handleStatCard(stat.action)"
+        @keydown.enter.prevent="handleStatCard(stat.action)"
+      >
         <div class="flex items-start justify-between gap-3">
           <div>
             <p class="text-[11px] font-black uppercase tracking-widest text-ink-soft">{{ stat.label }}</p>
@@ -36,6 +43,52 @@
           <div :class="['grid h-11 w-11 place-items-center rounded-xl text-sm font-black', stat.tone]">{{ stat.icon }}</div>
         </div>
       </article>
+    </section>
+
+    <section v-if="accountPanel" class="card overflow-hidden">
+      <div class="flex flex-col gap-3 border-b border-gray-50 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="font-display text-lg font-bold text-ink">{{ accountPanel.title }}</h2>
+          <p class="text-xs text-ink-soft">{{ accountPanel.subtitle }}</p>
+        </div>
+        <button class="text-xs font-bold text-ink-soft transition-all hover:text-brand-rose" @click="closeAccountPanel">Close</button>
+      </div>
+
+      <div v-if="accountPanelLoading" class="p-8 text-center text-sm font-bold text-ink-soft">Loading accounts...</div>
+      <div v-else-if="accountPanelItems.length === 0" class="p-8 text-center text-sm font-bold text-ink-soft">No accounts found.</div>
+      <div v-else class="divide-y divide-gray-50">
+        <div
+          v-for="account in accountPanelItems"
+          :key="account.id"
+          class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div class="min-w-0">
+            <div class="truncate text-sm font-bold text-ink">{{ account.full_name || account.email }}</div>
+            <div class="truncate text-xs font-semibold text-ink-soft">{{ account.email }}</div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span :class="['badge', account.account_status === 'active' ? 'badge-green' : 'badge-red']">
+              {{ formatStatus(account.account_status) }}
+            </span>
+            <template v-if="accountPanel.kind === 'blocked'">
+              <button
+                class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition-all hover:border-emerald-500 hover:bg-emerald-100"
+                :disabled="accountPanelLoading"
+                @click="unblockDashboardAccount(account)"
+              >
+                Unblock
+              </button>
+              <button
+                class="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-brand-rose transition-all hover:border-brand-rose hover:bg-rose-100"
+                :disabled="accountPanelLoading"
+                @click="removeDashboardAccount(account)"
+              >
+                Remove
+              </button>
+            </template>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
@@ -103,14 +156,6 @@
           </button>
         </div>
 
-        <div class="card p-5">
-          <h2 class="font-display text-lg font-bold text-ink">Quick Actions</h2>
-          <div class="mt-4 grid gap-3">
-            <button class="btn-secondary justify-start !rounded-xl" @click="router.push('/admin/sections')">Manage Sections</button>
-            <button class="btn-secondary justify-start !rounded-xl" @click="router.push('/admin/audit-log')">View Audit Log</button>
-            <button class="btn-primary justify-start !rounded-xl" @click="scrollToRequests">Verify Accounts</button>
-          </div>
-        </div>
       </aside>
     </section>
 
@@ -139,6 +184,7 @@ import { useRouter } from 'vue-router'
 import { apiFetch, ApiError } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 import { adminService } from '@/services/adminService'
+import type { AccountListOut } from '@/types/admin'
 
 interface PendingTeacher {
   id: number
@@ -162,14 +208,17 @@ const loading = ref(false)
 const successMsg = ref('')
 const errorMsg = ref('')
 const selectedTeacher = ref<PendingTeacher | null>(null)
+const accountPanel = ref<{ kind: 'blocked' | 'teachers' | 'students', title: string, subtitle: string } | null>(null)
+const accountPanelItems = ref<AccountListOut[]>([])
+const accountPanelLoading = ref(false)
 
 const statCards = computed(() => [
-  { label: 'Pending Verification Requests', value: pendingAccounts.value.length, description: 'Teacher accounts waiting for review.', icon: 'VR', tone: 'bg-brand-amber/15 text-brand-amber' },
-  { label: 'Approved Today', value: approvedToday.value, description: 'Accounts verified today.', icon: 'AP', tone: 'bg-brand-green/15 text-brand-green' },
-  { label: 'Blocked Accounts', value: blockedAccounts.value, description: 'Accounts restricted from access.', icon: 'BL', tone: 'bg-brand-rose/15 text-brand-rose' },
-  { label: 'Active Teachers', value: activeTeachers.value, description: 'Teacher accounts currently active.', icon: 'TR', tone: 'bg-brand-blue/10 text-brand-blue' },
-  { label: 'Active Students', value: activeStudents.value, description: 'Student accounts currently active.', icon: 'ST', tone: 'bg-brand-teal/15 text-brand-teal' },
-  { label: "Today's Logins", value: todaysLogins.value, description: 'Successful login events recorded today.', icon: 'LG', tone: 'bg-brand-violet/10 text-brand-violet' },
+  { label: 'Pending Verification Requests', value: pendingAccounts.value.length, description: 'Teacher accounts waiting for review.', icon: 'VR', tone: 'bg-brand-amber/15 text-brand-amber', action: 'pending' },
+  { label: 'Approved Today', value: approvedToday.value, description: 'Accounts verified today.', icon: 'AP', tone: 'bg-brand-green/15 text-brand-green', action: '' },
+  { label: 'Blocked Accounts', value: blockedAccounts.value, description: 'Accounts restricted from access.', icon: 'BL', tone: 'bg-brand-rose/15 text-brand-rose', action: 'blocked' },
+  { label: 'Active Teachers', value: activeTeachers.value, description: 'Teacher accounts currently active.', icon: 'TR', tone: 'bg-brand-blue/10 text-brand-blue', action: 'teachers' },
+  { label: 'Active Students', value: activeStudents.value, description: 'Student accounts currently active.', icon: 'ST', tone: 'bg-brand-teal/15 text-brand-teal', action: 'students' },
+  { label: "Today's Logins", value: todaysLogins.value, description: 'Successful login events recorded today.', icon: 'LG', tone: 'bg-brand-violet/10 text-brand-violet', action: '' },
 ])
 
 async function refreshDashboard() {
@@ -244,6 +293,82 @@ async function blockAccount(teacherId: number) {
   }
 }
 
+function handleStatCard(action: string) {
+  if (!action) return
+  if (action === 'pending') {
+    scrollToRequests()
+    return
+  }
+  openAccountPanel(action as 'blocked' | 'teachers' | 'students')
+}
+
+async function openAccountPanel(kind: 'blocked' | 'teachers' | 'students') {
+  accountPanel.value = {
+    kind,
+    title: kind === 'blocked' ? 'Blocked Accounts' : kind === 'teachers' ? 'Active Teachers' : 'Active Students',
+    subtitle: kind === 'blocked'
+      ? 'Accounts restricted from access. Unblock or remove them here.'
+      : kind === 'teachers'
+        ? 'Teacher accounts currently active.'
+        : 'Student accounts currently active.',
+  }
+  await loadAccountPanel()
+}
+
+async function loadAccountPanel() {
+  if (!accountPanel.value) return
+  accountPanelLoading.value = true
+  errorMsg.value = ''
+  try {
+    if (accountPanel.value.kind === 'blocked') {
+      const [suspended, inactive] = await Promise.all([
+        adminService.getAccounts({ status: 'suspended', page: 1, per_page: 25 }),
+        adminService.getAccounts({ status: 'inactive', page: 1, per_page: 25 }),
+      ])
+      accountPanelItems.value = [...suspended.items, ...inactive.items]
+      return
+    }
+
+    const role = accountPanel.value.kind === 'teachers' ? 'teacher' : 'student'
+    const res = await adminService.getAccounts({ role, status: 'active', page: 1, per_page: 25 })
+    accountPanelItems.value = res.items
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to load accounts.'
+  } finally {
+    accountPanelLoading.value = false
+  }
+}
+
+function closeAccountPanel() {
+  accountPanel.value = null
+  accountPanelItems.value = []
+}
+
+async function unblockDashboardAccount(account: AccountListOut) {
+  errorMsg.value = ''
+  successMsg.value = ''
+  try {
+    await adminService.updateAccountStatus(account.id, 'active', 'Account unblocked by administrator')
+    successMsg.value = 'Account unblocked.'
+    await Promise.all([loadAccountStats(), loadAccountPanel()])
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to unblock account.'
+  }
+}
+
+async function removeDashboardAccount(account: AccountListOut) {
+  if (!confirm(`Remove ${account.full_name || account.email}? This permanently deletes the account.`)) return
+  errorMsg.value = ''
+  successMsg.value = ''
+  try {
+    await adminService.deleteAccount(account.id)
+    successMsg.value = 'Account removed.'
+    await Promise.all([loadAccountStats(), loadAccountPanel()])
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to remove account.'
+  }
+}
+
 function teacherName(teacher: PendingTeacher) {
   return teacher.username || teacher.email.split('@')[0] || 'Teacher'
 }
@@ -258,6 +383,10 @@ function formatDateTime(value: string) {
 
 function formatTime(value: string) {
   return new Date(value).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+}
+
+function formatStatus(status: string) {
+  return status.replace(/_/g, ' ').toUpperCase()
 }
 
 function scrollToRequests() {
