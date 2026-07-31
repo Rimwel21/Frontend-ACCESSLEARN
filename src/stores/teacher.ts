@@ -87,6 +87,7 @@ interface AssessmentSettings {
   category?: string | null
   week?: string | null
   timeLimit?: string | null
+  timeLimitSeconds?: number | null
   attemptsAllowed?: number
   shuffleQuestions?: boolean
   showAnswersAfterSubmission?: boolean
@@ -218,6 +219,7 @@ interface TeacherAssessmentResponse {
   category: string | null
   week: string | null
   time_limit: string | null
+  time_limit_seconds: number | null
   attempts_allowed: number
   shuffle_questions: boolean
   show_answers_after_submission: boolean
@@ -559,7 +561,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     description: string
     quizType: string
     week: string
-    timeLimit: string
+    timeLimitSeconds: number | null
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
@@ -584,7 +586,8 @@ export const useTeacherStore = defineStore('teacher', () => {
           description: payload.description,
           category: payload.quizType,
           week: payload.week,
-          time_limit: payload.timeLimit,
+          time_limit: null,
+          time_limit_seconds: payload.timeLimitSeconds,
           attempts_allowed: payload.attemptsAllowed,
           shuffle_questions: payload.shuffleQuestions,
           show_answers_after_submission: payload.showAnswersAfterSubmission,
@@ -681,7 +684,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     description: string
     quizType: string
     week: string
-    timeLimit: string
+    timeLimitSeconds: number | null
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
@@ -705,7 +708,8 @@ export const useTeacherStore = defineStore('teacher', () => {
           description: payload.description,
           category: payload.quizType,
           week: payload.week,
-          time_limit: payload.timeLimit,
+          time_limit: null,
+          time_limit_seconds: payload.timeLimitSeconds,
           attempts_allowed: payload.attemptsAllowed,
           shuffle_questions: payload.shuffleQuestions,
           show_answers_after_submission: payload.showAnswersAfterSubmission,
@@ -1021,6 +1025,7 @@ function mapQuizResponse(assessment: TeacherAssessmentResponse, availableModules
     category: assessment.category,
     week: assessment.week,
     timeLimit: assessment.time_limit,
+    timeLimitSeconds: assessment.time_limit_seconds,
     attemptsAllowed: assessment.attempts_allowed,
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,

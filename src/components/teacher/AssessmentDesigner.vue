@@ -71,22 +71,44 @@
 
         <section class="figma-panel">
           <div class="mb-4">
-            <h2 class="figma-card-title mb-1">{{ title }} Settings</h2>
-            <p class="text-xs font-semibold text-ink-soft">Control attempt behavior and answer visibility.</p>
+            <h2 class="figma-card-title mb-1">{{ props.kind === 'quiz' ? 'Quiz Timer' : `${title} Settings` }}</h2>
+            <p class="text-xs font-semibold text-ink-soft">{{ props.kind === 'quiz' ? 'Choose if this quiz has a countdown, then set the duration and unit.' : 'Control attempt behavior and answer visibility.' }}</p>
           </div>
           <div class="grid gap-3 sm:grid-cols-2">
-            <div v-if="props.kind === 'quiz'">
-              <label class="figma-label" for="time-limit">Time Limit</label>
-              <div class="grid grid-cols-[minmax(0,1fr)_120px] gap-2">
-                <input id="time-limit" v-model.number="form.timeLimitValue" class="figma-input" min="1" type="number" />
-                <select v-model="form.timeLimitUnit" class="figma-input">
-                  <option value="seconds">Seconds</option>
-                  <option value="minutes">Minutes</option>
-                  <option value="hours">Hours</option>
-                </select>
+            <div v-if="props.kind === 'quiz'" class="sm:col-span-2">
+              <label class="flex items-center gap-2 text-xs font-bold">
+                <input v-model="form.timerEnabled" type="checkbox" class="accent-green-500" />
+                Enable Quiz Timer
+              </label>
+              <div class="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_150px]">
+                <div>
+                  <label class="figma-label" for="time-limit-duration">Duration</label>
+                  <input
+                    id="time-limit-duration"
+                    v-model.number="form.timeLimitValue"
+                    class="figma-input"
+                    inputmode="numeric"
+                    min="1"
+                    step="1"
+                    type="number"
+                    :disabled="!form.timerEnabled"
+                    placeholder="Enter number"
+                    @input="sanitizeTimerDuration"
+                    @keydown="blockInvalidNumberInput"
+                  />
+                </div>
+                <div>
+                  <label class="figma-label" for="time-limit-unit">Unit</label>
+                  <select id="time-limit-unit" v-model="form.timeLimitUnit" class="figma-input" :disabled="!form.timerEnabled">
+                    <option value="hours">Hours</option>
+                    <option value="minutes">Minutes</option>
+                    <option value="seconds">Seconds</option>
+                  </select>
+                </div>
               </div>
+              <p v-if="!form.timerEnabled" class="mt-2 text-[11px] font-semibold text-ink-soft">Timer disabled: students can answer without a countdown.</p>
             </div>
-            <div>
+            <div v-if="props.kind !== 'quiz'">
               <label class="figma-label" for="attempts">Attempts Allowed</label>
               <input id="attempts" v-model.number="form.attemptsAllowed" class="figma-input" min="1" type="number" />
             </div>
@@ -172,6 +194,7 @@ function blankForm() {
   category: '',
   week: '',
   dueDate: '',
+  timerEnabled: false,
   timeLimitValue: null as number | null,
   timeLimitUnit: 'minutes' as 'seconds' | 'minutes' | 'hours',
   attemptsAllowed: 1,
@@ -240,9 +263,9 @@ async function saveAssessment() {
   }
 
   if (props.kind === 'quiz') {
-    const timeLimit = composeTimeLimit()
-    if (!timeLimit) {
-      error.value = 'Enter a valid quiz time limit greater than zero.'
+    const timeLimitSeconds = composeTimeLimitSeconds()
+    if (form.value.timerEnabled && !timeLimitSeconds) {
+      error.value = 'Enter a positive whole-number quiz time limit.'
       return
     }
 
@@ -254,7 +277,7 @@ async function saveAssessment() {
       description: form.value.description,
       quizType: form.value.category,
       week: form.value.week,
-      timeLimit,
+      timeLimitSeconds,
       attemptsAllowed: form.value.attemptsAllowed,
       shuffleQuestions: form.value.shuffleQuestions,
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
@@ -324,7 +347,7 @@ async function hydrateForm() {
     category: assessment.category ?? ('type' in assessment ? assessment.type : assessment.module) ?? '',
     week: assessment.week ?? '',
     dueDate: toDateInput(assessment.dueAt),
-    ...parseTimeLimit(assessment.timeLimit ?? ('dueTime' in assessment ? assessment.dueTime : '') ?? ''),
+    ...parseTimeLimit(assessment.timeLimitSeconds, assessment.timeLimit ?? ('dueTime' in assessment ? assessment.dueTime : '') ?? ''),
     attemptsAllowed: assessment.attemptsAllowed ?? 1,
     shuffleQuestions: assessment.shuffleQuestions ?? true,
     showAnswersAfterSubmission: assessment.showAnswersAfterSubmission ?? true,
@@ -362,17 +385,25 @@ function toDateInput(value?: string | null) {
   return date.toISOString().slice(0, 10)
 }
 
-function composeTimeLimit() {
+function composeTimeLimitSeconds() {
+  if (!form.value.timerEnabled) return null
   const value = Number(form.value.timeLimitValue)
-  if (!Number.isInteger(value) || value <= 0) return ''
-  const unit = value === 1 ? form.value.timeLimitUnit.slice(0, -1) : form.value.timeLimitUnit
-  return `${value} ${unit}`
+  if (!Number.isInteger(value) || value <= 0) return null
+  if (form.value.timeLimitUnit === 'hours') return value * 3600
+  if (form.value.timeLimitUnit === 'minutes') return value * 60
+  return value
 }
 
-function parseTimeLimit(value?: string | null) {
+function parseTimeLimit(seconds?: number | null, value?: string | null) {
   const fallback = {
+    timerEnabled: false,
     timeLimitValue: null as number | null,
     timeLimitUnit: 'minutes' as 'seconds' | 'minutes' | 'hours',
+  }
+  if (seconds && Number.isInteger(seconds) && seconds > 0) {
+    if (seconds % 3600 === 0) return { timerEnabled: true, timeLimitValue: seconds / 3600, timeLimitUnit: 'hours' as const }
+    if (seconds % 60 === 0) return { timerEnabled: true, timeLimitValue: seconds / 60, timeLimitUnit: 'minutes' as const }
+    return { timerEnabled: true, timeLimitValue: seconds, timeLimitUnit: 'seconds' as const }
   }
   if (!value) return fallback
 
@@ -383,8 +414,23 @@ function parseTimeLimit(value?: string | null) {
   if (!Number.isInteger(amount) || amount <= 0) return fallback
 
   const unit = match[2] ?? 'minutes'
-  if (unit.startsWith('h')) return { timeLimitValue: amount, timeLimitUnit: 'hours' as const }
-  if (unit.startsWith('s')) return { timeLimitValue: amount, timeLimitUnit: 'seconds' as const }
-  return { timeLimitValue: amount, timeLimitUnit: 'minutes' as const }
+  if (unit.startsWith('h')) return { timerEnabled: true, timeLimitValue: amount, timeLimitUnit: 'hours' as const }
+  if (unit.startsWith('s')) return { timerEnabled: true, timeLimitValue: amount, timeLimitUnit: 'seconds' as const }
+  return { timerEnabled: true, timeLimitValue: amount, timeLimitUnit: 'minutes' as const }
+}
+
+function blockInvalidNumberInput(event: KeyboardEvent) {
+  if (['e', 'E', '+', '-', '.'].includes(event.key)) {
+    event.preventDefault()
+  }
+}
+
+function sanitizeTimerDuration() {
+  const value = Number(form.value.timeLimitValue)
+  if (!Number.isFinite(value) || value <= 0) {
+    form.value.timeLimitValue = null
+    return
+  }
+  form.value.timeLimitValue = Math.floor(value)
 }
 </script>

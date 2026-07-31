@@ -252,7 +252,10 @@
         <section class="w-full max-w-sm border-[3px] border-brand-teal bg-white p-6 shadow-2xl">
           <div class="mb-1 font-mono text-[10px] font-black uppercase tracking-widest text-brand-teal">Quiz Confirmation</div>
           <h2 class="font-display text-xl font-black text-ink">Ready to Start?</h2>
-          <p class="mt-3 text-sm leading-relaxed text-gray-600">Once you begin, the timer starts immediately and cannot be paused. Ensure you have a stable connection before continuing.</p>
+          <p class="mt-3 text-sm leading-relaxed text-gray-600">
+            This quiz has a time limit. The timer starts immediately after confirmation and cannot be paused or restarted.
+            When time expires, the quiz submits automatically and unanswered questions remain unanswered.
+          </p>
           <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
@@ -358,6 +361,12 @@ function selectIntro() {
 
 async function selectQuiz(quizId: number) {
   if (!quizUnlocked.value) return
+  const quiz = quizzes.value.find(item => item.id === quizId)
+  if (!quiz) return
+  if (quiz.student_status === 'completed' || quiz.student_started_at || !hasQuizTimer(quiz)) {
+    await openQuiz(quizId)
+    return
+  }
   pendingQuizId.value = quizId
 }
 
@@ -369,11 +378,16 @@ async function confirmQuizStart() {
   if (!pendingQuizId.value) return
   const quizId = pendingQuizId.value
   pendingQuizId.value = null
+  await openQuiz(quizId)
+}
+
+async function openQuiz(quizId: number) {
   clearQuizTimer()
   quizTimeExpired.value = false
   activeQuizId.value = quizId
   activeTopicId.value = null
-  quizAnswers.value = {}
+  const selectedQuiz = quizzes.value.find(quiz => quiz.id === quizId)
+  quizAnswers.value = { ...(selectedQuiz?.student_answers ?? {}) }
   quizResult.value = null
   const timer = await content.startQuiz(moduleId.value, quizId).catch(() => null)
   if (!timer) return
@@ -382,8 +396,8 @@ async function confirmQuizStart() {
     quizResult.value = { score: timer.score ?? 0, total: timer.total ?? 0 }
     return
   }
-  if (timer.started_at && timer.time_limit_seconds) {
-    startQuizTimer(timer.started_at, timer.time_limit_seconds)
+  if (timer.time_limit_seconds) {
+    startQuizTimer(timer.remaining_seconds ?? timer.time_limit_seconds)
   }
 }
 
@@ -436,13 +450,16 @@ function assetUrl(url?: string | null) {
   return `${API_BASE_URL}${url}`
 }
 
-function startQuizTimer(startedAt: string, limitSeconds: number) {
-  const startedMs = new Date(startedAt).getTime()
-  if (Number.isNaN(startedMs) || limitSeconds <= 0) return
+function startQuizTimer(initialRemainingSeconds: number) {
+  if (initialRemainingSeconds <= 0) {
+    quizRemainingSeconds.value = 0
+    quizTimeExpired.value = true
+    void submitActiveQuiz(true)
+    return
+  }
 
   const updateRemaining = () => {
-    const elapsedSeconds = Math.floor((Date.now() - startedMs) / 1000)
-    const remaining = Math.max(0, limitSeconds - elapsedSeconds)
+    const remaining = Math.max(0, (quizRemainingSeconds.value ?? initialRemainingSeconds) - 1)
     quizRemainingSeconds.value = remaining
     if (remaining === 0) {
       clearQuizTimer()
@@ -451,8 +468,7 @@ function startQuizTimer(startedAt: string, limitSeconds: number) {
     }
   }
 
-  updateRemaining()
-  if (quizRemainingSeconds.value === 0) return
+  quizRemainingSeconds.value = initialRemainingSeconds
   quizTimer = window.setInterval(updateRemaining, 1000)
 }
 
@@ -472,5 +488,9 @@ function formatQuizTime(seconds: number) {
     return `${hours}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
   }
   return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`
+}
+
+function hasQuizTimer(quiz: { time_limit_seconds?: number | null; time_limit?: string | null }) {
+  return Boolean(quiz.time_limit_seconds && quiz.time_limit_seconds > 0) || Boolean(quiz.time_limit)
 }
 </script>
