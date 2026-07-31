@@ -41,31 +41,20 @@ interface TokenResponse {
   profile_completed: boolean
 }
 
+interface CurrentUserResponse {
+  id: number
+  username: string | null
+  email: string | null
+  role: Role
+  profile_completed: boolean
+  account_status: string | null
+}
+
 interface TeacherOtpResponse {
   message: string
   delivery?: 'sent' | 'failed'
   debug_otp?: string
   detail?: string
-}
-
-interface AccessTokenPayload {
-  role?: unknown
-}
-
-function decodeAccessTokenPayload(token: string) {
-  const payload = token.split('.')[1]
-  if (!payload) return null
-
-  try {
-    const paddedPayload = payload
-      .replace(/-/g, '+')
-      .replace(/_/g, '/')
-      .padEnd(Math.ceil(payload.length / 4) * 4, '=')
-
-    return JSON.parse(atob(paddedPayload)) as AccessTokenPayload
-  } catch {
-    return null
-  }
 }
 
 function isRole(value: unknown): value is Role {
@@ -81,12 +70,15 @@ function roleLabel(value: Role) {
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('access_token'))
   const tokenType = ref(localStorage.getItem('token_type') ?? 'bearer')
-  const role = ref<Role | null>((localStorage.getItem('role') as Role | null) ?? null)
+  const role = ref<Role | null>(null)
+  const currentUser = ref<CurrentUserResponse | null>(null)
   const accountIdentity = ref(localStorage.getItem('account_identity') ?? '')
-  const profileCompleted = ref(localStorage.getItem('profile_completed') === 'true')
+  const profileCompleted = ref(false)
+  const hydrated = ref(!token.value)
   const loading = ref(false)
   const error = ref('')
   const otpVerified = ref(false)
+  let hydrationRequest: Promise<CurrentUserResponse | null> | null = null
 
   const isAuthenticated = computed(() => Boolean(token.value))
   const authorizationHeader = computed(() =>
@@ -160,31 +152,32 @@ export const useAuthStore = defineStore('auth', () => {
         body: JSON.stringify({ ...payload, role: selectedRole }),
       })
 
-      const actualRole = decodeAccessTokenPayload(data.access_token)?.role
+      token.value = data.access_token
+      tokenType.value = data.token_type
+      hydrated.value = false
+
+      localStorage.setItem('access_token', data.access_token)
+      localStorage.setItem('token_type', data.token_type)
+
+      const currentUser = await hydrateCurrentUser({ force: true })
+      const actualRole = currentUser?.role
 
       if (!isRole(actualRole)) {
+        logout()
         throw new Error('Unable to verify account role. Please try again.')
       }
 
       if (actualRole !== selectedRole) {
+        logout()
         throw new Error(`This account belongs to ${roleLabel(actualRole)}. Please use the ${roleLabel(actualRole)} login.`)
       }
 
-      token.value = data.access_token
-      tokenType.value = data.token_type
-      role.value = actualRole
-      accountIdentity.value = actualRole === 'student' ? payload.username ?? payload.email ?? '' : payload.email ?? ''
-      const isCompleted = actualRole === 'admin' ? true : data.profile_completed
-      profileCompleted.value = isCompleted
-
-      localStorage.setItem('access_token', data.access_token)
-      localStorage.setItem('token_type', data.token_type)
-      localStorage.setItem('role', actualRole)
       localStorage.setItem('selectedRole', actualRole)
-      localStorage.setItem('account_identity', accountIdentity.value)
-      localStorage.setItem('profile_completed', String(isCompleted))
 
-      return data
+      return {
+        ...data,
+        profile_completed: profileCompleted.value,
+      }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'
       throw err
@@ -199,6 +192,8 @@ export const useAuthStore = defineStore('auth', () => {
     role.value = null
     accountIdentity.value = ''
     profileCompleted.value = false
+    hydrated.value = true
+    hydrationRequest = null
     otpVerified.value = false
     localStorage.removeItem('access_token')
     localStorage.removeItem('token_type')
@@ -216,28 +211,65 @@ export const useAuthStore = defineStore('auth', () => {
 
   function setProfileCompleted(completed: boolean) {
     profileCompleted.value = completed
-    localStorage.setItem('profile_completed', String(completed))
   }
 
-  function setAdminSession(emailVal: string) {
-    token.value = 'mock-admin-token'
-    tokenType.value = 'bearer'
-    role.value = 'admin'
-    accountIdentity.value = emailVal
-    profileCompleted.value = true
-    localStorage.setItem('access_token', 'mock-admin-token')
-    localStorage.setItem('token_type', 'bearer')
-    localStorage.setItem('role', 'admin')
-    localStorage.setItem('account_identity', emailVal)
-    localStorage.setItem('profile_completed', 'true')
+  async function hydrateCurrentUser(options: { force?: boolean } = {}) {
+    if (!token.value) {
+      clearTrustedUserState()
+      hydrated.value = true
+      return null
+    }
+
+    if (hydrated.value && !options.force) {
+      return currentUser.value
+    }
+
+    if (hydrationRequest && !options.force) {
+      return hydrationRequest
+    }
+
+    hydrationRequest = apiFetch<CurrentUserResponse>('/auth/me', { token: token.value })
+      .then((currentUser) => {
+        setTrustedUserState(currentUser)
+        return currentUser
+      })
+      .catch((err) => {
+        logout()
+        throw err
+      })
+      .finally(() => {
+        hydrationRequest = null
+      })
+
+    return hydrationRequest
+  }
+
+  function setTrustedUserState(user: CurrentUserResponse) {
+    role.value = user.role
+    currentUser.value = user
+    accountIdentity.value = user.username ?? user.email ?? ''
+    profileCompleted.value = user.role === 'admin' ? true : user.profile_completed
+    hydrated.value = true
+    localStorage.setItem('account_identity', accountIdentity.value)
+    localStorage.removeItem('role')
+    localStorage.removeItem('profile_completed')
+  }
+
+  function clearTrustedUserState() {
+    role.value = null
+    currentUser.value = null
+    accountIdentity.value = ''
+    profileCompleted.value = false
   }
 
   return {
     token,
     tokenType,
     role,
+    currentUser,
     accountIdentity,
     profileCompleted,
+    hydrated,
     loading,
     error,
     otpVerified,
@@ -247,9 +279,9 @@ export const useAuthStore = defineStore('auth', () => {
     verifyTeacherOtp,
     register,
     login,
+    hydrateCurrentUser,
     logout,
     setProfileCompleted,
-    setAdminSession,
   }
 })
 
