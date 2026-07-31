@@ -67,7 +67,7 @@
             <span>WCAG</span>
             <span class="mt-0.5 text-xs">2.2</span>
           </div>
-          <p class="text-xs font-bold uppercase tracking-wider text-[#0a7b79]">Compliant</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-[#0a7b79]">Accessible learning.</p>
           <p class="mt-1.5 text-[11px] font-semibold leading-snug text-[#5a8d82]">Readable, keyboard-friendly, accessible learning.</p>
         </div>
       </div>
@@ -130,7 +130,7 @@
             <span class="hidden sm:inline text-[#2b7668]/45">|</span>
             <span class="inline-flex items-center gap-2">
               <span class="rounded bg-[#0a7b79] px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">WCAG 2.2</span>
-              <span class="text-[#2b7668]">Compliant: Accessible learning.</span>
+              <span class="text-[#2b7668]">Accessible learning.</span>
             </span>
           </div>
         </footer>
