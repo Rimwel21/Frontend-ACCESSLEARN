@@ -67,8 +67,8 @@ export interface FileProfile {
 type Profile = StudentProfile | TeacherProfile
 
 export const useProfileStore = defineStore('profile', () => {
-  const profile = ref<Profile | null>(loadJson<Profile>('profile_data'))
-  const image = ref<FileProfile | null>(loadJson<FileProfile>('profile_image'))
+  const profile = ref<Profile | null>(loadJson<Profile>(profileStorageKey('profile_data')))
+  const image = ref<FileProfile | null>(loadJson<FileProfile>(profileStorageKey('profile_image')))
   const loading = ref(false)
   const saving = ref(false)
   const error = ref('')
@@ -89,7 +89,7 @@ export const useProfileStore = defineStore('profile', () => {
       profile.value = await apiFetch<Profile>(`/profile/${auth.role}/get_profile`, {
         token: auth.token,
       })
-      localStorage.setItem('profile_data', JSON.stringify(profile.value))
+      localStorage.setItem(profileStorageKey('profile_data'), JSON.stringify(profile.value))
       auth.setProfileCompleted(true)
 
       await fetchImage({ ignoreMissing: true })
@@ -99,8 +99,7 @@ export const useProfileStore = defineStore('profile', () => {
       if (err instanceof ApiError && err.status === 404) {
         profile.value = null
         image.value = null
-        localStorage.removeItem('profile_data')
-        localStorage.removeItem('profile_image')
+        clearStoredProfile()
         auth.setProfileCompleted(false)
         return null
       }
@@ -121,12 +120,12 @@ export const useProfileStore = defineStore('profile', () => {
       image.value = await apiFetch<FileProfile>('/profile/image/get_image', {
         token: auth.token,
       })
-      localStorage.setItem('profile_image', JSON.stringify(image.value))
+      localStorage.setItem(profileStorageKey('profile_image'), JSON.stringify(image.value))
       return image.value
     } catch (err) {
       if (options.ignoreMissing && err instanceof ApiError && err.status === 404) {
         image.value = null
-        localStorage.removeItem('profile_image')
+        localStorage.removeItem(profileStorageKey('profile_image'))
         return null
       }
 
@@ -156,7 +155,7 @@ export const useProfileStore = defineStore('profile', () => {
         body: JSON.stringify(payload),
       })
 
-      localStorage.setItem('profile_data', JSON.stringify(profile.value))
+      localStorage.setItem(profileStorageKey('profile_data'), JSON.stringify(profile.value))
       auth.setProfileCompleted(true)
 
       if (imageFile) {
@@ -188,7 +187,7 @@ export const useProfileStore = defineStore('profile', () => {
       token: auth.token,
       body: formData,
     })
-    localStorage.setItem('profile_image', JSON.stringify(image.value))
+    localStorage.setItem(profileStorageKey('profile_image'), JSON.stringify(image.value))
 
     return image.value
   }
@@ -202,7 +201,7 @@ export const useProfileStore = defineStore('profile', () => {
     })
 
     image.value = null
-    localStorage.removeItem('profile_image')
+    localStorage.removeItem(profileStorageKey('profile_image'))
   }
 
   function clear() {
@@ -240,4 +239,18 @@ function loadJson<T>(key: string) {
     localStorage.removeItem(key)
     return null
   }
+}
+
+function profileStorageKey(key: 'profile_data' | 'profile_image') {
+  const role = localStorage.getItem('role') ?? 'anonymous'
+  const accountIdentity = localStorage.getItem('account_identity') ?? ''
+  const tokenHint = localStorage.getItem('access_token')?.slice(-16) ?? 'no-token'
+  return `${key}:${role}:${accountIdentity || tokenHint}`
+}
+
+function clearStoredProfile() {
+  localStorage.removeItem(profileStorageKey('profile_data'))
+  localStorage.removeItem(profileStorageKey('profile_image'))
+  localStorage.removeItem('profile_data')
+  localStorage.removeItem('profile_image')
 }
