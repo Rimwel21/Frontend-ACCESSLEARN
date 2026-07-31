@@ -1,9 +1,7 @@
-const CACHE_VERSION = 'signhear-v1'
+const CACHE_VERSION = 'signhear-v2'
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`
-const API_CACHE = `${CACHE_VERSION}-api`
-const APP_SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons.svg']
-const CACHEABLE_API_PATHS = ['/student/modules', '/student/activities', '/profile']
+const APP_SHELL = ['/manifest.webmanifest', '/favicon.svg', '/icons.svg']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -41,9 +39,7 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  if (isCacheableApi(url)) {
-    event.respondWith(staleWhileRevalidate(request, API_CACHE))
-  }
+  if (isApiRequest(url)) return
 })
 
 self.addEventListener('sync', (event) => {
@@ -64,25 +60,21 @@ async function cacheFirst(request, cacheName) {
 async function networkFirst(request, cacheName, fallbackUrl) {
   const cache = await caches.open(cacheName)
   try {
-    const response = await fetch(request)
+    const response = await fetch(request, { cache: 'no-store' })
     if (response.ok) cache.put(request, response.clone())
     return response
   } catch {
-    return (await cache.match(request)) || (await cache.match(fallbackUrl))
-  }
-}
+    const cached = await cache.match(request)
+    if (cached) return cached
 
-async function staleWhileRevalidate(request, cacheName) {
-  const cache = await caches.open(cacheName)
-  const cached = await cache.match(request)
-  const fresh = fetch(request)
-    .then(response => {
-      if (response.ok) cache.put(request, response.clone())
-      return response
+    const fallback = await cache.match(fallbackUrl)
+    if (fallback) return fallback
+
+    return new Response('Offline. Please reconnect to load this page.', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain' },
     })
-    .catch(() => cached)
-
-  return cached || fresh
+  }
 }
 
 function isStaticAsset(request, url) {
@@ -96,8 +88,13 @@ function isStaticAsset(request, url) {
     || url.pathname.startsWith('/static/')
 }
 
-function isCacheableApi(url) {
-  return CACHEABLE_API_PATHS.some(path => url.pathname.startsWith(path))
+function isApiRequest(url) {
+  return url.origin !== self.location.origin
+    || url.pathname.startsWith('/auth/')
+    || url.pathname.startsWith('/profile/')
+    || url.pathname.startsWith('/student/')
+    || url.pathname.startsWith('/teacher/')
+    || url.pathname.startsWith('/admin/')
 }
 
 async function notifyClientsToSync() {

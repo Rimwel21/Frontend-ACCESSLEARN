@@ -71,7 +71,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}) {
 
   const data = await response.json() as T
   if (shouldCacheApiResponse(path, options)) {
-    await cacheApiResponse(apiCacheKey(path), data).catch(() => null)
+    await cacheApiResponse(apiCacheKey(path, token), data).catch(() => null)
   }
 
   return data
@@ -85,11 +85,19 @@ function shouldCacheApiResponse(path: string, options: ApiOptions) {
     || path.startsWith('/profile')
 }
 
-function apiCacheKey(path: string) {
-  return `GET:${path}`
+function apiCacheKey(path: string, token?: string | null) {
+  return `${currentAccountCacheScope(token)}:GET:${path}`
 }
 
 async function getOfflineCachedResponse<T>(path: string, options: ApiOptions) {
   if (!shouldCacheApiResponse(path, options)) return null
-  return await getCachedApiResponse<T>(apiCacheKey(path)).catch(() => null)
+  const token = options.token ?? localStorage.getItem('access_token')
+  return await getCachedApiResponse<T>(apiCacheKey(path, token)).catch(() => null)
+}
+
+function currentAccountCacheScope(token?: string | null) {
+  const role = localStorage.getItem('role') ?? 'anonymous'
+  const accountIdentity = localStorage.getItem('account_identity') ?? ''
+  const tokenHint = token ? token.slice(-16) : 'no-token'
+  return `account:${role}:${accountIdentity || tokenHint}`
 }
