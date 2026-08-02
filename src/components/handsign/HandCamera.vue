@@ -5,7 +5,7 @@
       <LoadingIndicator v-if="isDetecting" label="Detecting" />
     </div>
 
-    <div class="relative aspect-[4/3] overflow-hidden border-[3px] border-brand-teal bg-gray-100">
+    <div class="relative mx-auto aspect-[4/3] w-full max-w-[760px] overflow-hidden border-[3px] border-brand-teal bg-gray-100">
       <video ref="videoRef" class="h-full w-full -scale-x-100 object-cover" muted playsinline aria-label="Live hand sign camera feed"></video>
       <canvas ref="canvasRef" hidden></canvas>
 

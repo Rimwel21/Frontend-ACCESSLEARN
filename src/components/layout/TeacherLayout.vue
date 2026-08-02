@@ -29,7 +29,18 @@
                 : 'border-transparent text-brand-blue/80 hover:translate-x-1 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
             ]"
           >
-            <span :class="['nav-icon-box shrink-0', item.iconClass]" aria-hidden="true"></span>
+            <svg
+              class="h-5 w-5 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path v-for="path in item.iconPaths" :key="path" :d="path" />
+            </svg>
             <span class="min-w-0 flex-1">{{ item.label }}</span>
           </button>
         </RouterLink>
@@ -73,7 +84,18 @@
                   : 'border-transparent text-brand-blue/80 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
               ]"
             >
-              <span :class="['nav-icon-box shrink-0', item.iconClass]" aria-hidden="true"></span>
+              <svg
+                class="h-5 w-5 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path v-for="path in item.iconPaths" :key="path" :d="path" />
+              </svg>
               <span class="min-w-0 flex-1">{{ item.label }}</span>
             </button>
           </RouterLink>
@@ -134,11 +156,16 @@ const profile = useProfileStore()
 const menuOpen = ref(false)
 
 const navItems = [
-  { to: '/teacher/dashboard',  label: 'Home',               iconClass: 'rounded-full' },
-  { to: '/teacher/class',      label: 'Class Management',   iconClass: 'rounded-sm'   },
-  { to: '/teacher/modules',    label: 'Learning Materials', iconClass: 'rounded-sm'   },
-  { to: '/teacher/quizzes',    label: 'Quizzes',            iconClass: 'rounded-sm'   },
-  { to: '/teacher/activities', label: 'Activities',         iconClass: 'rounded-sm'   },
+  {
+    to: '/teacher/dashboard',
+    label: 'Home',
+    iconPaths: ['m3 10.5 9-7 9 7', 'M5 9.5V20h14V9.5', 'M9.5 20v-6h5v6'],
+  },
+  {
+    to: '/teacher/class',
+    label: 'Class Management',
+    iconPaths: ['M4 5.5h16', 'M6 5.5V18a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5.5', 'M9 10h6', 'M9 14h4'],
+  },
 ]
 
 const titleMap: Record<string, string> = {

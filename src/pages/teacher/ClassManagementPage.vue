@@ -70,73 +70,60 @@
           </div>
         </div>
 
-        <div class="grid gap-5 xl:grid-cols-[1fr_230px]">
-          <div class="space-y-4">
-            <div class="card p-5">
-              <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 class="font-display text-base font-semibold">Students</h3>
-                  <p class="text-xs text-ink-soft">Automatically enrolled from matching grade level and section.</p>
-                </div>
-                <button class="figma-button" @click="store.fetchClassStudents(store.selectedClass!.id)">Refresh</button>
+        <div class="space-y-4">
+          <div class="card p-5">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 class="font-display text-base font-semibold">Students</h3>
+                <p class="text-xs text-ink-soft">Automatically enrolled from matching grade level and section.</p>
               </div>
-
-              <div v-if="store.classStudentsLoading" class="text-sm text-ink-soft">Loading students...</div>
-              <div v-else-if="store.classStudents.length === 0" class="text-sm text-ink-soft">No matching students found yet.</div>
-              <div v-else class="overflow-x-auto">
-                <table class="w-full min-w-[980px] text-left text-xs">
-                  <thead class="border-b border-gray-100 text-ink-soft">
-                    <tr>
-                      <th class="py-2 font-semibold">Name</th>
-                      <th class="py-2 font-semibold">Student ID</th>
-                      <th class="py-2 font-semibold">Email</th>
-                      <th class="py-2 font-semibold">Guardian</th>
-                      <th class="py-2 font-semibold">Contact</th>
-                      <th class="py-2 font-semibold">Grade</th>
-                      <th class="py-2 font-semibold">Section</th>
-                      <th class="py-2 font-semibold">Registered</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="student in store.classStudents" :key="student.id" class="border-b border-gray-50 last:border-0">
-                      <td class="py-2 font-semibold text-ink">{{ student.name }}</td>
-                      <td class="py-2 text-ink-soft">{{ student.username || student.accountId }}</td>
-                      <td class="py-2 text-ink-soft">{{ student.email || 'No email' }}</td>
-                      <td class="py-2 text-ink-soft">{{ student.guardiansName || 'Not set' }}</td>
-                      <td class="py-2 text-ink-soft">{{ student.guardiansContactNo || 'Not set' }}</td>
-                      <td class="py-2 text-ink-soft">{{ gradeLabel(student.gradeLevel) }}</td>
-                      <td class="py-2 text-ink-soft">{{ student.section }}</td>
-                      <td class="py-2 text-ink-soft">{{ student.createdAt || 'Not available' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              <button class="figma-button" @click="store.fetchClassStudents(store.selectedClass!.id)">Refresh</button>
             </div>
 
-            <div v-for="section in sections" :key="section.title" class="card-hover cursor-pointer" @click="router.push(section.to)">
-              <div class="flex">
-                <div :class="`w-1.5 flex-shrink-0 rounded-l-xl ${section.accent}`" />
-                <div class="flex-1 p-5">
-                  <h3 class="font-display text-base font-semibold mb-2">{{ section.title }}</h3>
-                  <p class="text-sm text-ink-soft leading-relaxed">{{ section.description }}</p>
-                  <div class="flex items-center justify-between mt-4 gap-3">
-                    <div class="flex flex-wrap gap-4">
-                      <span v-for="meta in section.meta" :key="meta" class="text-[11.5px] text-ink-soft">{{ meta }}</span>
-                    </div>
-                    <button :class="`text-white text-xs font-bold px-4 py-2 rounded-full ${section.btnClass}`">{{ section.btnLabel }}</button>
-                  </div>
-                </div>
-              </div>
+            <div v-if="store.classStudentsLoading" class="text-sm text-ink-soft">Loading students...</div>
+            <div v-else-if="store.classStudents.length === 0" class="text-sm text-ink-soft">No matching students found yet.</div>
+            <div v-else class="overflow-x-auto">
+              <table class="w-full min-w-[980px] text-left text-xs">
+                <thead class="border-b border-gray-100 text-ink-soft">
+                  <tr>
+                    <th class="py-2 font-semibold">Name</th>
+                    <th class="py-2 font-semibold">Student ID</th>
+                    <th class="py-2 font-semibold">Email</th>
+                    <th class="py-2 font-semibold">Guardian</th>
+                    <th class="py-2 font-semibold">Contact</th>
+                    <th class="py-2 font-semibold">Grade</th>
+                    <th class="py-2 font-semibold">Section</th>
+                    <th class="py-2 font-semibold">Registered</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="student in store.classStudents" :key="student.id" class="border-b border-gray-50 last:border-0">
+                    <td class="py-2 font-semibold text-ink">{{ student.name }}</td>
+                    <td class="py-2 text-ink-soft">{{ student.username || student.accountId }}</td>
+                    <td class="py-2 text-ink-soft">{{ student.email || 'No email' }}</td>
+                    <td class="py-2 text-ink-soft">{{ student.guardiansName || 'Not set' }}</td>
+                    <td class="py-2 text-ink-soft">{{ student.guardiansContactNo || 'Not set' }}</td>
+                    <td class="py-2 text-ink-soft">{{ gradeLabel(student.gradeLevel) }}</td>
+                    <td class="py-2 text-ink-soft">{{ student.section }}</td>
+                    <td class="py-2 text-ink-soft">{{ student.createdAt || 'Not available' }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
-          <div class="space-y-4">
-            <div class="card p-4">
-              <div class="font-display text-[13px] font-semibold mb-3">Quick Actions</div>
-              <div class="space-y-2">
-                <button @click="router.push('/teacher/modules')" class="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-brand-blue text-white text-[13px] font-semibold hover:-translate-y-0.5 hover:shadow-lg transition-all">Add Module</button>
-                <button @click="router.push('/teacher/quizzes')" class="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-xl gradient-violet text-white text-[13px] font-semibold hover:-translate-y-0.5 hover:shadow-lg transition-all">Create Quiz</button>
-                <button @click="router.push('/teacher/activities')" class="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-xl gradient-teal text-white text-[13px] font-semibold hover:-translate-y-0.5 hover:shadow-lg transition-all">Create Activity</button>
+          <div v-for="section in sections" :key="section.title" class="card-hover cursor-pointer" @click="router.push(section.to)">
+            <div class="flex">
+              <div :class="`w-1.5 flex-shrink-0 rounded-l-xl ${section.accent}`" />
+              <div class="flex-1 p-5">
+                <h3 class="font-display text-base font-semibold mb-2">{{ section.title }}</h3>
+                <p class="text-sm text-ink-soft leading-relaxed">{{ section.description }}</p>
+                <div class="flex items-center justify-between mt-4 gap-3">
+                  <div class="flex flex-wrap gap-4">
+                    <span v-for="meta in section.meta" :key="meta" class="text-[11.5px] text-ink-soft">{{ meta }}</span>
+                  </div>
+                  <button :class="`text-white text-xs font-bold px-4 py-2 rounded-full ${section.btnClass}`">{{ section.btnLabel }}</button>
+                </div>
               </div>
             </div>
           </div>
