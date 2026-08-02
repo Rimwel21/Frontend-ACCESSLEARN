@@ -14,7 +14,7 @@
           <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-blue text-xs font-black text-white">LM</span>
           <div>
             <div class="font-display text-sm font-bold text-ink">Learning Materials</div>
-            <div class="text-xs font-semibold text-ink-soft">Upload PDF or DOCX files for student lessons</div>
+            <div class="text-xs font-semibold text-ink-soft">Upload PDF, PowerPoint, or DOCX files for student lessons</div>
           </div>
         </div>
       </RouterLink>
@@ -77,7 +77,7 @@
           <span class="lg:hidden">Class: </span>{{ classNameFor(material.classId) }}
         </div>
         <div class="text-sm text-ink-soft">
-          <span class="lg:hidden">Type: </span>{{ material.contentType || 'Material' }}
+          <span class="lg:hidden">Type: </span>{{ contentTypeLabel(material.contentType) || 'Material' }}
         </div>
         <div class="text-sm text-ink-soft">
           <span class="lg:hidden">Week: </span>{{ material.week || 'Not set' }}
@@ -102,7 +102,7 @@
             <div class="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-gray-300 bg-white px-4 py-3 shadow-sm">
               <div>
                 <h2 class="font-display text-base font-bold">{{ editingMaterialId ? 'Edit Learning Material' : 'Upload Learning Materials' }}</h2>
-                <p class="mt-0.5 text-xs font-semibold text-ink-soft">Fill in the details, attach a PDF, then save it for the selected class.</p>
+                <p class="mt-0.5 text-xs font-semibold text-ink-soft">Fill in the details, attach a matching file, then save it for the selected class.</p>
               </div>
               <div class="flex gap-2">
                 <button class="figma-button" @click="closeForm">Cancel</button>
@@ -138,7 +138,7 @@
                       <label class="figma-label">Content Type</label>
                       <select v-model="form.contentType" class="figma-input">
                         <option value="">Select content type...</option>
-                        <option v-for="type in contentTypeOptions" :key="type" :value="type">{{ type }}</option>
+                        <option v-for="type in contentTypeOptions" :key="type.value" :value="type.value">{{ type.label }}</option>
                       </select>
                     </div>
                     <div>
@@ -155,7 +155,7 @@
               <section class="figma-panel flex min-h-72 flex-col justify-between">
                 <div>
                   <h3 class="figma-card-title mb-1">Upload File</h3>
-                  <p class="text-xs font-semibold text-ink-soft">PDF and DOCX files are parsed into readable topics after saving.</p>
+                  <p class="text-xs font-semibold text-ink-soft">PDF, PowerPoint, and DOCX files are parsed into readable topics after saving.</p>
                 </div>
                 <label
                   :class="[
@@ -167,11 +167,11 @@
                   @dragleave.prevent="isDraggingFile = false"
                   @drop.prevent="onFileDrop"
                 >
-                  <input class="sr-only" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" @change="onFileChange" />
-                  <span class="text-sm font-bold">{{ editingMaterialId ? 'Choose a new file to replace the current upload' : 'Drop your PDF or DOCX here' }}</span>
+                  <input :key="selectedContentType" class="sr-only" type="file" :accept="fileAccept" @change="onFileChange" />
+                  <span class="text-sm font-bold">{{ editingMaterialId ? `Choose a new ${selectedContentTypeLabel} file to replace the current upload` : dropLabel }}</span>
                   <span class="figma-button">Browse File</span>
                   <span v-if="fileName" class="max-w-full truncate text-xs font-semibold text-ink-soft">{{ fileName }}</span>
-                  <span v-else class="text-xs font-semibold text-ink-soft">PDF or DOCX only</span>
+                  <span v-else class="text-xs font-semibold text-ink-soft">{{ fileHint }}</span>
                 </label>
               </section>
             </div>
@@ -218,13 +218,48 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { learningWeekOptions } from '@/constants/learning'
 import { useTeacherStore } from '@/stores/teacher'
 
-const allowedExtensions = ['.pdf', '.docx']
-const contentTypeOptions = ['PDF', 'DOCX']
+const contentTypeOptions = [
+  { value: 'PDF', label: 'PDF' },
+  { value: 'PPT', label: 'PowerPoint' },
+  { value: 'DOCX', label: 'DOCX' },
+] as const
+type MaterialContentType = typeof contentTypeOptions[number]['value']
+interface MaterialForm {
+  title: string
+  description: string
+  classId: string | number
+  contentType: MaterialContentType | ''
+  week: string
+  status: 'Published' | 'Unpublished'
+  releaseDate: string
+  behaviorRequired: boolean
+}
+
+const contentTypeConfig: Record<MaterialContentType, { extensions: string[]; accept: string; hint: string; label: string }> = {
+  PDF: {
+    extensions: ['.pdf'],
+    accept: '.pdf,application/pdf',
+    hint: 'PDF only',
+    label: 'PDF',
+  },
+  PPT: {
+    extensions: ['.ppt', '.pptx'],
+    accept: '.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    hint: 'PPT or PPTX only',
+    label: 'PowerPoint',
+  },
+  DOCX: {
+    extensions: ['.docx'],
+    accept: '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    hint: 'DOCX only',
+    label: 'DOCX',
+  },
+}
 const store = useTeacherStore()
 const router = useRouter()
 const search = ref('')
@@ -234,7 +269,7 @@ const successMessage = ref('')
 const selectedFile = ref<File | null>(null)
 const fileName = ref('')
 const isDraggingFile = ref(false)
-const form = ref(defaultForm())
+const form = ref<MaterialForm>(defaultForm())
 const editingMaterialId = ref<string | null>(null)
 
 const normalizedSearch = computed(() => search.value.trim().toLowerCase())
@@ -252,18 +287,23 @@ const filteredMaterials = computed(() => store.modules.filter(material => {
   ].some(value => String(value ?? '').toLowerCase().includes(normalizedSearch.value))
 }))
 const selectedClassLabel = computed(() => classNameFor(form.value.classId ? Number(form.value.classId) : null))
+const selectedContentType = computed(() => isSupportedContentType(form.value.contentType) ? form.value.contentType : 'PDF')
+const selectedContentTypeLabel = computed(() => contentTypeLabel(selectedContentType.value))
+const fileAccept = computed(() => contentTypeConfig[selectedContentType.value].accept)
+const fileHint = computed(() => contentTypeConfig[selectedContentType.value].hint)
+const dropLabel = computed(() => `Drop your ${selectedContentTypeLabel.value} here`)
 
 onMounted(() => {
   store.fetchClasses()
   store.fetchModules()
 })
 
-function defaultForm() {
+function defaultForm(): MaterialForm {
   return {
     title: '',
     description: '',
     classId: store.selectedClassId ?? '',
-    contentType: contentTypeOptions[0] ?? '',
+    contentType: contentTypeOptions[0]?.value ?? '',
     week: '',
     status: 'Unpublished' as 'Published' | 'Unpublished',
     releaseDate: '',
@@ -288,7 +328,7 @@ function openForm(material?: {
     title: material.title,
     description: material.description,
     classId: material.classId ? String(material.classId) : '',
-    contentType: contentTypeOptions.includes(material.contentType ?? '') ? material.contentType ?? '' : contentTypeOptions[0] ?? '',
+    contentType: isSupportedContentType(material.contentType) ? material.contentType : contentTypeOptions[0]?.value ?? '',
     week: material.week ?? '',
     status: material.status,
     releaseDate: toDateInputValue(material.dueAt),
@@ -323,17 +363,14 @@ function setSelectedFile(file: File | null, input?: HTMLInputElement) {
 
   if (!file) return
 
-  const lowerName = file.name.toLowerCase()
-  const isAllowed = allowedExtensions.some(extension => lowerName.endsWith(extension))
-  if (!isAllowed) {
-    formError.value = 'Unsupported file type. Upload PDF or DOCX files only.'
+  if (!isFileAllowedForContentType(file, selectedContentType.value)) {
+    formError.value = `The selected content type accepts ${selectedContentTypeLabel.value} files only.`
     if (input) input.value = ''
     return
   }
 
   selectedFile.value = file
   fileName.value = file.name
-  form.value.contentType = lowerName.endsWith('.docx') ? 'DOCX' : 'PDF'
   formError.value = ''
 }
 
@@ -347,7 +384,7 @@ async function submitMaterial() {
   }
 
   if (!editingMaterialId.value && !selectedFile.value) {
-    formError.value = 'Please select a PDF or DOCX file.'
+    formError.value = 'Please select a PDF, PowerPoint, or DOCX file.'
     return
   }
 
@@ -400,6 +437,20 @@ function classNameFor(classId?: number | null) {
   return cls ? `${cls.className} - ${cls.subject}` : `Class #${classId}`
 }
 
+function contentTypeLabel(value?: string | null) {
+  const option = contentTypeOptions.find(type => type.value === value)
+  return option?.label ?? value ?? ''
+}
+
+function isSupportedContentType(value?: string | null): value is MaterialContentType {
+  return contentTypeOptions.some(type => type.value === value)
+}
+
+function isFileAllowedForContentType(file: File, contentType: MaterialContentType) {
+  const lowerName = file.name.toLowerCase()
+  return contentTypeConfig[contentType].extensions.some(extension => lowerName.endsWith(extension))
+}
+
 async function downloadMaterial(material: { id: string; fileName?: string | null }) {
   try {
     await store.downloadModuleFile(material.id, material.fileName)
@@ -420,4 +471,12 @@ function toApiDateTime(value: string) {
 function toDateInputValue(value?: string | null) {
   return value ? value.slice(0, 10) : ''
 }
+
+watch(() => form.value.contentType, () => {
+  if (selectedFile.value && !isFileAllowedForContentType(selectedFile.value, selectedContentType.value)) {
+    selectedFile.value = null
+    fileName.value = ''
+    formError.value = `Please select a ${selectedContentTypeLabel.value} file for this content type.`
+  }
+})
 </script>

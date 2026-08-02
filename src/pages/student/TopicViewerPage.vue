@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-screen bg-white">
+  <div class="flex h-screen overflow-hidden bg-white">
     <!-- Mobile overlay -->
     <div
       v-if="sidebarOpen"
@@ -11,7 +11,7 @@
     <aside
       :class="[
         'flex flex-col border-r-[3px] border-brand-teal bg-white transition-transform duration-300 z-30',
-        'fixed inset-y-0 left-0 w-[260px] lg:relative lg:w-[220px] lg:min-w-[220px] lg:translate-x-0',
+        'fixed inset-y-0 left-0 w-[260px] lg:sticky lg:top-0 lg:h-screen lg:w-[220px] lg:min-w-[220px] lg:translate-x-0',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       ]"
     >
@@ -41,6 +41,7 @@
 
       <div class="flex-1 space-y-2 overflow-y-auto px-3 py-2">
         <button
+          v-if="hasAutoIntro"
           :class="[
             'flex w-full items-center gap-2.5 border-[2px] border-brand-teal px-3 py-2.5 text-left text-[13px] font-bold transition-all',
             isIntroActive ? 'bg-brand-blue text-white' : 'bg-white hover:bg-brand-blue-soft'
@@ -90,9 +91,9 @@
       </div>
     </aside>
 
-    <main class="flex min-w-0 flex-1 flex-col lg:ml-0">
+    <main class="flex h-screen min-w-0 flex-1 flex-col overflow-hidden lg:ml-0">
       <!-- Top bar -->
-      <header class="flex items-center gap-3 border-b-[3px] border-brand-teal bg-brand-teal px-4 py-4 sm:px-8 sm:py-5">
+      <header class="flex shrink-0 items-center gap-3 border-b-[3px] border-brand-teal bg-brand-teal px-4 py-4 sm:px-8 sm:py-5">
         <!-- Mobile sidebar toggle -->
         <button
           class="flex-shrink-0 rounded border-[2px] border-white/40 bg-white/20 p-1.5 text-white transition hover:bg-white/30 lg:hidden"
@@ -124,7 +125,7 @@
         </div>
       </header>
 
-      <section class="flex-1 overflow-y-auto bg-white p-4 sm:p-7">
+      <section class="min-h-0 flex-1 overflow-y-auto bg-white p-4 sm:p-7">
         <div v-if="content.loading" class="border-[3px] border-brand-teal bg-white p-8 text-center font-black">Loading learning content...</div>
         <div v-else-if="content.error" class="border-[3px] border-brand-teal bg-red-50 p-8 text-center font-black text-red-700">{{ content.error }}</div>
         <div v-else-if="topics.length === 0 && !isIntroActive" class="border-[3px] border-brand-teal bg-white p-10 text-center">
@@ -308,7 +309,8 @@ const quizzes = computed(() => (moduleData.value?.assessments ?? []).filter(item
 const activeQuiz = computed(() => quizzes.value.find(quiz => quiz.id === activeQuizId.value) ?? null)
 const activeIndex = computed(() => activeTopic.value ? topics.value.findIndex(topic => topic.id === activeTopic.value?.id) : 0)
 const quizUnlocked = computed(() => topics.value.length > 0 && progress.value.completed_topics >= topics.value.length)
-const isIntroActive = computed(() => !activeTopicId.value && !activeQuizId.value)
+const hasAutoIntro = computed(() => !isPagedMaterial(moduleData.value?.content_type))
+const isIntroActive = computed(() => hasAutoIntro.value && !activeTopicId.value && !activeQuizId.value)
 const headerTitle = computed(() => activeQuiz.value?.title || activeTopic.value?.title || moduleData.value?.title || 'Learning Content')
 const headerDescription = computed(() => activeQuiz.value?.description || activeTopic.value?.description || moduleData.value?.description || 'Module description')
 const quizLocked = computed(() => Boolean(quizResult.value) || quizTimeExpired.value || activeQuiz.value?.student_status === 'completed')
@@ -319,7 +321,7 @@ const quizTimerLabel = computed(() => {
 
 onMounted(async () => {
   await content.fetchModule(moduleId.value)
-  activeTopicId.value = null
+  activeTopicId.value = hasAutoIntro.value ? null : topics.value[0]?.id ?? null
 })
 
 onBeforeUnmount(() => {
@@ -354,7 +356,7 @@ function selectIntro() {
   clearQuizTimer()
   quizTimeExpired.value = false
   pendingQuizId.value = null
-  activeTopicId.value = null
+  activeTopicId.value = hasAutoIntro.value ? null : topics.value[0]?.id ?? null
   activeQuizId.value = null
   quizResult.value = null
 }
@@ -403,7 +405,7 @@ async function openQuiz(quizId: number) {
 
 async function goPrevious() {
   if (activeIndex.value <= 0) {
-    selectIntro()
+    if (hasAutoIntro.value) selectIntro()
     return
   }
   const previous = topics.value[activeIndex.value - 1]
@@ -448,6 +450,10 @@ function assetUrl(url?: string | null) {
   if (!url) return ''
   if (url.startsWith('http')) return url
   return `${API_BASE_URL}${url}`
+}
+
+function isPagedMaterial(contentType?: string | null) {
+  return contentType === 'PDF' || contentType === 'PPT'
 }
 
 function startQuizTimer(initialRemainingSeconds: number) {

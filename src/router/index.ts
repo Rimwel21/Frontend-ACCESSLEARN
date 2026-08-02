@@ -70,15 +70,27 @@ export const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
   if (!navigator.onLine && (to.path.startsWith('/teacher') || to.path.startsWith('/admin'))) {
     return { path: '/offline-required' }
   }
 
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { path: '/forbidden' }
+  if (to.meta.requiresAuth) {
+    if (!auth.isAuthenticated) {
+      return { path: '/forbidden' }
+    }
+
+    try {
+      await auth.hydrateCurrentUser()
+    } catch {
+      return { path: '/forbidden' }
+    }
+
+    if (!auth.role) {
+      return { path: '/forbidden' }
+    }
   }
 
   if (to.name === 'ProfileSetup' && auth.role === 'admin') {
@@ -94,6 +106,12 @@ router.beforeEach((to) => {
   }
 
   if ((to.name === 'Login' || to.name === 'Register' || to.name === 'Portal' || to.name === 'AdminLogin') && auth.isAuthenticated) {
+    try {
+      await auth.hydrateCurrentUser()
+    } catch {
+      return true
+    }
+
     return auth.role === 'teacher'
       ? { path: '/teacher/class' }
       : auth.role === 'admin'

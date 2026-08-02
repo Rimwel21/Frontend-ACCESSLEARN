@@ -1,15 +1,16 @@
 <template>
-  <div class="min-h-screen bg-white">
-    <div class="border-b-[3px] border-brand-teal bg-brand-teal px-8 py-6">
+  <div class="flex h-screen flex-col overflow-hidden bg-white">
+    <div class="shrink-0 border-b-[3px] border-brand-teal bg-brand-teal px-8 py-6">
       <button class="mb-4 border-[3px] border-brand-teal bg-white px-4 py-2 text-xs font-black" @click="router.push('/teacher/modules')">Back</button>
       <h1 class="font-display text-[32px] font-black text-white">{{ headerTitle }}</h1>
       <p class="mt-1 text-sm font-bold text-white/85">{{ headerDescription }}</p>
     </div>
 
-    <div class="grid min-h-[calc(100vh-150px)] grid-cols-1 lg:grid-cols-[220px_1fr]">
-      <aside class="border-b-[3px] border-brand-teal bg-white p-3 lg:border-b-0 lg:border-r-[3px]">
+    <div class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[220px_1fr]">
+      <aside class="border-b-[3px] border-brand-teal bg-white p-3 lg:h-full lg:overflow-y-auto lg:border-b-0 lg:border-r-[3px]">
         <div class="mb-3 font-mono text-[10px] uppercase tracking-widest text-gray-500">Student Preview</div>
         <button
+          v-if="hasAutoIntro"
           :class="['mb-2 flex w-full items-center gap-2 border-[2px] border-brand-teal px-3 py-2.5 text-left text-xs font-black', isIntroActive ? 'bg-brand-blue text-white' : 'bg-white']"
          
           @click="activeTopicId = null"
@@ -37,7 +38,7 @@
         </div>
       </aside>
 
-      <main class="overflow-y-auto p-7">
+      <main class="min-h-0 overflow-y-auto p-7">
         <div v-if="loading" class="border-[3px] border-brand-teal p-8 text-center font-black">Loading preview...</div>
         <div v-else-if="error" class="border-[3px] border-brand-teal bg-red-50 p-8 text-center font-black text-red-700">{{ error }}</div>
         <article v-else-if="isIntroActive" class="rounded-lg border-[2px] border-gray-200 bg-white p-6 text-sm leading-7 text-gray-700">
@@ -86,6 +87,7 @@ interface ModuleDetail {
   id: number
   title: string
   description: string
+  content_type?: string | null
   topics: Topic[]
   assessments: Array<{ id: number; assessment_type: string; title: string; description: string }>
 }
@@ -98,9 +100,10 @@ const loading = ref(false)
 const error = ref('')
 
 const topics = computed(() => [...(moduleData.value?.topics ?? [])].filter(topic => topic.title.toLowerCase() !== 'introduction').sort((a, b) => a.sort_order - b.sort_order))
+const hasAutoIntro = computed(() => !isPagedMaterial(moduleData.value?.content_type))
 const quizzes = computed(() => (moduleData.value?.assessments ?? []).filter(item => item.assessment_type === 'quiz'))
 const activeTopic = computed(() => activeTopicId.value ? topics.value.find(topic => topic.id === activeTopicId.value) ?? null : null)
-const isIntroActive = computed(() => !activeTopicId.value)
+const isIntroActive = computed(() => hasAutoIntro.value && !activeTopicId.value)
 const headerTitle = computed(() => activeTopic.value?.title || moduleData.value?.title || 'Module Preview')
 const headerDescription = computed(() => activeTopic.value?.description || moduleData.value?.description || '')
 
@@ -108,7 +111,7 @@ onMounted(async () => {
   loading.value = true
   try {
     moduleData.value = await apiFetch<ModuleDetail>(`/teacher/modules/${route.params.moduleId}`)
-    activeTopicId.value = null
+    activeTopicId.value = hasAutoIntro.value ? null : topics.value[0]?.id ?? null
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Unable to load preview.'
   } finally {
@@ -120,5 +123,9 @@ function assetUrl(url?: string | null) {
   if (!url) return ''
   if (url.startsWith('http')) return url
   return `${API_BASE_URL}${url}`
+}
+
+function isPagedMaterial(contentType?: string | null) {
+  return contentType === 'PDF' || contentType === 'PPT'
 }
 </script>

@@ -242,10 +242,9 @@ function loadJson<T>(key: string) {
 }
 
 function profileStorageKey(key: 'profile_data' | 'profile_image') {
-  const role = localStorage.getItem('role') ?? 'anonymous'
   const accountIdentity = localStorage.getItem('account_identity') ?? ''
   const tokenHint = localStorage.getItem('access_token')?.slice(-16) ?? 'no-token'
-  return `${key}:${role}:${accountIdentity || tokenHint}`
+  return `${key}:${accountIdentity || tokenHint}`
 }
 
 function clearStoredProfile() {

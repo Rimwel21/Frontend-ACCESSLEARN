@@ -60,6 +60,9 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}) {
     if (response.status === 401) {
       localStorage.removeItem('access_token')
       localStorage.removeItem('token_type')
+      localStorage.removeItem('role')
+      localStorage.removeItem('selectedRole')
+      localStorage.removeItem('account_identity')
       localStorage.removeItem('profile_completed')
     }
     throw new ApiError(await formatApiError(response), response.status)
@@ -96,8 +99,7 @@ async function getOfflineCachedResponse<T>(path: string, options: ApiOptions) {
 }
 
 function currentAccountCacheScope(token?: string | null) {
-  const role = localStorage.getItem('role') ?? 'anonymous'
   const accountIdentity = localStorage.getItem('account_identity') ?? ''
   const tokenHint = token ? token.slice(-16) : 'no-token'
-  return `account:${role}:${accountIdentity || tokenHint}`
+  return `account:${accountIdentity || tokenHint}`
 }
