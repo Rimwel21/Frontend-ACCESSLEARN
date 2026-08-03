@@ -23,12 +23,24 @@
             type="button"
             @click="navigate"
             :class="[
-              'mb-1 flex w-full items-center rounded-lg px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
+              'mb-1 flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
               isActive
                 ? 'bg-brand-blue/[0.12] text-brand-blue'
                 : 'text-brand-blue/80 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
             ]"
           >
+            <svg
+              class="h-5 w-5 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path v-for="path in item.iconPaths" :key="path" :d="path" />
+            </svg>
             <span class="min-w-0 flex-1">{{ item.label }}</span>
           </button>
         </RouterLink>
@@ -66,12 +78,24 @@
               type="button"
               @click="() => { navigate(); menuOpen = false }"
               :class="[
-                'mb-1 flex w-full items-center rounded-lg px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
+                'mb-1 flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
                 isActive
                   ? 'bg-brand-blue/[0.12] text-brand-blue'
                   : 'text-brand-blue/80 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
               ]"
             >
+              <svg
+                class="h-5 w-5 shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path v-for="path in item.iconPaths" :key="path" :d="path" />
+              </svg>
               <span class="min-w-0 flex-1">{{ item.label }}</span>
             </button>
           </RouterLink>
@@ -132,22 +156,27 @@ const navItems = [
   {
     to: '/teacher/dashboard',
     label: 'Home',
+    iconPaths: ['m3 10.5 9-7 9 7', 'M5 9.5V20h14V9.5', 'M9.5 20v-6h5v6'],
   },
   {
     to: '/teacher/class',
     label: 'Class Management',
+    iconPaths: ['M4 5.5h16', 'M6 5.5V18a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5.5', 'M9 10h6', 'M9 14h4'],
   },
   {
     to: '/teacher/modules',
     label: 'Learning Materials',
+    iconPaths: ['M5 4h9l5 5v11H5z', 'M14 4v5h5', 'M8 13h8', 'M8 17h5'],
   },
   {
     to: '/teacher/quizzes',
     label: 'Quizzes',
+    iconPaths: ['M9 11a3 3 0 1 1 3 3v1', 'M12 19h.01', 'M4 4h16v16H4z'],
   },
   {
     to: '/teacher/activities',
     label: 'Activities',
+    iconPaths: ['M8 6h13', 'M8 12h13', 'M8 18h13', 'M3.5 6h.01', 'M3.5 12h.01', 'M3.5 18h.01'],
   },
 ]
 
