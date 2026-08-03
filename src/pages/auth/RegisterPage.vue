@@ -34,7 +34,7 @@
 
             <div>
               <div>
-                <label class="field-label" for="student-lrn">Student LRN</label>
+                <label class="field-label" for="student-lrn">Student</label>
                 <input id="student-lrn" v-model.trim="studentLrn" class="input-field mt-2" type="text" inputmode="numeric" placeholder="109290120032" minlength="12" maxlength="12" required />
               </div>
             </div>
@@ -604,7 +604,7 @@ async function submitStudentRegister() {
   }
 
   if (!/^\d{12}$/.test(studentLrn.value.trim())) {
-    validationError.value = 'Student LRN must be exactly 12 digits.'
+    validationError.value = 'Student must be exactly 12 digits.'
     return
   }
 

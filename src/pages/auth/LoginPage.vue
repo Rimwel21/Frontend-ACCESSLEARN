@@ -21,7 +21,7 @@
 
         <div>
           <label class="field-label" :for="role === 'teacher' ? 'email' : 'account'">
-            {{ role === 'teacher' ? 'Email' : 'Username or email' }}
+            {{ role === 'teacher' ? 'Email' : 'Username' }}
           </label>
           <input
             :id="role === 'teacher' ? 'email' : 'account'"
@@ -29,7 +29,7 @@
             class="input-field mt-2"
             :type="role === 'teacher' ? 'email' : 'text'"
             :autocomplete="role === 'teacher' ? 'email' : 'username'"
-            :placeholder="role === 'teacher' ? 'teacher@school.edu' : 'Enter username or email'"
+            :placeholder="role === 'teacher' ? 'teacher@school.edu' : 'Enter username'"
             minlength="3" maxlength="60" required
           />
         </div>
@@ -253,12 +253,11 @@ async function submitLogin() {
   resetMessage.value = ''
   resetError.value = ''
   const accountIdentity = accountIdentityInput.value.trim()
-  const isEmailLogin = accountIdentity.includes('@')
 
   try {
     const data = await auth.login({
-      email: role.value === 'teacher' || isEmailLogin ? accountIdentity : null,
-      username: role.value === 'student' && !isEmailLogin ? accountIdentity : null,
+      email: role.value === 'teacher' ? accountIdentity : null,
+      username: role.value === 'student' ? accountIdentity : null,
       password: password.value,
     }, role.value)
 
