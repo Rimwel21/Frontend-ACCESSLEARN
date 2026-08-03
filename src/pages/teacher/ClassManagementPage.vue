@@ -70,9 +70,7 @@
           </div>
         </div>
 
-        <div class="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_280px]">
-          <div class="space-y-4">
-            <div class="card p-5">
+        <div class="card p-5">
               <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 class="font-display text-base font-semibold">Students</h3>
@@ -117,25 +115,7 @@
                   </tbody>
                 </table>
               </div>
-            </div>
-
           </div>
-
-          <div class="min-w-0 space-y-4">
-            <RouterLink
-              v-for="section in sections"
-              :key="section.title"
-              :to="section.to"
-              class="card-hover flex min-h-[92px] items-center gap-3 p-4"
-            >
-              <span :class="`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-black text-white ${section.badgeClass}`">{{ section.badge }}</span>
-              <span class="min-w-0">
-                <span class="block font-display text-sm font-semibold text-ink">{{ section.title }}</span>
-                <span class="mt-1 block text-xs leading-snug text-ink-soft">{{ section.description }}</span>
-              </span>
-            </RouterLink>
-          </div>
-        </div>
       </template>
     </template>
 
@@ -208,12 +188,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useTeacherStore } from '@/stores/teacher'
 import { fetchGradeLevelOptions, type GradeLevelOption } from '@/lib/gradeSections'
 import { useAuthStore } from '@/stores/auth'
 
-const router = useRouter()
 const store = useTeacherStore()
 const auth = useAuthStore()
 
@@ -224,30 +202,6 @@ const deleteTargetId = ref<string | null>(null)
 const gradeLevels = ref<GradeLevelOption[]>([])
 
 const classModules = computed(() => store.modules.filter(module => module.classId === Number(store.selectedClassId)))
-
-const sections = computed(() => [
-  {
-    badge: 'LM',
-    title: 'Learning Materials',
-    description: 'Upload PDF, PowerPoint, or DOCX files for student lessons',
-    badgeClass: 'bg-brand-blue',
-    to: '/teacher/modules',
-  },
-  {
-    badge: 'A',
-    title: 'Activities',
-    description: 'Create practice tasks',
-    badgeClass: 'bg-brand-teal',
-    to: '/teacher/activities',
-  },
-  {
-    badge: 'Q',
-    title: 'Quizzes',
-    description: 'Build scored checks',
-    badgeClass: 'bg-brand-rose',
-    to: '/teacher/quizzes',
-  },
-])
 
 onMounted(async () => {
   await Promise.allSettled([

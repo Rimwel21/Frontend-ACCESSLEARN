@@ -23,24 +23,12 @@
             type="button"
             @click="navigate"
             :class="[
-              'mb-1 flex w-full items-center gap-3 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
+              'mb-1 flex w-full items-center rounded-lg px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
               isActive
-                ? 'border-brand-amber bg-brand-blue/[0.12] text-brand-blue'
-                : 'border-transparent text-brand-blue/80 hover:translate-x-1 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
+                ? 'bg-brand-blue/[0.12] text-brand-blue'
+                : 'text-brand-blue/80 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
             ]"
           >
-            <svg
-              class="h-5 w-5 shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path v-for="path in item.iconPaths" :key="path" :d="path" />
-            </svg>
             <span class="min-w-0 flex-1">{{ item.label }}</span>
           </button>
         </RouterLink>
@@ -78,24 +66,12 @@
               type="button"
               @click="() => { navigate(); menuOpen = false }"
               :class="[
-              'mb-1 flex w-full items-center gap-3 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
+                'mb-1 flex w-full items-center rounded-lg px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
                 isActive
-                  ? 'border-brand-amber bg-brand-blue/[0.12] text-brand-blue'
-                  : 'border-transparent text-brand-blue/80 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
+                  ? 'bg-brand-blue/[0.12] text-brand-blue'
+                  : 'text-brand-blue/80 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
               ]"
             >
-              <svg
-                class="h-5 w-5 shrink-0"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path v-for="path in item.iconPaths" :key="path" :d="path" />
-              </svg>
               <span class="min-w-0 flex-1">{{ item.label }}</span>
             </button>
           </RouterLink>
@@ -156,12 +132,22 @@ const navItems = [
   {
     to: '/teacher/dashboard',
     label: 'Home',
-    iconPaths: ['m3 10.5 9-7 9 7', 'M5 9.5V20h14V9.5', 'M9.5 20v-6h5v6'],
   },
   {
     to: '/teacher/class',
     label: 'Class Management',
-    iconPaths: ['M4 5.5h16', 'M6 5.5V18a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5.5', 'M9 10h6', 'M9 14h4'],
+  },
+  {
+    to: '/teacher/modules',
+    label: 'Learning Materials',
+  },
+  {
+    to: '/teacher/quizzes',
+    label: 'Quizzes',
+  },
+  {
+    to: '/teacher/activities',
+    label: 'Activities',
   },
 ]
 
