@@ -202,8 +202,8 @@
                 <input id="teacher-name" v-model.trim="teacherFullName" class="input-field mt-2" type="text" placeholder="Maria Santos" required />
               </div>
               <div>
-                <label class="field-label" for="teacher-id">Teacher ID</label>
-                <input id="teacher-id" v-model.trim="teacherId" class="input-field mt-2" type="text" placeholder="T-101" required />
+                <label class="field-label" for="teacher-id">Employee ID</label>
+                <input id="teacher-id" v-model.trim="teacherId" class="input-field mt-2" type="text" placeholder="EMP-101" required />
               </div>
             </div>
 
@@ -871,7 +871,7 @@ async function submitTeacherRegister() {
   }
 
   if (!teacherId.value.trim()) {
-    formStatus.value = { message: 'Please enter your teacher ID.', type: 'error' }
+    formStatus.value = { message: 'Please enter your employee ID.', type: 'error' }
     return
   }
 
