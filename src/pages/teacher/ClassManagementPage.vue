@@ -119,32 +119,21 @@
               </div>
             </div>
 
-            <div v-for="section in sections" :key="section.title" class="card-hover cursor-pointer" @click="router.push(section.to)">
-              <div class="flex">
-                <div :class="`w-1.5 flex-shrink-0 rounded-l-xl ${section.accent}`" />
-                <div class="flex-1 p-5">
-                  <h3 class="font-display text-base font-semibold mb-2">{{ section.title }}</h3>
-                  <p class="text-sm text-ink-soft leading-relaxed">{{ section.description }}</p>
-                  <div class="flex items-center justify-between mt-4 gap-3">
-                    <div class="flex flex-wrap gap-4">
-                      <span v-for="meta in section.meta" :key="meta" class="text-[11.5px] text-ink-soft">{{ meta }}</span>
-                    </div>
-                    <button :class="`text-white text-xs font-bold px-4 py-2 rounded-full ${section.btnClass}`">{{ section.btnLabel }}</button>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div class="min-w-0 space-y-4">
-            <div class="card p-4">
-              <div class="font-display text-[13px] font-semibold mb-3">Quick Actions</div>
-              <div class="grid gap-2 sm:grid-cols-3 2xl:grid-cols-1">
-                <button @click="router.push('/teacher/modules')" class="flex min-h-11 w-full items-center justify-center rounded-xl bg-brand-blue px-4 py-2.5 text-center text-[13px] font-semibold leading-tight text-white transition-all hover:-translate-y-0.5 hover:shadow-lg">Add Module</button>
-                <button @click="router.push('/teacher/quizzes')" class="flex min-h-11 w-full items-center justify-center rounded-xl gradient-violet px-4 py-2.5 text-center text-[13px] font-semibold leading-tight text-white transition-all hover:-translate-y-0.5 hover:shadow-lg">Create Quiz</button>
-                <button @click="router.push('/teacher/activities')" class="flex min-h-11 w-full items-center justify-center rounded-xl gradient-teal px-4 py-2.5 text-center text-[13px] font-semibold leading-tight text-white transition-all hover:-translate-y-0.5 hover:shadow-lg">Create Activity</button>
-              </div>
-            </div>
+            <RouterLink
+              v-for="section in sections"
+              :key="section.title"
+              :to="section.to"
+              class="card-hover flex min-h-[92px] items-center gap-3 p-4"
+            >
+              <span :class="`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-black text-white ${section.badgeClass}`">{{ section.badge }}</span>
+              <span class="min-w-0">
+                <span class="block font-display text-sm font-semibold text-ink">{{ section.title }}</span>
+                <span class="mt-1 block text-xs leading-snug text-ink-soft">{{ section.description }}</span>
+              </span>
+            </RouterLink>
           </div>
         </div>
       </template>
@@ -238,31 +227,25 @@ const classModules = computed(() => store.modules.filter(module => module.classI
 
 const sections = computed(() => [
   {
-    title: 'Modules / Learning Materials',
-    description: 'Manage class learning materials, upload resources, and track published content.',
-    accent: 'bg-gradient-to-b from-brand-blue to-brand-violet',
-    btnClass: 'bg-gradient-to-r from-brand-blue to-brand-violet',
-    btnLabel: 'Manage',
+    badge: 'LM',
+    title: 'Learning Materials',
+    description: 'Upload PDF, PowerPoint, or DOCX files for student lessons',
+    badgeClass: 'bg-brand-blue',
     to: '/teacher/modules',
-    meta: [`${classModules.value.length} materials`, `${classModules.value.filter(module => module.status === 'Published').length} published`],
   },
   {
+    badge: 'A',
     title: 'Activities',
-    description: 'Create and manage student activities for the selected class content.',
-    accent: 'bg-gradient-to-b from-brand-teal to-brand-green',
-    btnClass: 'bg-gradient-to-r from-brand-teal to-brand-green',
-    btnLabel: 'Manage',
+    description: 'Create practice tasks',
+    badgeClass: 'bg-brand-teal',
     to: '/teacher/activities',
-    meta: [`${store.activities.length} activities`, `${store.atRiskStudents.length} students need help`],
   },
   {
+    badge: 'Q',
     title: 'Quizzes',
-    description: 'Create, schedule, and review quizzes linked to class learning materials.',
-    accent: 'bg-gradient-to-b from-brand-amber to-brand-rose',
-    btnClass: 'bg-gradient-to-r from-brand-amber to-brand-rose',
-    btnLabel: 'Review',
+    description: 'Build scored checks',
+    badgeClass: 'bg-brand-rose',
     to: '/teacher/quizzes',
-    meta: [`${store.quizzes.length} quizzes`, 'Class scoped by material'],
   },
 ])
 
