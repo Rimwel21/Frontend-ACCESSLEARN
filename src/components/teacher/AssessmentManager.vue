@@ -19,7 +19,7 @@
         <div class="flex items-center gap-3">
           <div>
             <div class="font-display text-sm font-bold text-ink">Learning Materials</div>
-            <div class="text-xs font-semibold text-ink-soft">Upload PDF or DOCX files for student lessons</div>
+            <div class="text-xs font-semibold text-ink-soft">Upload PDF, PowerPoint, or DOCX files for student lessons</div>
           </div>
         </div>
       </RouterLink>
@@ -68,7 +68,7 @@
     <div v-else-if="filteredItems.length === 0" class="card p-12 text-center">
       <h2 class="font-display text-xl font-bold">No {{ listTitle.toLowerCase() }} have been created yet.</h2>
       <p class="mx-auto mt-2 max-w-md text-sm text-ink-soft">
-        Create your first {{ title.toLowerCase() }} for the selected module.
+        Create your first {{ title.toLowerCase() }} for the selected class.
       </p>
       <button class="btn-primary mt-5" @click="openForm()">Add {{ title }}</button>
     </div>
