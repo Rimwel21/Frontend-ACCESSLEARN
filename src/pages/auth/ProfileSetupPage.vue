@@ -1,8 +1,15 @@
 <template>
   <main class="auth-page">
     <section class="auth-card max-w-3xl">
-      <p class="eyebrow">{{ auth.role }}</p>
-      <h1 class="auth-title">{{ roleLabel }} Profile Setup</h1>
+      <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p class="eyebrow">{{ auth.role }}</p>
+          <h1 class="auth-title">{{ roleLabel }} Profile Setup</h1>
+        </div>
+        <button type="button" class="btn-secondary rounded-lg" @click="goBackFromProfile">
+          Back
+        </button>
+      </div>
 
       <div v-if="profile.loading" class="empty-state">Loading your existing profile...</div>
 
@@ -251,6 +258,10 @@ async function submitProfile() {
   setTimeout(() => {
     router.push(auth.role === 'student' ? '/student/dashboard' : '/teacher/class')
   }, 500)
+}
+
+function goBackFromProfile() {
+  router.push(auth.role === 'student' ? '/student/dashboard' : '/teacher/class')
 }
 
 function normalizeStudentPayload() {

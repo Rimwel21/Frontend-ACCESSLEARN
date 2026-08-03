@@ -555,8 +555,6 @@ export const useTeacherStore = defineStore('teacher', () => {
 
   async function addQuiz(payload: {
     classId?: number | null
-    moduleId?: number | null
-    topicId?: number | null
     title: string
     description: string
     quizType: string
@@ -580,8 +578,6 @@ export const useTeacherStore = defineStore('teacher', () => {
         body: JSON.stringify({
           assessment_type: 'quiz',
           class_id: payload.classId ?? null,
-          module_id: payload.moduleId ?? null,
-          topic_id: payload.topicId ?? null,
           title: payload.title,
           description: payload.description,
           category: payload.quizType,
@@ -678,8 +674,6 @@ export const useTeacherStore = defineStore('teacher', () => {
 
   async function updateQuiz(id: string, payload: {
     classId?: number | null
-    moduleId?: number | null
-    topicId?: number | null
     title: string
     description: string
     quizType: string
@@ -702,8 +696,6 @@ export const useTeacherStore = defineStore('teacher', () => {
         token: auth.token,
         body: JSON.stringify({
           class_id: payload.classId ?? null,
-          module_id: payload.moduleId ?? null,
-          topic_id: payload.topicId ?? null,
           title: payload.title,
           description: payload.description,
           category: payload.quizType,
