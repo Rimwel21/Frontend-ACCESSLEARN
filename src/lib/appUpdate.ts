@@ -5,6 +5,11 @@ let currentBuildSignature = getCurrentBuildSignature()
 let checking = false
 
 export function setupAppUpdateChecks() {
+  if (import.meta.env.DEV) {
+    void clearDevelopmentServiceWorker()
+    return
+  }
+
   void registerServiceWorker()
   void checkForUpdatedBuild()
 
@@ -25,6 +30,22 @@ export function setupAppUpdateChecks() {
   window.setInterval(() => {
     void checkForUpdatedBuild()
   }, CHECK_INTERVAL_MS)
+}
+
+async function clearDevelopmentServiceWorker() {
+  if (!('serviceWorker' in navigator)) return
+
+  const registrations = await navigator.serviceWorker.getRegistrations().catch(() => [])
+  await Promise.all(registrations.map(registration => registration.unregister()))
+
+  if ('caches' in window) {
+    const keys = await caches.keys().catch(() => [])
+    await Promise.all(
+      keys
+        .filter(key => key.startsWith('signhear-'))
+        .map(key => caches.delete(key))
+    )
+  }
 }
 
 async function registerServiceWorker() {
