@@ -84,11 +84,12 @@
               <div v-if="store.classStudentsLoading" class="text-sm text-ink-soft">Loading students...</div>
               <div v-else-if="store.classStudents.length === 0" class="text-sm text-ink-soft">No matching students found yet.</div>
               <div v-else class="overflow-x-auto">
-                <table class="w-full min-w-[720px] text-left text-xs">
+                <table class="w-full min-w-[980px] text-left text-xs">
                   <thead class="border-b border-gray-100 text-ink-soft">
                     <tr>
                       <th class="px-2 py-2 font-semibold first:pl-0">Name</th>
                       <th class="px-2 py-2 font-semibold">Student ID</th>
+                      <th class="px-2 py-2 font-semibold">Email</th>
                       <th class="px-2 py-2 font-semibold">Guardian</th>
                       <th class="px-2 py-2 font-semibold">Contact</th>
                       <th class="px-2 py-2 font-semibold">Grade</th>
@@ -102,6 +103,9 @@
                         <span class="block truncate" :title="student.name">{{ student.name }}</span>
                       </td>
                       <td class="px-2 py-2 text-ink-soft">{{ student.username || student.accountId }}</td>
+                      <td class="max-w-[190px] px-2 py-2 text-ink-soft">
+                        <span class="block truncate" :title="student.email || 'No email'">{{ student.email || 'No email' }}</span>
+                      </td>
                       <td class="max-w-[170px] px-2 py-2 text-ink-soft">
                         <span class="block truncate" :title="student.guardiansName || 'Not set'">{{ student.guardiansName || 'Not set' }}</span>
                       </td>
