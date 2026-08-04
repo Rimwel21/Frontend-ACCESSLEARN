@@ -23,7 +23,7 @@
                     <span class="text-[10px] font-bold uppercase tracking-widest text-ink-soft">Grade</span>
                     <select v-model="filters.grade" class="bg-transparent border-0 text-sm font-bold text-ink outline-none" @change="fetchStudents">
                         <option value="">All</option>
-                        <option v-for="g in ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']" :key="g" :value="g">{{ g }}</option>
+                        <option v-for="g in gradeOptions" :key="g" :value="g">{{ g }}</option>
                     </select>
                 </div>
                 <div class="flex items-center gap-2">
@@ -108,7 +108,7 @@
                     <div class="grid grid-cols-2 gap-4">
                          <select v-model="transferDest.grade" class="input-field !text-xs font-bold shadow-sm bg-white">
                             <option value="">Target Grade</option>
-                            <option v-for="g in ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']" :key="g" :value="g">{{ g }}</option>
+                            <option v-for="g in gradeOptions" :key="g" :value="g">{{ g }}</option>
                         </select>
                         <select v-model="transferDest.section" class="input-field !text-xs font-bold shadow-sm bg-white">
                             <option value="">Target Section</option>
@@ -137,6 +137,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const filters = ref({ grade: '', section: '', page: 1 })
+const gradeOptions = ['Grade 4', 'Grade 5', 'Grade 6']
 const sections = ref(['Diamond', 'Sapphire', 'Emerald', 'Ruby', 'Pearl'])
 const students = ref<any[]>([])
 const selectedIds = ref<number[]>([])
