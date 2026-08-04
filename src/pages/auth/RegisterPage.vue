@@ -648,7 +648,7 @@ async function submitStudentRegister() {
       guardians_contact_no: studentGuardiansContact.value.trim() || null,
     })
 
-    message.value = 'Your student account was created. You can now sign in.'
+    message.value = 'Your student account was created. Redirecting to login...'
     studentFullName.value = ''
     studentUsername.value = ''
     studentLrn.value = ''
@@ -662,6 +662,10 @@ async function submitStudentRegister() {
     studentImageBase64.value = null
     studentGuardiansName.value = ''
     studentGuardiansContact.value = ''
+
+    setTimeout(() => {
+      router.push('/login?role=student')
+    }, 800)
   } catch {
     // auth store owns the visible error
   }

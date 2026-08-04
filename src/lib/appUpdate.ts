@@ -1,8 +1,12 @@
-const RELOAD_MARKER_KEY = 'signhear:last-applied-build-signature'
+const PENDING_BUILD_KEY = 'signhear:pending-build-signature'
+const RELOAD_ATTEMPT_KEY = 'signhear:update-reload-signature'
 const CHECK_INTERVAL_MS = 15 * 60 * 1000
+const BUILD_CHECK_PARAM = 'signhear_build_check'
+const CONTROLLER_CHANGE_TIMEOUT_MS = 5000
 
 let currentBuildSignature = getCurrentBuildSignature()
 let checking = false
+let applyingUpdate = false
 
 export function setupAppUpdateChecks() {
   if (import.meta.env.DEV) {
@@ -10,6 +14,7 @@ export function setupAppUpdateChecks() {
     return
   }
 
+  clearAppliedBuildMarker()
   void registerServiceWorker()
   void checkForUpdatedBuild()
 
@@ -51,16 +56,7 @@ async function clearDevelopmentServiceWorker() {
 async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return
 
-  const hadController = Boolean(navigator.serviceWorker.controller)
-  let refreshingForController = false
-
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController || refreshingForController) return
-    refreshingForController = true
-    window.location.reload()
-  })
-
-  const registration = await navigator.serviceWorker.register('/sw.js', {
+  const registration = await navigator.serviceWorker.register(serviceWorkerUrl(currentBuildSignature), {
     updateViaCache: 'none',
   }).catch(() => null)
 
@@ -74,7 +70,7 @@ async function checkForUpdatedBuild() {
   checking = true
 
   try {
-    const response = await fetch('/index.html', {
+    const response = await fetch(cacheBustedIndexUrl(), {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache' },
     })
@@ -84,18 +80,48 @@ async function checkForUpdatedBuild() {
     const latestSignature = getBuildSignatureFromHtml(await response.text())
     if (!latestSignature || latestSignature === currentBuildSignature) return
 
-    const lastAppliedSignature = sessionStorage.getItem(RELOAD_MARKER_KEY)
-    if (lastAppliedSignature === latestSignature) {
-      currentBuildSignature = latestSignature
-      return
-    }
+    if (sessionStorage.getItem(RELOAD_ATTEMPT_KEY) === latestSignature) return
 
-    sessionStorage.setItem(RELOAD_MARKER_KEY, latestSignature)
-    window.location.reload()
+    sessionStorage.setItem(PENDING_BUILD_KEY, latestSignature)
+    await updateServiceWorkerForBuild(latestSignature)
+    sessionStorage.setItem(RELOAD_ATTEMPT_KEY, latestSignature)
+    window.location.replace(cacheBustedCurrentUrl(latestSignature))
   } catch {
     // Update checks should never interrupt offline-capable app startup.
   } finally {
     checking = false
+  }
+}
+
+async function updateServiceWorkerForBuild(buildSignature: string) {
+  if (!('serviceWorker' in navigator) || applyingUpdate) return
+  applyingUpdate = true
+
+  try {
+    const controllerChange = waitForControllerChange()
+    const registration = await navigator.serviceWorker.register(serviceWorkerUrl(buildSignature), {
+      updateViaCache: 'none',
+    }).catch(() => null)
+
+    await registration?.update().catch(() => null)
+    const pendingWorker = registration?.waiting || registration?.installing
+    pendingWorker?.postMessage({ type: 'SKIP_WAITING' })
+    await controllerChange
+  } finally {
+    applyingUpdate = false
+  }
+}
+
+function clearAppliedBuildMarker() {
+  const pendingSignature = sessionStorage.getItem(PENDING_BUILD_KEY)
+  if (pendingSignature && pendingSignature === currentBuildSignature) {
+    sessionStorage.removeItem(PENDING_BUILD_KEY)
+    sessionStorage.removeItem(RELOAD_ATTEMPT_KEY)
+  }
+  if (new URL(window.location.href).searchParams.has(BUILD_CHECK_PARAM)) {
+    const cleanUrl = new URL(window.location.href)
+    cleanUrl.searchParams.delete(BUILD_CHECK_PARAM)
+    window.history.replaceState(window.history.state, '', `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`)
   }
 }
 
@@ -125,4 +151,49 @@ function normalizeBuildUrls(urls: string[]) {
     .filter(url => url.origin === window.location.origin)
     .map(url => `${url.pathname}${url.search}`)
     .sort()
+}
+
+function cacheBustedIndexUrl() {
+  const url = new URL('/index.html', window.location.origin)
+  url.searchParams.set(BUILD_CHECK_PARAM, String(Date.now()))
+  return url.toString()
+}
+
+function cacheBustedCurrentUrl(buildSignature: string) {
+  const url = new URL(window.location.href)
+  url.searchParams.set(BUILD_CHECK_PARAM, encodeBuildSignature(buildSignature))
+  return url.toString()
+}
+
+function serviceWorkerUrl(buildSignature: string) {
+  const url = new URL('/sw.js', window.location.origin)
+  url.searchParams.set('build', encodeBuildSignature(buildSignature || 'dev'))
+  return url.pathname + url.search
+}
+
+function waitForControllerChange() {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+    return Promise.resolve()
+  }
+
+  return new Promise<void>((resolve) => {
+    let resolved = false
+    const finish = () => {
+      if (resolved) return
+      resolved = true
+      navigator.serviceWorker.removeEventListener('controllerchange', finish)
+      resolve()
+    }
+
+    navigator.serviceWorker.addEventListener('controllerchange', finish)
+    window.setTimeout(finish, CONTROLLER_CHANGE_TIMEOUT_MS)
+  })
+}
+
+function encodeBuildSignature(buildSignature: string) {
+  let hash = 0
+  for (let index = 0; index < buildSignature.length; index += 1) {
+    hash = Math.imul(31, hash) + buildSignature.charCodeAt(index) | 0
+  }
+  return Math.abs(hash).toString(36)
 }
