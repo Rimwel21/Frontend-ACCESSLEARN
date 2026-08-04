@@ -92,10 +92,10 @@
               <!-- Right: Content -->
               <div class="flex flex-col justify-center text-white">
                 <h1 class="mb-3 font-display text-2xl font-bold leading-tight lg:text-[28px] xl:text-[34px] text-white">
-                  Learning that adapts to every child, every ability, every classroom.
+                  Accessible Science learning for every learner, every ability, and every classroom.
                 </h1>
                 <p class="mb-4 max-w-[620px] text-xs leading-relaxed text-white/90 lg:text-[14px]">
-                  SIGNHEAR combines audio lessons, sign-language videos, subtitles, and adaptive quizzes to create equitable learning in Philippine schools.
+                  SIGNHEAR provides accessible Science lessons, captioned videos, visual learning materials, interactive quizzes, and Sign Language Alphabet Recognition to support inclusive learning in Philippine schools.
                 </p>
                 <div class="flex justify-center sm:justify-start">
                   <RouterLink to="/portal" class="min-w-[144px] rounded-full bg-[#f59e5b] px-6 py-2.5 text-center text-sm font-bold text-white shadow-[0_4px_12px_rgba(245,158,91,0.25)] transition-all hover:scale-[1.03] hover:bg-[#e08a47]">
@@ -148,21 +148,21 @@ const isMobileMenuOpen = ref(false)
 const features = [
   {
     icons: ['🧏', '💬'],
-    title: 'Sign & Captions',
+    title: 'Sign Language & Captions',
     summary: 'For hearing support learners.',
     detail: 'Each module includes sign-language videos, subtitles, and transcript toggles.',
   },
   {
     icons: ['🎯', '📚'],
-    title: 'Adaptive Activities',
-    summary: 'Personalized interactive tasks.',
-    detail: "Adjust to each learner's progress, ensuring engagement and mastery of skills.",
+    title: 'Interactive Activities',
+    summary: 'Engaging learning tasks.',
+    detail: 'Help students participate, practice, and strengthen their understanding of Science lessons.',
   },
   {
     icons: ['✅', '⚙️'],
-    title: 'Adaptive Quizzes',
-    summary: 'Smart assessments.',
-    detail: 'Adapt difficulty based on performance, guiding learners toward review or advancement.',
+    title: 'Interactive Quizzes',
+    summary: 'Interactive assessments.',
+    detail: 'Help students check their understanding and receive feedback on their Science lessons.',
   },
   {
     icons: ['👩', '🏫', '📊'],
