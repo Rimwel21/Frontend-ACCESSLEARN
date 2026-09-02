@@ -70,7 +70,8 @@
           </div>
         </div>
 
-        <div class="card p-5">
+        <div class="space-y-4">
+          <div class="card p-5">
               <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 class="font-display text-base font-semibold">Students</h3>
@@ -116,6 +117,23 @@
                 </table>
               </div>
           </div>
+
+          <div v-for="section in sections" :key="section.title" class="card-hover cursor-pointer" @click="router.push(section.to)">
+            <div class="flex">
+              <div :class="`w-1.5 flex-shrink-0 rounded-l-xl ${section.accent}`" />
+              <div class="flex-1 p-5">
+                <h3 class="font-display text-base font-semibold mb-2">{{ section.title }}</h3>
+                <p class="text-sm text-ink-soft leading-relaxed">{{ section.description }}</p>
+                <div class="flex items-center justify-between mt-4 gap-3">
+                  <div class="flex flex-wrap gap-4">
+                    <span v-for="meta in section.meta" :key="meta" class="text-[11.5px] text-ink-soft">{{ meta }}</span>
+                  </div>
+                  <button :class="`text-white text-xs font-bold px-4 py-2 rounded-full ${section.btnClass}`">{{ section.btnLabel }}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </template>
     </template>
 
@@ -188,10 +206,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useTeacherStore } from '@/stores/teacher'
 import { fetchGradeLevelOptions, type GradeLevelOption } from '@/lib/gradeSections'
 import { useAuthStore } from '@/stores/auth'
 
+const router = useRouter()
 const store = useTeacherStore()
 const auth = useAuthStore()
 
@@ -202,6 +222,45 @@ const deleteTargetId = ref<string | null>(null)
 const gradeLevels = ref<GradeLevelOption[]>([])
 
 const classModules = computed(() => store.modules.filter(module => module.classId === Number(store.selectedClassId)))
+
+const sections = computed(() => [
+  {
+    title: 'Modules / Learning Materials',
+    description: 'Manage class learning materials, upload resources, and track published content.',
+    accent: 'bg-gradient-to-b from-brand-blue to-brand-violet',
+    btnClass: 'bg-gradient-to-r from-brand-blue to-brand-violet',
+    btnLabel: 'Manage',
+    to: '/teacher/modules',
+    meta: [`${classModules.value.length} materials`, `${classModules.value.filter(module => module.status === 'Published').length} published`],
+  },
+  {
+    title: 'Activities',
+    description: 'Create and manage student activities for the selected class content.',
+    accent: 'bg-gradient-to-b from-brand-teal to-brand-green',
+    btnClass: 'bg-gradient-to-r from-brand-teal to-brand-green',
+    btnLabel: 'Manage',
+    to: '/teacher/activities',
+    meta: [`${store.activities.length} activities`, `${store.atRiskStudents.length} students need help`],
+  },
+  {
+    title: 'Student Records',
+    description: 'Review student activity answers, quiz performance, learning progress, and Handsign practice scores for this class.',
+    accent: 'bg-gradient-to-b from-brand-blue to-brand-teal',
+    btnClass: 'bg-gradient-to-r from-brand-blue to-brand-teal',
+    btnLabel: 'View Records',
+    to: '/teacher/records',
+    meta: [`${store.selectedClass?.studentCount ?? 0} students`, 'Class records'],
+  },
+  {
+    title: 'Quizzes',
+    description: 'Create, schedule, and review quizzes linked to class learning materials.',
+    accent: 'bg-gradient-to-b from-brand-amber to-brand-rose',
+    btnClass: 'bg-gradient-to-r from-brand-amber to-brand-rose',
+    btnLabel: 'Review',
+    to: '/teacher/quizzes',
+    meta: [`${store.quizzes.length} quizzes`, 'Class scoped by material'],
+  },
+])
 
 onMounted(async () => {
   await Promise.allSettled([
@@ -272,3 +331,6 @@ async function loadGradeLevels() {
 .modal-enter-from .relative { transform: scale(.95); opacity: 0; }
 .modal-leave-to { opacity: 0; }
 </style>
+
+
+
