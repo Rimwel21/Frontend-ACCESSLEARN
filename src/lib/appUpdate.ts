@@ -5,6 +5,11 @@ let currentBuildSignature = getCurrentBuildSignature()
 let checking = false
 
 export function setupAppUpdateChecks() {
+  if (import.meta.env.DEV) {
+    void cleanupDevelopmentServiceWorkers()
+    return
+  }
+
   void registerServiceWorker()
   void checkForUpdatedBuild()
 
@@ -104,4 +109,19 @@ function normalizeBuildUrls(urls: string[]) {
     .filter(url => url.origin === window.location.origin)
     .map(url => `${url.pathname}${url.search}`)
     .sort()
+}
+async function cleanupDevelopmentServiceWorkers() {
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations().catch(() => [])
+    await Promise.all(registrations.map(registration => registration.unregister().catch(() => false)))
+  }
+
+  if ('caches' in window) {
+    const cacheNames = await caches.keys().catch(() => [])
+    await Promise.all(
+      cacheNames
+        .filter(cacheName => cacheName.startsWith('signhear-'))
+        .map(cacheName => caches.delete(cacheName).catch(() => false)),
+    )
+  }
 }

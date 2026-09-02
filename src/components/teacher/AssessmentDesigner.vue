@@ -148,6 +148,61 @@
               </div>
               <input v-model.trim="question.prompt" class="figma-input min-w-0 bg-white" :placeholder="`Prompt for question ${index + 1}`" />
               <input v-model.trim="question.answer" class="figma-input bg-white" placeholder="Correct answer (optional)" />
+              <div v-if="props.kind === 'activity'" class="rounded-md border border-gray-200 bg-gray-50 p-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <div class="text-xs font-black uppercase tracking-wide text-ink">Sign tutorial video</div>
+                    <p class="mt-0.5 text-[11px] font-semibold text-ink-soft">Saved using the correct answer word.</p>
+                  </div>
+                  <span class="rounded-full bg-[#D6E4FF] px-3 py-1 text-[11px] font-bold text-[#315ed8]">
+                    {{ canonicalPreview(question.answer || '') || 'Answer needed' }}
+                  </span>
+                </div>
+
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <label
+                    :class="[
+                      'figma-button cursor-pointer',
+                      !question.answer?.trim() ? 'cursor-not-allowed opacity-50' : ''
+                    ]"
+                  >
+                    Upload Video
+                    <input
+                      class="hidden"
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                      :disabled="!question.answer?.trim()"
+                      @change="handleTutorialFile(index, $event)"
+                    />
+                  </label>
+                  <button
+                    class="figma-button"
+                    type="button"
+                    :disabled="!question.answer?.trim()"
+                    @click="openRecordingModal(index)"
+                  >
+                    Take Video
+                  </button>
+                  <button
+                    v-if="tutorialFiles[index]"
+                    class="figma-button"
+                    type="button"
+                    @click="clearTutorialVideo(index)"
+                  >
+                    Remove Video
+                  </button>
+                </div>
+
+                <video
+                  v-if="tutorialPreviewUrls[index]"
+                  class="mt-3 aspect-video w-full rounded-md border border-gray-200 bg-black object-contain"
+                  :src="tutorialPreviewUrls[index]"
+                  controls
+                ></video>
+                <p v-if="tutorialUploadMessages[index]" class="mt-2 text-[11px] font-bold text-green-700">{{ tutorialUploadMessages[index] }}</p>
+                <p v-if="tutorialUploadErrors[index]" class="mt-2 text-[11px] font-bold text-red-700">{{ tutorialUploadErrors[index] }}</p>
+                <p v-if="!question.answer?.trim()" class="mt-2 text-[11px] font-semibold text-ink-soft">Enter a correct answer before adding its tutorial video.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -161,13 +216,40 @@
         {{ saving ? 'Saving...' : `${isEditing ? 'Update' : 'Save'} ${title}` }}
       </button>
     </div>
+
+    <Teleport to="body">
+      <div v-if="recordingModal" class="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4 py-6" role="dialog" aria-modal="true">
+        <section class="w-full max-w-2xl rounded-md border border-gray-200 bg-white p-4 shadow-xl">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 class="figma-card-title mb-1">Take Tutorial Video</h2>
+              <p class="text-xs font-semibold text-ink-soft">Recording tutorial for {{ canonicalPreview(recordingModal.answer) }}.</p>
+            </div>
+            <button class="figma-button" type="button" @click="closeRecordingModal">Close</button>
+          </div>
+
+          <div class="mt-4 overflow-hidden rounded-md border border-gray-200 bg-black">
+            <video ref="recordingVideoRef" class="aspect-video w-full object-cover" autoplay muted playsinline></video>
+          </div>
+
+          <p v-if="recordingError" class="status-error mt-3" role="alert">{{ recordingError }}</p>
+          <p v-else class="mt-3 text-xs font-semibold text-ink-soft">{{ isRecording ? 'Recording now. Stop when the sign tutorial is finished.' : 'Camera is ready. Start recording when you are ready.' }}</p>
+
+          <div class="mt-4 flex flex-wrap justify-end gap-2">
+            <button class="figma-button" type="button" :disabled="isRecording || !recordingReady" @click="startTutorialRecording">Start Recording</button>
+            <button class="figma-primary" type="button" :disabled="!isRecording" @click="stopTutorialRecording">Stop and Use Video</button>
+          </div>
+        </section>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { learningWeekOptions } from '@/constants/learning'
 import { apiFetch } from '@/lib/api'
+import { handsignErrorMessage, uploadTutorialVideo } from '@/services/handsign'
 import { useTeacherStore } from '@/stores/teacher'
 import type { Activity, Quiz } from '@/stores/teacher'
 
@@ -208,6 +290,20 @@ function blankForm() {
 
 const form = ref(blankForm())
 const topics = ref<Array<{ id: number; title: string }>>([])
+const tutorialFiles = ref<Record<number, File | null>>({})
+const tutorialPreviewUrls = ref<Record<number, string>>({})
+const tutorialUploadMessages = ref<Record<number, string>>({})
+const tutorialUploadErrors = ref<Record<number, string>>({})
+const recordingModal = ref<{ index: number; answer: string } | null>(null)
+const recordingVideoRef = ref<HTMLVideoElement | null>(null)
+const recordingReady = ref(false)
+const isRecording = ref(false)
+const recordingError = ref('')
+const tutorialUploadSummary = ref(0)
+let recordingStream: MediaStream | null = null
+let mediaRecorder: MediaRecorder | null = null
+let recordedChunks: Blob[] = []
+let discardRecording = false
 
 const saving = computed(() => props.kind === 'quiz' ? store.quizSaving : store.activitySaving)
 const isEditing = computed(() => Boolean(props.initialAssessment))
@@ -229,6 +325,7 @@ function addQuestion() {
 function removeQuestion(index: number) {
   if (form.value.questions.length === 1) return
   form.value.questions.splice(index, 1)
+  shiftTutorialStateAfterRemove(index)
 }
 
 async function loadTopics(resetTopic = true) {
@@ -249,13 +346,20 @@ function selectClass() {
 async function saveAssessment() {
   error.value = ''
   success.value = ''
+  tutorialUploadSummary.value = 0
 
   if (!form.value.title || !form.value.description || !form.value.category || !form.value.week || !form.value.classId || (props.kind === 'quiz' && !form.value.moduleId)) {
     error.value = `Please complete the ${props.title.toLowerCase()} information.`
     return
   }
 
-  const questions = form.value.questions.filter(question => question.prompt.trim())
+  const questionEntries = form.value.questions
+    .map((question, index) => ({ question, index }))
+    .filter(({ question }) => question.prompt.trim())
+  const questions = questionEntries.map(({ question }) => ({
+    prompt: question.prompt,
+    answer: question.answer,
+  }))
 
   if (questions.length === 0) {
     error.value = 'Add at least one question.'
@@ -306,16 +410,192 @@ async function saveAssessment() {
       dueAt: toApiDateTime(form.value.dueDate),
     }
 
+    let tutorialUploadCount = 0
     if (props.initialAssessment) {
       await store.updateActivity(props.initialAssessment.id, payload)
     } else {
       await store.addActivity(payload)
     }
+    tutorialUploadCount = await uploadPendingTutorialVideos(questionEntries)
+    tutorialUploadSummary.value = tutorialUploadCount
   }
 
   const mode = props.initialAssessment ? 'updated' : 'created'
-  success.value = `${props.title} ${mode} successfully.`
+  success.value = `${props.title} ${mode} successfully.${tutorialUploadSummary.value ? ` ${tutorialUploadSummary.value} tutorial video${tutorialUploadSummary.value === 1 ? '' : 's'} uploaded.` : ''}`
   emit('saved', mode)
+}
+
+
+onBeforeUnmount(() => {
+  closeRecordingModal()
+  Object.values(tutorialPreviewUrls.value).forEach(url => URL.revokeObjectURL(url))
+})
+
+function handleTutorialFile(index: number, event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) setTutorialFile(index, file)
+  input.value = ''
+}
+
+function setTutorialFile(index: number, file: File) {
+  const previous = tutorialPreviewUrls.value[index]
+  if (previous) URL.revokeObjectURL(previous)
+  tutorialFiles.value = { ...tutorialFiles.value, [index]: file }
+  tutorialPreviewUrls.value = { ...tutorialPreviewUrls.value, [index]: URL.createObjectURL(file) }
+  tutorialUploadMessages.value = { ...tutorialUploadMessages.value, [index]: 'Ready to upload when the activity is saved.' }
+  tutorialUploadErrors.value = { ...tutorialUploadErrors.value, [index]: '' }
+}
+
+function clearTutorialVideo(index: number) {
+  const previous = tutorialPreviewUrls.value[index]
+  if (previous) URL.revokeObjectURL(previous)
+  const { [index]: _file, ...remainingFiles } = tutorialFiles.value
+  const { [index]: _preview, ...remainingPreviews } = tutorialPreviewUrls.value
+  const { [index]: _message, ...remainingMessages } = tutorialUploadMessages.value
+  const { [index]: _error, ...remainingErrors } = tutorialUploadErrors.value
+  tutorialFiles.value = remainingFiles
+  tutorialPreviewUrls.value = remainingPreviews
+  tutorialUploadMessages.value = remainingMessages
+  tutorialUploadErrors.value = remainingErrors
+}
+
+function shiftTutorialStateAfterRemove(removedIndex: number) {
+  clearTutorialVideo(removedIndex)
+  tutorialFiles.value = shiftIndexedRecord(tutorialFiles.value, removedIndex)
+  tutorialPreviewUrls.value = shiftIndexedRecord(tutorialPreviewUrls.value, removedIndex)
+  tutorialUploadMessages.value = shiftIndexedRecord(tutorialUploadMessages.value, removedIndex)
+  tutorialUploadErrors.value = shiftIndexedRecord(tutorialUploadErrors.value, removedIndex)
+}
+
+function shiftIndexedRecord<T>(source: Record<number, T>, removedIndex: number) {
+  return Object.entries(source).reduce<Record<number, T>>((acc, [key, value]) => {
+    const index = Number(key)
+    if (index < removedIndex) acc[index] = value
+    if (index > removedIndex) acc[index - 1] = value
+    return acc
+  }, {})
+}
+
+async function openRecordingModal(index: number) {
+  const answer = form.value.questions[index]?.answer?.trim() ?? ''
+  if (!answer) {
+    tutorialUploadErrors.value = { ...tutorialUploadErrors.value, [index]: 'Enter the correct answer before recording a tutorial.' }
+    return
+  }
+  recordingModal.value = { index, answer }
+  recordingError.value = ''
+  recordingReady.value = false
+  isRecording.value = false
+  recordedChunks = []
+  await nextTick()
+  await startRecordingCamera()
+}
+
+async function startRecordingCamera() {
+  try {
+    recordingStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, audio: false })
+    if (!recordingVideoRef.value) {
+      closeRecordingModal()
+      recordingError.value = 'Recording preview is not ready yet.'
+      return
+    }
+    recordingVideoRef.value.srcObject = recordingStream
+    await recordingVideoRef.value.play()
+    recordingReady.value = true
+  } catch {
+    recordingError.value = 'Camera permission is required to take a tutorial video.'
+    stopRecordingCamera()
+  }
+}
+
+function startTutorialRecording() {
+  if (!recordingStream || !recordingModal.value || isRecording.value) return
+  try {
+    recordedChunks = []
+    discardRecording = false
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ? 'video/webm;codecs=vp8' : 'video/webm'
+    mediaRecorder = new MediaRecorder(recordingStream, { mimeType })
+    mediaRecorder.ondataavailable = event => {
+      if (event.data.size > 0) recordedChunks.push(event.data)
+    }
+    mediaRecorder.onstop = () => {
+      if (!discardRecording) {
+        const word = canonicalPreview(recordingModal.value?.answer ?? 'tutorial') || 'tutorial'
+        const blob = new Blob(recordedChunks, { type: 'video/webm' })
+        const file = new File([blob], `${word.toLowerCase()}-tutorial.webm`, { type: 'video/webm' })
+        if (recordingModal.value) setTutorialFile(recordingModal.value.index, file)
+      }
+      stopRecordingCamera()
+      recordingModal.value = null
+      isRecording.value = false
+      discardRecording = false
+    }
+    mediaRecorder.start()
+    isRecording.value = true
+  } catch {
+    recordingError.value = 'This browser could not start video recording.'
+    isRecording.value = false
+  }
+}
+
+function stopTutorialRecording() {
+  if (!mediaRecorder || mediaRecorder.state === 'inactive') return
+  discardRecording = false
+  mediaRecorder.stop()
+}
+
+function closeRecordingModal() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    discardRecording = true
+    mediaRecorder.stop()
+  }
+  stopRecordingCamera()
+  recordingModal.value = null
+  isRecording.value = false
+  recordingReady.value = false
+  recordedChunks = []
+}
+
+function stopRecordingCamera() {
+  recordingStream?.getTracks().forEach(track => track.stop())
+  recordingStream = null
+  recordingReady.value = false
+  if (recordingVideoRef.value) recordingVideoRef.value.srcObject = null
+}
+
+async function uploadPendingTutorialVideos(entries: Array<{ question: { prompt: string; answer?: string | null }; index: number }>) {
+  let uploaded = 0
+  for (const { question, index } of entries) {
+    const file = tutorialFiles.value[index]
+    if (!file) continue
+    if (!question.answer?.trim()) {
+      tutorialUploadErrors.value = { ...tutorialUploadErrors.value, [index]: 'Enter a correct answer before uploading this tutorial video.' }
+      throw new Error('A tutorial video is missing its answer word.')
+    }
+    tutorialUploadMessages.value = { ...tutorialUploadMessages.value, [index]: 'Uploading tutorial video...' }
+    tutorialUploadErrors.value = { ...tutorialUploadErrors.value, [index]: '' }
+    try {
+      const status = await uploadTutorialVideo(question.answer, file)
+      tutorialUploadMessages.value = { ...tutorialUploadMessages.value, [index]: `Uploaded tutorial for ${status.word}.` }
+      uploaded += 1
+    } catch (err) {
+      tutorialUploadErrors.value = { ...tutorialUploadErrors.value, [index]: handsignErrorMessage(err) }
+      throw new Error('Activity saved, but a tutorial video failed to upload.')
+    }
+  }
+  return uploaded
+}
+
+function canonicalPreview(value: string) {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/_/g, ' ')
+    .replace(/[^A-Z0-9 ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\s+/g, '_')
 }
 
 watch(() => props.initialAssessment, () => {

@@ -166,11 +166,18 @@ const navItems = [
     label: 'Class Management',
     iconPaths: ['M4 5.5h16', 'M6 5.5V18a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5.5', 'M9 10h6', 'M9 14h4'],
   },
+  {
+    to: '/teacher/activity-logs',
+    label: 'Activity Logs',
+    iconPaths: ['M12 8v5l3 2', 'M21 12a9 9 0 1 1-3-6.7'],
+  },
 ]
 
 const titleMap: Record<string, string> = {
   TeacherDashboard:  'Home',
   ClassManagement:   'Class Management',
+  TeacherStudentRecords: 'Student Records',
+  TeacherActivityLogs: 'Activity Logs',
   Modules:           'Learning Materials',
   TeacherActivities: 'Activities',
   Quizzes:           'Quizzes',
@@ -200,3 +207,4 @@ function logout() {
 .page-enter-from { opacity: 0; transform: translateY(8px); }
 .page-leave-to { opacity: 0; transform: translateY(-4px); }
 </style>
+

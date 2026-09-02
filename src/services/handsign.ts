@@ -1,10 +1,18 @@
 import axios from 'axios'
 import { API_BASE_URL } from '@/lib/api'
-import type { BackspaceCameraSessionResponse, CameraDetectionResponse, PredictionResponse } from '@/types/handsign'
+import type {
+  BackspaceCameraSessionResponse,
+  CameraDetectionResponse,
+  PracticeResultOut,
+  PredictionResponse,
+  SequenceScoreResponse,
+  TutorialStatus,
+  WordGestureSummary,
+} from '@/types/handsign'
 
 const handsignApi = axios.create({
   baseURL: `${API_BASE_URL}/api/handsign`,
-  timeout: 10000,
+  timeout: 30000,
 })
 
 handsignApi.interceptors.request.use((config) => {
@@ -16,7 +24,7 @@ handsignApi.interceptors.request.use((config) => {
 })
 
 export async function checkHandsignHealth() {
-  const response = await handsignApi.get<{ status: string; classes: string[] }>('/health')
+  const response = await handsignApi.get<{ status: string; classes: string[]; word_gestures?: WordGestureSummary }>('/health')
   return response.data
 }
 
@@ -42,6 +50,48 @@ export async function backspaceCameraSession(sessionId: string): Promise<Backspa
     session_id: sessionId,
   })
   return response.data
+}
+
+export async function getWordGestureSummary(): Promise<WordGestureSummary> {
+  const response = await handsignApi.get<WordGestureSummary>('/word-gestures/summary')
+  return response.data
+}
+
+export async function getTutorialStatus(word: string): Promise<TutorialStatus> {
+  const response = await handsignApi.get<TutorialStatus>(`/tutorials/${encodeURIComponent(word)}`)
+  return response.data
+}
+
+export async function uploadTutorialVideo(word: string, video: File): Promise<TutorialStatus> {
+  const formData = new FormData()
+  formData.append('video', video)
+  const response = await handsignApi.post<TutorialStatus>(`/tutorials/${encodeURIComponent(word)}/video`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000,
+  })
+  return response.data
+}
+
+export async function scoreWordPracticeFrames(word: string, images: string[]): Promise<SequenceScoreResponse> {
+  const response = await handsignApi.post<SequenceScoreResponse>('/tutorials/practice/score-frames', {
+    word,
+    images,
+  }, { timeout: 60000 })
+  return response.data
+}
+
+export async function saveTutorialPracticeResult(activityId: number, word: string, attemptScores: number[]): Promise<PracticeResultOut> {
+  const response = await handsignApi.post<PracticeResultOut>('/tutorials/practice/results', {
+    activity_id: activityId,
+    word,
+    attempt_scores: attemptScores,
+  })
+  return response.data
+}
+
+export function tutorialVideoUrl(videoUrl: string | null | undefined) {
+  if (!videoUrl) return ''
+  return `${API_BASE_URL}${videoUrl}`
 }
 
 export function handsignErrorMessage(error: unknown) {

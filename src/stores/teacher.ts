@@ -39,6 +39,8 @@ interface RecentActivity {
   text: string
   time: string
   color: string
+  activityType: string
+  occurredAt: string
 }
 
 interface StudentRow {
@@ -246,6 +248,92 @@ interface RecentActivityResponse {
   activity_type: 'material' | 'quiz' | 'activity' | string
 }
 
+interface TeacherStudentRecordAssessmentResponse {
+  assessment_id: number
+  title: string
+  assessment_type: 'quiz' | 'activity' | string
+  expected_answers: string[]
+  status: string
+  score?: number | null
+  total?: number | null
+  answers?: Record<string, string>
+  completed_at?: string | null
+  submission_type?: string | null
+}
+
+interface TeacherStudentRecordHandsignResponse {
+  id: number
+  activity_id: number
+  activity_title?: string | null
+  word: string
+  attempt_scores: number[]
+  highest_score: number
+  completed_at?: string | null
+}
+
+interface TeacherStudentRecordResponse {
+  student_id: number
+  student_name: string
+  grade_level?: string | null
+  section?: string | null
+  overall_percent: number
+  activity_percent: number
+  learning_materials_completed: number
+  learning_materials_in_progress: number
+  learning_materials_total: number
+  activities_completed: number
+  activities_total: number
+  status: 'Complete' | 'In Progress' | 'Needs Help' | string
+  last_activity?: string | null
+  quiz_activity?: string | null
+  assessments: TeacherStudentRecordAssessmentResponse[]
+  handsign_practice: TeacherStudentRecordHandsignResponse[]
+}
+
+export interface StudentAssessmentRecord {
+  assessmentId: number
+  title: string
+  assessmentType: string
+  expectedAnswers: string[]
+  status: string
+  score?: number | null
+  total?: number | null
+  answers: Record<string, string>
+  completedAt?: string | null
+  submissionType?: string | null
+}
+
+export interface StudentHandsignRecord {
+  id: number
+  activityId: number
+  activityTitle?: string | null
+  word: string
+  attemptScores: number[]
+  highestScore: number
+  completedAt?: string | null
+}
+
+export interface StudentRecord {
+  studentId: string
+  studentName: string
+  initials: string
+  avatarGradient: string
+  gradeLevel?: string | null
+  section?: string | null
+  overallPercent: number
+  activityPercent: number
+  learningMaterialsCompleted: number
+  learningMaterialsInProgress: number
+  learningMaterialsTotal: number
+  activitiesCompleted: number
+  activitiesTotal: number
+  status: string
+  lastActivity: string
+  quizActivity: string
+  assessments: StudentAssessmentRecord[]
+  handsignPractice: StudentHandsignRecord[]
+}
+
 export const useTeacherStore = defineStore('teacher', () => {
   const teacherName = ref('Ms. Rymuel')
   const modules = ref<Module[]>([])
@@ -269,6 +357,9 @@ export const useTeacherStore = defineStore('teacher', () => {
   const classError = ref('')
   const classStudents = ref<ClassStudent[]>([])
   const classStudentsLoading = ref(false)
+  const studentRecords = ref<StudentRecord[]>([])
+  const studentRecordsLoading = ref(false)
+  const studentRecordsError = ref('')
 
   const performers = ref<Performer[]>([
     { name: 'Penagrin, Aguiluz Emmanuelle O.', initials: 'FE', gradient: 'from-brand-blue to-brand-violet', assignments: 80, quiz: 183, activities: 80, total: 343, avg: '95%' },
@@ -278,6 +369,9 @@ export const useTeacherStore = defineStore('teacher', () => {
   ])
 
   const recentActivities = ref<RecentActivity[]>([])
+  const activityLogs = ref<RecentActivity[]>([])
+  const activityLogsLoading = ref(false)
+  const activityLogsError = ref('')
 
   const students = ref<StudentRow[]>([])
 
@@ -529,14 +623,52 @@ export const useTeacherStore = defineStore('teacher', () => {
     }
   }
 
-  async function fetchRecentActivities() {
+  async function fetchRecentActivities(limit = 5) {
     const auth = useAuthStore()
     if (!auth.token) return
     try {
-      const data = await apiFetch<RecentActivityResponse[]>('/teacher/classes/recent-activities', { token: auth.token })
-      recentActivities.value = data.map(mapRecentActivityResponse)
+      const data = await apiFetch<RecentActivityResponse[]>(`/teacher/classes/recent-activities?limit=${limit}`, { token: auth.token })
+      recentActivities.value = data.map(mapRecentActivityResponse).slice(0, limit)
     } catch {
       recentActivities.value = []
+    }
+  }
+
+  async function fetchActivityLogs(limit = 50) {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    activityLogsLoading.value = true
+    activityLogsError.value = ''
+    try {
+      const data = await apiFetch<RecentActivityResponse[]>(`/teacher/classes/recent-activities?limit=${limit}`, { token: auth.token })
+      activityLogs.value = data.map(mapRecentActivityResponse)
+    } catch (err) {
+      activityLogsError.value = err instanceof Error ? err.message : 'Unable to load activity logs'
+    } finally {
+      activityLogsLoading.value = false
+    }
+  }
+
+
+  async function fetchStudentRecords(filters: { classId?: string | null; assessmentType?: string | null; status?: string | null; search?: string | null } = {}) {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    studentRecordsLoading.value = true
+    studentRecordsError.value = ''
+
+    try {
+      const params = new URLSearchParams()
+      if (filters.classId) params.set('class_id', filters.classId)
+      if (filters.assessmentType) params.set('assessment_type', filters.assessmentType)
+      if (filters.status) params.set('status_filter', filters.status)
+      if (filters.search?.trim()) params.set('search', filters.search.trim())
+      const query = params.toString() ? `?${params.toString()}` : ''
+      const data = await apiFetch<TeacherStudentRecordResponse[]>(`/teacher/classes/student-records${query}`, { token: auth.token })
+      studentRecords.value = data.map(mapStudentRecordResponse)
+    } catch (err) {
+      studentRecordsError.value = err instanceof Error ? err.message : 'Unable to load student records'
+    } finally {
+      studentRecordsLoading.value = false
     }
   }
 
@@ -874,12 +1006,12 @@ export const useTeacherStore = defineStore('teacher', () => {
   }
 
   return {
-    teacherName, modules, performers, recentActivities, students, quizzes, activities, dashboardSummary,
+    teacherName, modules, performers, recentActivities, activityLogs, students, quizzes, activities, dashboardSummary,
     classes, availableClasses, selectedClassId, selectedClass, hasClasses,
     modulesLoading, moduleSaving, moduleError, quizSaving, quizError, activitySaving, activityError,
-    classesLoading, classSaving, classError, classStudents, classStudentsLoading,
+    classesLoading, classSaving, classError, classStudents, classStudentsLoading, studentRecords, studentRecordsLoading, studentRecordsError, activityLogsLoading, activityLogsError,
     publishedModules, unpublishedModules, atRiskStudents,
-    fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchAssessments, addQuiz, updateQuiz, deleteQuiz, addActivity, updateActivity, deleteActivity,
+    fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchActivityLogs, fetchStudentRecords, fetchAssessments, addQuiz, updateQuiz, deleteQuiz, addActivity, updateActivity, deleteActivity,
     fetchClasses, addClass, selectClass, deleteClass, fetchClassStudents,
     fetchAvailableClasses, selectClassAction, unselectClassAction,
   }
@@ -975,6 +1107,51 @@ function mapRecentActivityResponse(activity: RecentActivityResponse): RecentActi
     text: activity.text,
     time: relativeTime(activity.occurred_at),
     color: activityColor(activity.activity_type),
+    activityType: activity.activity_type,
+    occurredAt: activity.occurred_at,
+  }
+}
+
+
+function mapStudentRecordResponse(record: TeacherStudentRecordResponse): StudentRecord {
+  return {
+    studentId: String(record.student_id),
+    studentName: record.student_name,
+    initials: initialsFor(record.student_name),
+    avatarGradient: gradientFor(record.student_id),
+    gradeLevel: record.grade_level,
+    section: record.section,
+    overallPercent: record.overall_percent,
+    activityPercent: record.activity_percent ?? 0,
+    learningMaterialsCompleted: record.learning_materials_completed ?? 0,
+    learningMaterialsInProgress: record.learning_materials_in_progress ?? 0,
+    learningMaterialsTotal: record.learning_materials_total ?? 0,
+    activitiesCompleted: record.activities_completed,
+    activitiesTotal: record.activities_total,
+    status: record.status,
+    lastActivity: record.last_activity ? new Date(record.last_activity).toLocaleDateString() : 'No activity',
+    quizActivity: record.quiz_activity ?? 'No quiz yet',
+    assessments: (record.assessments ?? []).map(item => ({
+      assessmentId: item.assessment_id,
+      title: item.title,
+      assessmentType: item.assessment_type,
+      expectedAnswers: item.expected_answers ?? [],
+      status: item.status,
+      score: item.score,
+      total: item.total,
+      answers: item.answers ?? {},
+      completedAt: item.completed_at ?? null,
+      submissionType: item.submission_type ?? null,
+    })),
+    handsignPractice: (record.handsign_practice ?? []).map(item => ({
+      id: item.id,
+      activityId: item.activity_id,
+      activityTitle: item.activity_title,
+      word: item.word,
+      attemptScores: item.attempt_scores ?? [],
+      highestScore: item.highest_score,
+      completedAt: item.completed_at ?? null,
+    })),
   }
 }
 

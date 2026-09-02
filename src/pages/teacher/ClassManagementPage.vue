@@ -237,6 +237,15 @@ const sections = computed(() => [
     meta: [`${store.activities.length} activities`, `${store.atRiskStudents.length} students need help`],
   },
   {
+    title: 'Student Records',
+    description: 'Review student activity answers, quiz performance, learning progress, and Handsign practice scores for this class.',
+    accent: 'bg-gradient-to-b from-brand-blue to-brand-teal',
+    btnClass: 'bg-gradient-to-r from-brand-blue to-brand-teal',
+    btnLabel: 'View Records',
+    to: '/teacher/records',
+    meta: [`${store.selectedClass?.studentCount ?? 0} students`, 'Class records'],
+  },
+  {
     title: 'Quizzes',
     description: 'Create, schedule, and review quizzes linked to class learning materials.',
     accent: 'bg-gradient-to-b from-brand-amber to-brand-rose',
@@ -316,3 +325,6 @@ async function loadGradeLevels() {
 .modal-enter-from .relative { transform: scale(.95); opacity: 0; }
 .modal-leave-to { opacity: 0; }
 </style>
+
+
+

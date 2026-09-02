@@ -44,7 +44,7 @@
               <option value="">All classes</option>
               <option v-for="cls in store.classes" :key="cls.id" :value="cls.id">{{ cls.className }}</option>
             </select>
-            <RouterLink to="/teacher/class" class="inline-flex h-9 items-center justify-center rounded-full bg-brand-blue px-4 text-xs font-semibold text-white transition-all hover:bg-brand-teal">
+            <RouterLink to="/teacher/records" class="inline-flex h-9 items-center justify-center rounded-full bg-brand-blue px-4 text-xs font-semibold text-white transition-all hover:bg-brand-teal">
               See All
             </RouterLink>
           </div>
@@ -111,8 +111,11 @@
         </div>
 
         <div class="card flex-1">
-          <div class="px-4 pt-4 pb-3 border-b border-gray-50 font-display font-semibold text-[13px]">Recent Activity</div>
-          <div class="p-4 flex flex-col gap-3">
+          <div class="flex items-center justify-between gap-3 border-b border-gray-50 px-4 pb-3 pt-4">
+            <span class="font-display text-[13px] font-semibold">Recent Activity</span>
+            <RouterLink to="/teacher/activity-logs" class="text-[11px] font-bold text-brand-blue hover:text-brand-teal">View All</RouterLink>
+          </div>
+          <div class="scrollbar-thin flex max-h-64 flex-col gap-3 overflow-y-auto p-4">
             <div v-for="act in store.recentActivities" :key="act.id" class="flex items-start gap-2.5">
               <div :class="`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${act.color}`" />
               <div>
@@ -152,7 +155,7 @@ onMounted(async () => {
     profile.fetchProfile(),
     store.fetchClasses(),
     store.fetchDashboardSummary(),
-    store.fetchRecentActivities(),
+    store.fetchRecentActivities(5),
     store.fetchModules(),
   ])
 })

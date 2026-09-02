@@ -20,6 +20,8 @@ const routes: RouteRecordRaw[] = [
       { path: '',            redirect: '/teacher/dashboard' },
       { path: 'dashboard',   name: 'TeacherDashboard', component: () => import('@/pages/teacher/DashboardPage.vue') },
       { path: 'class',       name: 'ClassManagement',  component: () => import('@/pages/teacher/ClassManagementPage.vue') },
+      { path: 'records',     name: 'TeacherStudentRecords', component: () => import('@/pages/teacher/StudentRecordsPage.vue') },
+      { path: 'activity-logs', name: 'TeacherActivityLogs', component: () => import('@/pages/teacher/ActivityLogsPage.vue') },
       { path: 'modules',     name: 'Modules',          component: () => import('@/pages/teacher/ModulesPage.vue') },
       { path: 'modules/:moduleId/preview', name: 'ModulePreview', component: () => import('@/pages/teacher/ModulePreviewPage.vue') },
       { path: 'activities',  name: 'TeacherActivities', component: () => import('@/pages/teacher/ActivitiesPage.vue') },
@@ -38,6 +40,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'quiz',       name: 'StudentQuiz',      component: () => import('@/pages/student/QuizPage.vue') },
       { path: 'activities', name: 'Activities',       component: () => import('@/pages/student/ActivitiesPage.vue') },
       { path: 'activities/handsign', name: 'HandSignLanguage', component: () => import('@/pages/student/HandSignLanguagePage.vue') },
+      { path: 'activities/handsign/practice', name: 'HandSignPractice', component: () => import('@/pages/student/HandSignPracticePage.vue') },
     ],
   },
 
@@ -121,3 +124,4 @@ router.beforeEach(async (to) => {
 
   return true
 })
+
