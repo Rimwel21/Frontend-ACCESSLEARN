@@ -20,18 +20,20 @@
 
     <div v-if="isMobileMenuOpen" class="fixed inset-0 z-40 flex flex-col space-y-3 bg-[#e8f5f0] px-6 pt-20 lg:hidden">
       <RouterLink to="/" class="flex items-center gap-3 rounded-xl border-l-[3px] border-[#f59e5b] bg-[#d7eef7] px-4 py-3 font-bold text-[#2d6e61]" @click="isMobileMenuOpen = false">Home</RouterLink>
-      <RouterLink to="/portal" class="flex items-center gap-3 rounded-xl border-l-[3px] border-transparent px-4 py-3 font-bold text-[#5a8d82] hover:bg-[#c4e4da] hover:text-[#2d6e61]" @click="isMobileMenuOpen = false">Register</RouterLink>
-      <RouterLink to="/portal" class="flex items-center gap-3 rounded-xl border-l-[3px] border-transparent px-4 py-3 font-bold text-[#5a8d82] hover:bg-[#c4e4da] hover:text-[#2d6e61]" @click="isMobileMenuOpen = false">Log in</RouterLink>
+      <RouterLink to="/about" class="flex items-center gap-3 rounded-xl border-l-[3px] border-transparent px-4 py-3 font-bold text-[#5a8d82] hover:bg-[#c4e4da] hover:text-[#2d6e61]" @click="isMobileMenuOpen = false">About Us</RouterLink>
+      <RouterLink to="/portal" class="flex items-center gap-3 rounded-xl border-l-[3px] border-transparent px-4 py-3 font-bold text-[#5a8d82] hover:bg-[#c4e4da] hover:text-[#2d6e61]" @click="isMobileMenuOpen = false">Register / Log in</RouterLink>
     </div>
 
     <aside class="sticky top-0 z-20 hidden h-screen w-[240px] shrink-0 flex-col justify-between border-r border-[#a5d8cc]/80 bg-[#e2f3ee] shadow-[4px_0_24px_rgba(45,110,97,0.06)] lg:flex">
       <div>
         <div class="flex flex-col items-center px-6 pb-6 pt-8 text-center">
-          <img
-            src="@/assets/signhear_logo.png"
-            alt="SIGNHEAR - Sign Language Integrated Guidance for Hearing Education and Accessible Resources"
-            class="h-auto w-full max-w-[140px] object-contain xl:max-w-[160px]"
-          />
+          <RouterLink to="/">
+            <img
+              src="@/assets/signhear_logo.png"
+              alt="SIGNHEAR - Sign Language Integrated Guidance for Hearing Education and Accessible Resources"
+              class="h-auto w-full max-w-[140px] object-contain xl:max-w-[160px]"
+            />
+          </RouterLink>
         </div>
 
         <nav class="space-y-3 px-4">
@@ -45,18 +47,18 @@
             </RouterLink>
           </div>
 
-          <RouterLink to="/portal" class="flex items-center gap-3 pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
+          <RouterLink to="/about" class="flex items-center gap-3 pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
             <svg class="h-6 w-6 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Register
+            About Us
           </RouterLink>
 
           <RouterLink to="/portal" class="flex items-center gap-3 pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
             <svg class="h-6 w-6 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
             </svg>
-            Log in
+            Register / Log in
           </RouterLink>
         </nav>
       </div>
@@ -67,8 +69,8 @@
             <span>WCAG</span>
             <span class="mt-0.5 text-xs">2.2</span>
           </div>
-          <p class="text-xs font-bold uppercase tracking-wider text-[#0a7b79]">Accessible learning.</p>
-          <p class="mt-1.5 text-[11px] font-semibold leading-snug text-[#5a8d82]">Readable, keyboard-friendly, accessible learning.</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-[#0a7b79]">ACCESSIBLE LEARNING</p>
+          <p class="mt-1.5 text-[11px] font-semibold leading-snug text-[#5a8d82]">Guided by WCAG 2.2 for inclusive education.</p>
         </div>
       </div>
     </aside>
