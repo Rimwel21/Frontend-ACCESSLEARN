@@ -14,7 +14,7 @@
           <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-blue text-xs font-black text-white">LM</span>
           <div>
             <div class="font-display text-sm font-bold text-ink">Learning Materials</div>
-            <div class="text-xs font-semibold text-ink-soft">Upload PDF or DOCX files for student lessons</div>
+            <div class="text-xs font-semibold text-ink-soft">Upload PDF, DOCX, or PPTX files for student lessons</div>
           </div>
         </div>
       </RouterLink>
@@ -49,7 +49,7 @@
     <div v-if="store.modulesLoading" class="empty-state">Loading learning materials...</div>
     <div v-else-if="filteredMaterials.length === 0" class="card p-12 text-center">
       <h2 class="font-display text-xl font-bold">No learning materials have been added yet.</h2>
-      <p class="mx-auto mt-2 max-w-md text-sm text-ink-soft">Add PDFs or Word documents for the selected module.</p>
+      <p class="mx-auto mt-2 max-w-md text-sm text-ink-soft">Add PDFs, Word documents, or PowerPoint presentations for the selected module.</p>
       <button class="btn-primary mt-5" @click="openForm()">Add Learning Material</button>
     </div>
     <div v-else class="card overflow-hidden">
@@ -155,7 +155,7 @@
               <section class="figma-panel flex min-h-72 flex-col justify-between">
                 <div>
                   <h3 class="figma-card-title mb-1">Upload File</h3>
-                  <p class="text-xs font-semibold text-ink-soft">PDF and DOCX files are parsed into readable topics after saving.</p>
+                  <p class="text-xs font-semibold text-ink-soft">PDF, DOCX, and PPTX files are parsed into readable topics after saving.</p>
                 </div>
                 <label
                   :class="[
@@ -226,6 +226,7 @@ import { useTeacherStore } from '@/stores/teacher'
 const contentTypeOptions = [
   { value: 'PDF', label: 'PDF' },
   { value: 'DOCX', label: 'DOCX' },
+  { value: 'PPTX', label: 'PPTX (PowerPoint)' },
 ] as const
 type MaterialContentType = typeof contentTypeOptions[number]['value']
 interface MaterialForm {
@@ -248,11 +249,18 @@ const contentTypeConfig: Record<MaterialContentType, { extensions: string[]; mim
     label: 'PDF',
   },
   DOCX: {
-    extensions: ['.docx'],
-    mimeTypes: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-    accept: '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    extensions: ['.docx', '.doc'],
+    mimeTypes: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'],
+    accept: '.docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword',
     hint: 'DOCX only',
     label: 'DOCX',
+  },
+  PPTX: {
+    extensions: ['.pptx', '.ppt'],
+    mimeTypes: ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-powerpoint'],
+    accept: '.pptx,.ppt,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint',
+    hint: 'PPT or PPTX only',
+    label: 'PPT / PPTX',
   },
 }
 const store = useTeacherStore()
@@ -379,7 +387,7 @@ async function submitMaterial() {
   }
 
   if (!editingMaterialId.value && !selectedFile.value) {
-    formError.value = 'Please select a PDF or DOCX file.'
+    formError.value = 'Please select a file (PDF, DOCX, or PPTX).'
     return
   }
 
@@ -445,8 +453,10 @@ function isFileAllowedForContentType(file: File, contentType: MaterialContentTyp
   const lowerName = file.name.toLowerCase()
   const config = contentTypeConfig[contentType]
   const hasAllowedExtension = config.extensions.some(extension => lowerName.endsWith(extension))
+  // Browsers may report unexpected or empty MIME types for .doc/.ppt files,
+  // so we accept the file as long as the extension OR the MIME type matches.
   const hasAllowedMime = !file.type || config.mimeTypes.includes(file.type)
-  return hasAllowedExtension && hasAllowedMime
+  return hasAllowedExtension || hasAllowedMime
 }
 
 async function downloadMaterial(material: { id: string; fileName?: string | null }) {

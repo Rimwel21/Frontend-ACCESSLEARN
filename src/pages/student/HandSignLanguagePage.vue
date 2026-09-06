@@ -37,9 +37,48 @@
         </section>
 
         <section v-else-if="activeActivity" class="border-[3px] border-brand-teal bg-brand-amber p-5">
-          <div class="font-mono text-[10px] font-black uppercase tracking-widest">Question {{ activeQuestionIndex + 1 }} of {{ activeActivity.questions.length }}</div>
+          <div class="flex items-center justify-between gap-2 font-mono text-[10px] font-black uppercase tracking-widest">
+            <span>Question {{ activeQuestionIndex + 1 }} of {{ activeActivity.questions.length }}</span>
+            <span v-if="activeQuestionParsed.type !== 'identification'" class="rounded border border-black/20 bg-black/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider">
+              {{ activeQuestionParsed.type === 'multiple_choice' ? 'Multiple Choice' : 'True or False' }}
+            </span>
+          </div>
           <h2 class="mt-2 font-display text-xl font-black">{{ activeQuestion?.prompt }}</h2>
-          <p class="mt-2 text-sm font-bold text-gray-700">{{ activeActivity.description }}</p>
+
+          <!-- Display choices for Multiple Choice or True / False -->
+          <div v-if="activeQuestionParsed.choices.length" class="mt-4 grid gap-2.5 sm:grid-cols-2">
+            <button
+              v-for="choice in activeQuestionParsed.choices"
+              :key="choice.letter"
+              type="button"
+              :disabled="isActivityCompleted"
+              :class="[
+                'flex items-center gap-3 border-[2.5px] border-brand-teal p-3 text-left font-black transition-all',
+                isSelectedChoice(choice)
+                  ? 'bg-brand-blue text-white shadow-[2px_2px_0_#000]'
+                  : 'bg-white text-ink hover:bg-brand-blue-soft',
+                isActivityCompleted ? 'cursor-not-allowed opacity-60' : ''
+              ]"
+              @click="selectChoice(choice)"
+            >
+              <span
+                v-if="activeQuestionParsed.type === 'multiple_choice'"
+                :class="[
+                  'grid h-6 w-6 shrink-0 place-items-center rounded-full border-[2px] border-current text-xs font-black',
+                  isSelectedChoice(choice)
+                    ? 'bg-white text-brand-blue'
+                    : 'bg-surface text-ink'
+                ]"
+              >
+                {{ choice.letter }}
+              </span>
+              <span class="text-sm font-bold">{{ choice.text }}</span>
+            </button>
+          </div>
+
+          <p v-if="activeActivity.description" class="mt-3 text-xs font-bold text-gray-700/80 border-t border-black/10 pt-2">
+            {{ activeActivity.description }}
+          </p>
         </section>
 
         <HandCamera
@@ -300,6 +339,60 @@ const activityId = computed(() => route.query.activityId ? Number(route.query.ac
 const isAlphabetOnly = computed(() => !activityId.value)
 const activeActivity = computed(() => content.currentActivity)
 const activeQuestion = computed(() => activeActivity.value?.questions[activeQuestionIndex.value] ?? null)
+
+function parseQuestionOptions(rawAnswer?: string | null) {
+  if (!rawAnswer) return { type: 'identification', choices: [] as { letter: string; text: string }[] }
+  const up = rawAnswer.trim().toUpperCase()
+  if (up === 'TRUE' || up === 'FALSE') {
+    return {
+      type: 'true_false',
+      choices: [
+        { letter: 'TRUE', text: 'True' },
+        { letter: 'FALSE', text: 'False' },
+      ],
+    }
+  }
+  if (rawAnswer.includes('CORRECT:') && rawAnswer.includes('|')) {
+    const parts = rawAnswer.split('|')
+    const choices: { letter: string; text: string }[] = []
+    for (const part of parts) {
+      if (part.includes(':')) {
+        const colonIdx = part.indexOf(':')
+        const k = part.slice(0, colonIdx).trim()
+        const v = part.slice(colonIdx + 1).trim()
+        if (k !== 'CORRECT' && k) {
+          choices.push({ letter: k, text: v })
+        }
+      }
+    }
+    if (choices.length >= 2) {
+      return { type: 'multiple_choice', choices }
+    }
+  }
+  return { type: 'identification', choices: [] as { letter: string; text: string }[] }
+}
+
+const activeQuestionParsed = computed(() => parseQuestionOptions(activeQuestion.value?.answer))
+
+function isSelectedChoice(choice: { letter: string; text: string }) {
+  const current = (answers.value[String(activeQuestionIndex.value)] || currentAnswer.value || textAnswer.value || '').trim().toUpperCase()
+  const letter = choice.letter.trim().toUpperCase()
+  const text = choice.text.trim().toUpperCase()
+  return current === letter || current === text
+}
+
+function selectChoice(choice: { letter: string; text: string }) {
+  if (isActivityCompleted.value) return
+  textAnswer.value = choice.letter
+  answers.value[String(activeQuestionIndex.value)] = choice.letter
+}
+
+function saveCurrentAnswer() {
+  const ans = (currentAnswer.value || textAnswer.value || '').trim()
+  if (ans) {
+    answers.value[String(activeQuestionIndex.value)] = ans
+  }
+}
 const isHearingImpaired = computed(() => {
   const data = profile.profile
   return Boolean(data && 'student_type' in data && data.student_type === 'hearing impaired')
@@ -403,9 +496,6 @@ async function submitAnswer() {
   await loadTutorial(true)
 }
 
-function saveCurrentAnswer() {
-  answers.value[String(activeQuestionIndex.value)] = currentAnswer.value.trim()
-}
 
 function openResultPopup(submitted: { score: number; total: number }, submittedMode: string) {
   const isCorrect = submitted.total > 0 && submitted.score === submitted.total

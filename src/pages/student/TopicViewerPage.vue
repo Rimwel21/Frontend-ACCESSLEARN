@@ -184,9 +184,61 @@
           <div v-for="(question, index) in activeQuiz.questions" :key="index" class="border-[3px] border-brand-teal bg-white p-5">
             <label class="block text-sm font-black">Question {{ index + 1 }}</label>
             <p class="mt-1 text-sm text-gray-700">{{ question.prompt }}</p>
+
+            <!-- Multiple Choice -->
+            <div v-if="parseQuestionOptions(question.answer).type === 'multiple_choice'" class="mt-3 space-y-2">
+              <label
+                v-for="choice in parseQuestionOptions(question.answer).choices"
+                :key="choice.letter"
+                :class="[
+                  'flex cursor-pointer items-center gap-3 border-[2px] border-brand-teal p-3 text-sm font-bold transition-all',
+                  quizAnswers[String(index)] === choice.letter
+                    ? 'bg-brand-blue text-white shadow-[2px_2px_0_#000]'
+                    : 'bg-white text-ink hover:bg-brand-blue-soft',
+                  quizLocked ? 'cursor-not-allowed opacity-60' : ''
+                ]"
+              >
+                <input
+                  type="radio"
+                  :name="`q-${index}`"
+                  :value="choice.letter"
+                  :checked="quizAnswers[String(index)] === choice.letter"
+                  :disabled="quizLocked"
+                  class="hidden"
+                  @change="quizAnswers[String(index)] = choice.letter; saveActiveQuizAnswers()"
+                />
+                <span :class="['grid h-6 w-6 shrink-0 place-items-center rounded-full border-[2px] border-current text-xs font-black', quizAnswers[String(index)] === choice.letter ? 'bg-white text-brand-blue' : 'bg-surface text-ink']">
+                  {{ choice.letter }}
+                </span>
+                <span>{{ choice.text }}</span>
+              </label>
+            </div>
+
+            <!-- True or False -->
+            <div v-else-if="parseQuestionOptions(question.answer).type === 'true_false'" class="mt-3 flex gap-3">
+              <button
+                v-for="tf in parseQuestionOptions(question.answer).choices"
+                :key="tf.letter"
+                type="button"
+                :disabled="quizLocked"
+                :class="[
+                  'flex-1 border-[2px] border-brand-teal py-3 text-center text-sm font-black transition-all',
+                  quizAnswers[String(index)] === tf.letter
+                    ? 'bg-brand-blue text-white shadow-[2px_2px_0_#000]'
+                    : 'bg-white text-ink hover:bg-brand-blue-soft',
+                  quizLocked ? 'cursor-not-allowed opacity-60' : ''
+                ]"
+                @click="quizAnswers[String(index)] = tf.letter; saveActiveQuizAnswers()"
+              >
+                {{ tf.text }}
+              </button>
+            </div>
+
+            <!-- Identification (text input) -->
             <input
+              v-else
               v-model="quizAnswers[String(index)]"
-              class="mt-3 w-full border-[2px] border-brand-teal px-3 py-2 text-sm outline-none focus:bg-brand-blue-soft disabled:opacity-60 disabled:cursor-not-allowed"
+              class="mt-3 w-full border-[2px] border-brand-teal px-3 py-2 text-sm outline-none focus:bg-brand-blue-soft disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="quizLocked"
               placeholder="Your answer"
               @input="saveActiveQuizAnswers"
@@ -498,5 +550,37 @@ function formatQuizTime(seconds: number) {
 
 function hasQuizTimer(quiz: { time_limit_seconds?: number | null; time_limit?: string | null }) {
   return Boolean(quiz.time_limit_seconds && quiz.time_limit_seconds > 0) || Boolean(quiz.time_limit)
+}
+
+function parseQuestionOptions(rawAnswer?: string | null) {
+  if (!rawAnswer) return { type: 'identification', choices: [] as { letter: string; text: string }[] }
+  const up = rawAnswer.trim().toUpperCase()
+  if (up === 'TRUE' || up === 'FALSE') {
+    return {
+      type: 'true_false',
+      choices: [
+        { letter: 'TRUE', text: 'True' },
+        { letter: 'FALSE', text: 'False' },
+      ],
+    }
+  }
+  if (rawAnswer.includes('CORRECT:') && rawAnswer.includes('|')) {
+    const parts = rawAnswer.split('|')
+    const choices: { letter: string; text: string }[] = []
+    for (const part of parts) {
+      if (part.includes(':')) {
+        const colonIdx = part.indexOf(':')
+        const k = part.slice(0, colonIdx).trim()
+        const v = part.slice(colonIdx + 1).trim()
+        if (k !== 'CORRECT' && k) {
+          choices.push({ letter: k, text: v })
+        }
+      }
+    }
+    if (choices.length >= 2) {
+      return { type: 'multiple_choice', choices }
+    }
+  }
+  return { type: 'identification', choices: [] as { letter: string; text: string }[] }
 }
 </script>

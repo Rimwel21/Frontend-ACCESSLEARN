@@ -634,10 +634,13 @@ async function submitStudentRegister() {
   }
 
   try {
+    const regUsername = studentUsername.value.trim()
+    const regPassword = password.value
+
     await auth.register({
       role: 'student',
-      username: studentUsername.value.trim(),
-      password: password.value,
+      username: regUsername,
+      password: regPassword,
       full_name: studentFullName.value.trim(),
       student_lrn: studentLrn.value.trim(),
       grade_level_id: studentGradeLevelId.value,
@@ -648,7 +651,7 @@ async function submitStudentRegister() {
       guardians_contact_no: studentGuardiansContact.value.trim() || null,
     })
 
-    message.value = 'Your student account was created. Redirecting to login...'
+    message.value = 'Account created successfully! Logging you in...'
     studentFullName.value = ''
     studentUsername.value = ''
     studentLrn.value = ''
@@ -663,9 +666,8 @@ async function submitStudentRegister() {
     studentGuardiansName.value = ''
     studentGuardiansContact.value = ''
 
-    setTimeout(() => {
-      router.push('/login?role=student')
-    }, 800)
+    await auth.login({ username: regUsername, password: regPassword }, 'student')
+    router.push('/student/dashboard')
   } catch {
     // auth store owns the visible error
   }
