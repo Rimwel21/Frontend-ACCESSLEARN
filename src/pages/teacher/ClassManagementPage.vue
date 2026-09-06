@@ -161,7 +161,17 @@
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Section</label>
-                <input v-model.trim="newClass.section" class="input-field" placeholder="e.g. A, Rizal, Sampaguita" />
+                <select
+                  v-model="newClass.sectionId"
+                  class="input-field"
+                  :disabled="!newClass.gradeLevelId || sectionsLoading || sectionOptions.length === 0"
+                >
+                  <option :value="null">{{ sectionPlaceholder }}</option>
+                  <option v-for="section in sectionOptions" :key="section.id" :value="section.id">
+                    {{ section.name }}
+                  </option>
+                </select>
+                <p v-if="sectionError" class="mt-1.5 text-xs font-medium text-brand-rose">{{ sectionError }}</p>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">School Year</label>
@@ -199,10 +209,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTeacherStore } from '@/stores/teacher'
-import { fetchGradeLevelOptions, type GradeLevelOption } from '@/lib/gradeSections'
+import { fetchGradeLevelOptions, fetchSectionOptions, type GradeLevelOption, type SectionOption } from '@/lib/gradeSections'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -214,8 +224,18 @@ const showAddClass = ref(false)
 const newClass = ref(defaultClassForm())
 const deleteTargetId = ref<string | null>(null)
 const gradeLevels = ref<GradeLevelOption[]>([])
+const sectionOptions = ref<SectionOption[]>([])
+const sectionsLoading = ref(false)
+const sectionError = ref('')
+let sectionRequestId = 0
 
 const classModules = computed(() => store.modules.filter(module => module.classId === Number(store.selectedClassId)))
+const sectionPlaceholder = computed(() => {
+  if (!newClass.value.gradeLevelId) return 'Select grade level first...'
+  if (sectionsLoading.value) return 'Loading sections...'
+  if (sectionOptions.value.length === 0) return 'No sections available for this grade level.'
+  return 'Select section...'
+})
 
 const sections = computed(() => [
   {
@@ -260,13 +280,13 @@ function defaultClassForm() {
     className: '',
     subject: '',
     gradeLevelId: null as number | null,
-    section: '',
+    sectionId: null as number | null,
     schoolYear: '',
   }
 }
 
 async function createClass() {
-  if (!newClass.value.className || !newClass.value.subject || !newClass.value.gradeLevelId || !newClass.value.section) {
+  if (!newClass.value.className || !newClass.value.subject || !newClass.value.gradeLevelId || !newClass.value.sectionId) {
     alert('Please complete the class details.')
     return
   }
@@ -276,7 +296,7 @@ async function createClass() {
       className: newClass.value.className,
       subject: newClass.value.subject,
       gradeLevelId: newClass.value.gradeLevelId,
-      section: newClass.value.section,
+      sectionId: newClass.value.sectionId,
       schoolYear: newClass.value.schoolYear || null,
     })
     closeClassModal()
@@ -287,7 +307,11 @@ async function createClass() {
 
 function closeClassModal() {
   showAddClass.value = false
+  sectionRequestId += 1
   newClass.value = defaultClassForm()
+  sectionOptions.value = []
+  sectionError.value = ''
+  sectionsLoading.value = false
 }
 
 function confirmDeleteClass(id: string) {
@@ -307,6 +331,32 @@ async function loadGradeLevels() {
   if (!auth.token) return
   gradeLevels.value = await fetchGradeLevelOptions(auth.token)
 }
+
+watch(
+  () => newClass.value.gradeLevelId,
+  async gradeLevelId => {
+    const requestId = ++sectionRequestId
+    newClass.value.sectionId = null
+    sectionOptions.value = []
+    sectionError.value = ''
+    sectionsLoading.value = false
+
+    if (!gradeLevelId || !auth.token) return
+
+    sectionsLoading.value = true
+
+    try {
+      const sections = await fetchSectionOptions(gradeLevelId, auth.token)
+      if (requestId === sectionRequestId) sectionOptions.value = sections
+    } catch (err) {
+      if (requestId === sectionRequestId) {
+        sectionError.value = err instanceof Error ? err.message : 'Unable to load sections.'
+      }
+    } finally {
+      if (requestId === sectionRequestId) sectionsLoading.value = false
+    }
+  },
+)
 </script>
 
 <style scoped>
