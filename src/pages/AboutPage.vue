@@ -112,7 +112,7 @@
                 <h2 class="font-display text-xl font-bold text-[#2b7668]">About SIGNHEAR</h2>
               </div>
               <p class="text-xs sm:text-sm leading-relaxed text-[#4a6b63]">
-                SIGNHEAR is a web-based e-learning system designed to support inclusive Science education for intermediate learners in Grades 4 to 6, particularly learners with hearing impairment. It provides accessible learning materials, captioned video content, visual learning resources, sign language-supported materials, interactive quizzes and activities, and foundational Sign Language Alphabet Recognition.
+                SIGNHEAR is a web-based e-learning system designed to support inclusive Science education for intermediate learners in Grades 4 to 6, particularly learners with hearing impairment. It provides accessible learning materials, visual learning resources, sign language-supported materials, interactive quizzes and activities, and foundational Sign Language Alphabet Recognition.
               </p>
             </div>
           </section>
@@ -165,7 +165,7 @@
                 </div>
               </div>
               <p class="text-xs text-[#4a6b63] leading-relaxed">
-                Access Science lessons, activities, quizzes, captions, visual resources, and sign language-supported learning features.
+                Access Science lessons, activities, quizzes, visual resources, and sign language-supported learning features.
               </p>
             </div>
 
@@ -249,10 +249,10 @@
             </div>
 
             <div class="rounded-xl border border-[#a5d8cc]/60 bg-white p-5 shadow-sm">
-              <div class="mb-2.5 text-2xl">🎬</div>
-              <h3 class="mb-1 text-sm font-bold text-[#2b7668]">Captioned Content</h3>
+              <div class="mb-2.5 text-2xl">📖</div>
+              <h3 class="mb-1 text-sm font-bold text-[#2b7668]">Visual Learning Content</h3>
               <p class="text-xs text-[#5a8d82] leading-relaxed">
-                Captioned video content, transcripts, and visual resources tailored for intermediate learners in Science.
+                Structured visual learning content, diagrams, and resources tailored for intermediate learners in Science.
               </p>
             </div>
 
@@ -293,9 +293,9 @@ const keyFeatures = [
     description: 'Structured Science curriculum for Grades 4 to 6 designed with clear typography and visual support.',
   },
   {
-    icon: '💬',
-    title: 'Captioned Video Content',
-    description: 'Video lessons equipped with captions, subtitles, and transcript toggles for hearing support.',
+    icon: '💡',
+    title: 'Visual Science Diagrams',
+    description: 'Illustrated Science lessons equipped with visual diagrams and key term breakdowns for hearing support.',
   },
   {
     icon: '🔤',

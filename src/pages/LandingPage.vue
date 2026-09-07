@@ -97,7 +97,7 @@
                   Accessible Science learning for every learner, every ability, and every classroom.
                 </h1>
                 <p class="mb-4 max-w-[620px] text-xs leading-relaxed text-white/90 lg:text-[14px]">
-                  SIGNHEAR provides accessible Science lessons, captioned videos, visual learning materials, interactive quizzes, and Sign Language Alphabet Recognition to support inclusive learning in Philippine schools.
+                  SIGNHEAR provides accessible Science lessons, visual learning materials, interactive quizzes, and Sign Language Alphabet Recognition to support inclusive learning in Philippine schools.
                 </p>
                 <div class="flex justify-center sm:justify-start">
                   <RouterLink to="/portal" class="min-w-[144px] rounded-full bg-[#f59e5b] px-6 py-2.5 text-center text-sm font-bold text-white shadow-[0_4px_12px_rgba(245,158,91,0.25)] transition-all hover:scale-[1.03] hover:bg-[#e08a47]">
@@ -150,9 +150,9 @@ const isMobileMenuOpen = ref(false)
 const features = [
   {
     icons: ['🧏', '💬'],
-    title: 'Sign Language & Captions',
+    title: 'Sign Language Support',
     summary: 'For hearing support learners.',
-    detail: 'Each module includes sign-language videos, subtitles, and transcript toggles.',
+    detail: 'Each module includes sign language guides, visual diagrams, and interactive learning resources.',
   },
   {
     icons: ['🎯', '📚'],

@@ -176,7 +176,13 @@ function debouncedFetch() {
 }
 
 function logUser(log: any) {
-  return log.affected_record || (log.user_id ? `User #${log.user_id}` : 'System')
+  if (log.affected_record) {
+    if (log.affected_record.includes(' - ')) {
+      return log.affected_record.split(' - ')[0]
+    }
+    return log.affected_record
+  }
+  return log.user_id ? `User #${log.user_id}` : 'System'
 }
 
 function roleLabel(role?: string) {
@@ -188,7 +194,12 @@ function roleLabel(role?: string) {
 
 function activityLabel(log: any) {
   const action = String(log.action || 'activity').replace(/_/g, ' ')
-  return action.charAt(0).toUpperCase() + action.slice(1)
+  const formattedAction = action.charAt(0).toUpperCase() + action.slice(1)
+  if (log.affected_record && log.affected_record.includes(' - ')) {
+    const detail = log.affected_record.split(' - ').slice(1).join(' - ')
+    return `${formattedAction}: ${detail}`
+  }
+  return formattedAction
 }
 
 function formatDate(value: string) {

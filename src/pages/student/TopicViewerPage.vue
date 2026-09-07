@@ -257,36 +257,115 @@
         </article>
 
         <article v-else-if="activeTopic" class="space-y-6">
-          <div v-if="activeTopic.page_image_urls?.length" class="mx-auto grid max-w-4xl gap-6">
-            <img
-              v-for="(pageUrl, index) in activeTopic.page_image_urls"
-              :key="`${activeTopic.id}-${index}`"
-              :src="assetUrl(pageUrl)"
-              alt=""
-              class="w-full rounded border border-gray-200 bg-white shadow-sm"
-            />
-          </div>
-          <div v-else class="prose max-w-none whitespace-pre-line text-[14px] leading-relaxed text-gray-700">{{ activeTopic.content }}</div>
+          <!-- ===== PPTX Presentation-Card Layout ===== -->
+          <template v-if="parsedPptxContent">
+            <div class="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm md:p-8">
+              <!-- Slide Title Pill Badge (Rendered ONCE cleanly) -->
+              <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div class="inline-block rounded-lg bg-teal-700 px-4 py-1.5 text-lg font-bold text-white shadow-sm">
+                  {{ parsedPptxContent.badge || activeTopic.title }}
+                </div>
+                <div class="font-mono text-xs font-semibold text-slate-500">
+                  Slide {{ activeIndex + 1 }} of {{ topics.length }}
+                </div>
+              </div>
 
-          <div v-if="activeTopic.image_url" class="flex flex-col gap-5 lg:flex-row">
-            <img :src="assetUrl(activeTopic.image_url)" alt="" class="h-[280px] w-full border-[3px] border-[#FF9F40] object-cover lg:w-[280px]" />
-            <div class="flex-1 rounded-lg border-[2px] border-gray-200 bg-white p-5 text-[14px] leading-relaxed text-gray-700">
-              {{ activeTopic.description }}
+              <!-- Content grid: 12-col layout on desktop -->
+              <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+                <!-- Media Column (5 cols) -->
+                <div
+                  v-if="parsedPptxContent.image_urls?.length"
+                  :class="[
+                    'flex flex-col gap-3',
+                    parsedPptxContent.paragraphs?.length ? 'lg:col-span-5' : 'lg:col-span-12'
+                  ]"
+                >
+                  <div
+                    :class="[
+                      parsedPptxContent.image_urls.length > 1
+                        ? 'grid grid-cols-2 gap-3'
+                        : 'flex flex-col gap-3'
+                    ]"
+                  >
+                    <div
+                      v-for="(imgUrl, i) in parsedPptxContent.image_urls"
+                      :key="i"
+                      class="flex items-center justify-center overflow-hidden rounded-xl border border-teal-100 bg-white p-2 shadow-sm"
+                    >
+                      <img
+                        :src="assetUrl(imgUrl)"
+                        alt="Slide graphic"
+                        class="max-h-[350px] w-full rounded-lg object-contain md:max-h-[420px]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Text Paragraphs Column (7 cols) -->
+                <div
+                  :class="[
+                    'flex flex-col gap-4',
+                    parsedPptxContent.image_urls?.length ? 'lg:col-span-7' : 'lg:col-span-12'
+                  ]"
+                >
+                  <div
+                    v-for="(para, i) in parsedPptxContent.paragraphs"
+                    :key="i"
+                    class="rounded-xl border border-teal-100 border-l-4 border-l-teal-600 bg-white p-4 text-sm leading-relaxed text-slate-800 shadow-sm md:p-5 md:text-base"
+                  >
+                    {{ para }}
+                  </div>
+                  <div
+                    v-if="!parsedPptxContent.paragraphs?.length"
+                    class="rounded-xl border border-teal-100 bg-white p-6 text-center text-sm italic text-slate-500 shadow-sm"
+                  >
+                    No text content on this slide.
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </template>
 
-          <div class="flex items-center justify-between pt-4">
+          <!-- ===== Default Layout (PDF page images / plain text) ===== -->
+          <template v-else>
+            <div class="mx-auto max-w-6xl space-y-6">
+              <div v-if="activeTopic.page_image_urls?.length" class="mx-auto grid max-w-4xl gap-6">
+                <img
+                  v-for="(pageUrl, index) in activeTopic.page_image_urls"
+                  :key="`${activeTopic.id}-${index}`"
+                  :src="assetUrl(pageUrl)"
+                  alt=""
+                  class="w-full rounded-lg border border-slate-200 bg-white shadow-sm"
+                />
+              </div>
+              <div v-else class="prose max-w-none whitespace-pre-line text-sm leading-relaxed text-slate-800 md:text-base">
+                {{ activeTopic.content }}
+              </div>
+
+              <div v-if="activeTopic.image_url" class="flex flex-col gap-5 lg:flex-row">
+                <img
+                  :src="assetUrl(activeTopic.image_url)"
+                  alt=""
+                  class="max-h-[350px] w-full rounded-lg border border-teal-100 object-contain shadow-sm md:max-h-[420px] lg:w-[280px]"
+                />
+                <div class="flex-1 rounded-xl border border-teal-100 border-l-4 border-l-teal-600 bg-white p-5 text-sm leading-relaxed text-slate-800 shadow-sm md:text-base">
+                  {{ activeTopic.description }}
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- ===== Navigation controls ===== -->
+          <div class="mx-auto flex max-w-6xl items-center justify-between pt-4">
             <button
-              class="border-[3px] border-brand-teal bg-white px-5 py-2.5 text-sm font-black transition-all hover:-translate-x-[1px] hover:-translate-y-[1px]"
-             
+              class="border-[3px] border-brand-teal bg-white px-4 py-2.5 text-xs font-black text-ink shadow-[2px_2px_0_#000] transition-all hover:-translate-x-[1px] hover:-translate-y-[1px] sm:px-5 sm:text-sm"
               @click="goPrevious"
             >
               Previous
             </button>
-            <span class="font-mono text-xs text-gray-400">Topic {{ activeIndex + 1 }} of {{ topics.length }}</span>
+            <span class="font-mono text-xs font-bold text-slate-500">Topic {{ activeIndex + 1 }} of {{ topics.length }}</span>
             <button
-              class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px]"
-             
+              class="border-[3px] border-brand-teal bg-brand-blue px-4 py-2.5 text-xs font-black text-white shadow-[2px_2px_0_#000] transition-all hover:-translate-x-[2px] hover:-translate-y-[2px] sm:px-5 sm:text-sm"
               @click="goNext"
             >
               {{ activeIndex === topics.length - 1 ? 'Finish Module' : 'Next Topic' }}
@@ -352,7 +431,30 @@ let quizTimer: number | null = null
 
 const moduleId = computed(() => String(route.params.moduleId))
 const moduleData = computed(() => content.currentModule)
-const topics = computed(() => content.sortedTopics)
+const _allTopics = computed(() => content.sortedTopics)
+
+// Deduplicate and filter out raw "--- Slide X ---" sidebar entries
+const SLIDE_MARKER = /^-{2,}\s*Slide\s*\d+\s*-{2,}$/i
+const topics = computed(() => {
+  const seen = new Set<string>()
+  return _allTopics.value.filter(t => {
+    if (SLIDE_MARKER.test(t.title ?? '')) return false
+    const key = (t.title ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+})
+
+// Parse structured PPTX JSON content for the active topic
+const parsedPptxContent = computed(() => {
+  if (!activeTopic.value) return null
+  try {
+    const parsed = JSON.parse(activeTopic.value.content ?? '')
+    if (parsed?.type === 'pptx_slide') return parsed as { badge: string; paragraphs: string[]; image_urls: string[] }
+  } catch {}
+  return null
+})
 const progress = computed(() => content.progress)
 const completedIds = computed(() => new Set(progress.value.completed_topic_ids))
 const completedQuizIds = computed(() => new Set(progress.value.completed_quiz_ids))
@@ -363,8 +465,12 @@ const activeIndex = computed(() => activeTopic.value ? topics.value.findIndex(to
 const quizUnlocked = computed(() => topics.value.length > 0 && progress.value.completed_topics >= topics.value.length)
 const hasAutoIntro = computed(() => !isPagedMaterial(moduleData.value?.content_type))
 const isIntroActive = computed(() => hasAutoIntro.value && !activeTopicId.value && !activeQuizId.value)
-const headerTitle = computed(() => activeQuiz.value?.title || activeTopic.value?.title || moduleData.value?.title || 'Learning Content')
-const headerDescription = computed(() => activeQuiz.value?.description || activeTopic.value?.description || moduleData.value?.description || 'Module description')
+const headerTitle = computed(() => activeQuiz.value?.title || moduleData.value?.title || 'Learning Content')
+const headerDescription = computed(() => {
+  if (activeQuiz.value) return activeQuiz.value.description || 'Quiz'
+  if (activeTopic.value) return `Topic ${activeIndex.value + 1} of ${topics.value.length}`
+  return moduleData.value?.description || 'Module description'
+})
 const quizLocked = computed(() => Boolean(quizResult.value) || quizTimeExpired.value || activeQuiz.value?.student_status === 'completed')
 const quizTimerLabel = computed(() => {
   if (quizRemainingSeconds.value === null) return ''
@@ -505,7 +611,8 @@ function assetUrl(url?: string | null) {
 }
 
 function isPagedMaterial(contentType?: string | null) {
-  return contentType === 'PDF' || contentType === 'PPT'
+  // PDF uses page-image rendering; PPTX/PPT now uses structured JSON viewer
+  return contentType === 'PDF'
 }
 
 function startQuizTimer(initialRemainingSeconds: number) {
