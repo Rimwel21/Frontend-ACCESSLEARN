@@ -1,5 +1,5 @@
 <template>
-  <section class="border-[3px] border-brand-teal bg-white p-4">
+  <section class="border-[3px] border-brand-teal bg-white p-4 shadow-[0_10px_28px_rgba(20,184,166,0.08)]">
     <div class="flex items-center justify-between gap-3 border-b-[3px] border-brand-teal pb-3">
       <h2 class="font-display text-sm font-black uppercase tracking-widest">Answer</h2>
       <ConfidenceBadge
@@ -18,11 +18,14 @@
       placeholder="Type your answer"
       :disabled="disabled"
     />
-    <div v-else class="mt-4 min-h-[132px] border-[3px] border-brand-teal bg-surface p-4">
-      <div class="break-words font-display text-3xl font-black leading-tight">{{ answer || '...' }}</div>
+    <div v-else class="mt-4 min-h-[150px] border-[3px] border-brand-teal bg-surface p-5">
+      <div class="break-words font-display text-3xl font-black leading-tight text-brand-blue">{{ answer || '...' }}</div>
       <div class="mt-3 font-mono text-[10px] font-bold uppercase tracking-wide text-gray-500">
         {{ detectionStatus }}
       </div>
+      <p v-if="!detection?.detected" class="mt-2 text-sm font-bold text-brand-blue/80">
+        Show your sign in front of the camera...
+      </p>
     </div>
   </section>
 </template>

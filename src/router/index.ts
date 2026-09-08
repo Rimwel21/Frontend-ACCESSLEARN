@@ -22,7 +22,6 @@ const routes: RouteRecordRaw[] = [
       { path: 'dashboard',   name: 'TeacherDashboard', component: () => import('@/pages/teacher/DashboardPage.vue') },
       { path: 'class',       name: 'ClassManagement',  component: () => import('@/pages/teacher/ClassManagementPage.vue') },
       { path: 'records',     name: 'TeacherStudentRecords', component: () => import('@/pages/teacher/StudentRecordsPage.vue') },
-      { path: 'activity-logs', name: 'TeacherActivityLogs', component: () => import('@/pages/teacher/ActivityLogsPage.vue') },
       { path: 'modules',     name: 'Modules',          component: () => import('@/pages/teacher/ModulesPage.vue') },
       { path: 'modules/:moduleId/preview', name: 'ModulePreview', component: () => import('@/pages/teacher/ModulePreviewPage.vue') },
       { path: 'activities',  name: 'TeacherActivities', component: () => import('@/pages/teacher/ActivitiesPage.vue') },

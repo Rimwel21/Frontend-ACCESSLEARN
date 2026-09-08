@@ -110,7 +110,6 @@
         <div class="card flex-1">
           <div class="flex items-center justify-between gap-3 border-b border-gray-50 px-4 pb-3 pt-4">
             <span class="font-display text-[13px] font-semibold">Recent Activity</span>
-            <RouterLink to="/teacher/activity-logs" class="text-[11px] font-bold text-brand-blue hover:text-brand-teal">View All</RouterLink>
           </div>
           <div class="scrollbar-thin flex max-h-64 flex-col gap-3 overflow-y-auto p-4">
             <div v-for="act in store.recentActivities" :key="act.id" class="flex items-start gap-2.5">

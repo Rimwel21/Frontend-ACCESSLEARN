@@ -55,17 +55,15 @@
       </RouterLink>
     </div>
 
-    <div class="card p-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <input v-model="search" class="input-field max-w-sm" :placeholder="`Search ${listTitle.toLowerCase()} by title, type, module, week, or student...`" />
-        <span class="text-xs font-semibold text-ink-soft">{{ filteredItems.length }} of {{ items.length }} shown</span>
+    <div v-if="successMessage || errorMessage" class="card p-4">
+      <div class="flex flex-wrap items-center gap-3">
         <span v-if="successMessage" class="status-success">{{ successMessage }}</span>
         <span v-if="errorMessage" class="status-error">{{ errorMessage }}</span>
       </div>
     </div>
 
     <div v-if="loading" class="empty-state">Loading {{ listTitle.toLowerCase() }}...</div>
-    <div v-else-if="filteredItems.length === 0" class="card p-12 text-center">
+    <div v-else-if="items.length === 0" class="card p-12 text-center">
       <h2 class="font-display text-xl font-bold">No {{ listTitle.toLowerCase() }} have been created yet.</h2>
       <p class="mx-auto mt-2 max-w-md text-sm text-ink-soft">
         Create your first {{ title.toLowerCase() }} for the selected class.
@@ -157,7 +155,6 @@ const props = defineProps<{
 }>()
 
 const store = useTeacherStore()
-const search = ref('')
 const showForm = ref(false)
 const loading = ref(false)
 const successMessage = ref('')
@@ -167,9 +164,7 @@ const deletingId = ref('')
 
 const listTitle = computed(() => props.kind === 'quiz' ? 'Quizzes' : 'Activities')
 const items = computed(() => props.kind === 'quiz' ? store.quizzes : store.activities)
-const normalizedSearch = computed(() => search.value.trim().toLowerCase())
-const filteredItems = computed(() => items.value.filter(item => matchesAssessmentSearch(item)))
-const filteredCards = computed(() => filteredItems.value.map(item => {
+const filteredCards = computed(() => items.value.map(item => {
   if ('type' in item) {
     return {
       id: item.id,
@@ -232,27 +227,6 @@ function handleSaved(mode: 'created' | 'updated') {
 function formatSubmissionAnswers(answers: Record<string, string>) {
   const values = Object.values(answers).filter(Boolean)
   return values.length ? values.join(' / ') : 'No answer text'
-}
-
-function matchesAssessmentSearch(item: Quiz | Activity) {
-  if (!normalizedSearch.value) return true
-  const submissions = 'submissions' in item ? item.submissions ?? [] : []
-  return [
-    item.title,
-    item.description,
-    item.module,
-    item.category,
-    item.week,
-    item.createdAt,
-    'type' in item ? item.type : item.status,
-    item.createdAt,
-    'dueDate' in item ? item.dueDate : item.date,
-    ...submissions.flatMap(submission => [
-      submission.studentName,
-      `${submission.score ?? 0}/${submission.total ?? 0}`,
-      formatSubmissionAnswers(submission.answers),
-    ]),
-  ].some(value => String(value ?? '').toLowerCase().includes(normalizedSearch.value))
 }
 
 async function deleteItem(item: Quiz | Activity) {

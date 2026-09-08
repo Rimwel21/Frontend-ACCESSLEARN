@@ -1,11 +1,11 @@
 <template>
-  <section class="border-[3px] border-brand-teal bg-white p-4">
+  <section class="border-[3px] border-brand-teal bg-white p-4 shadow-[0_10px_28px_rgba(20,184,166,0.08)]">
     <div class="mb-3 flex items-center justify-between gap-3">
       <h2 class="font-display text-sm font-black uppercase tracking-widest">Camera</h2>
       <LoadingIndicator v-if="isDetecting" label="Detecting" />
     </div>
 
-    <div class="relative mx-auto aspect-[4/3] w-full max-w-[760px] overflow-hidden border-[3px] border-brand-teal bg-gray-100">
+    <div class="relative mx-auto aspect-[4/3] w-full overflow-hidden border-[3px] border-brand-teal bg-gray-100">
       <video ref="videoRef" class="h-full w-full -scale-x-100 object-cover" muted playsinline aria-label="Live hand sign camera feed"></video>
       <canvas ref="canvasRef" hidden></canvas>
 
@@ -32,8 +32,8 @@
         :style="progressStyle"
         aria-hidden="true"
       ></div>
-      <div v-else-if="isRunning" class="absolute left-3 top-3 border-[3px] border-brand-teal bg-white px-3 py-2 font-mono text-[10px] font-black uppercase">
-        No hand detected
+      <div v-else-if="isRunning" class="absolute left-3 top-3 border-[3px] border-brand-teal bg-white px-3 py-2 font-mono text-[10px] font-black uppercase shadow-sm">
+        Camera Active
       </div>
     </div>
 

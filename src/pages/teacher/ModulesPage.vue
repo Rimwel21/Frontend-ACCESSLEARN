@@ -38,16 +38,12 @@
       </RouterLink>
     </div>
 
-    <div class="card p-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <input v-model="search" class="input-field max-w-sm" placeholder="Search by title, class, week, status, or file..." />
-        <span class="text-xs font-semibold text-ink-soft">{{ filteredMaterials.length }} of {{ store.modules.length }} shown</span>
-        <span v-if="successMessage" class="status-success">{{ successMessage }}</span>
-      </div>
+    <div v-if="successMessage" class="card p-4">
+      <span class="status-success">{{ successMessage }}</span>
     </div>
 
     <div v-if="store.modulesLoading" class="empty-state">Loading learning materials...</div>
-    <div v-else-if="filteredMaterials.length === 0" class="card p-12 text-center">
+    <div v-else-if="store.modules.length === 0" class="card p-12 text-center">
       <h2 class="font-display text-xl font-bold">No learning materials have been added yet.</h2>
       <p class="mx-auto mt-2 max-w-md text-sm text-ink-soft">Add PDFs, Word documents, or PowerPoint presentations for the selected module.</p>
       <button class="btn-primary mt-5" @click="openForm()">Add Learning Material</button>
@@ -62,7 +58,7 @@
         <div class="text-right">Actions</div>
       </div>
       <article
-        v-for="material in filteredMaterials"
+        v-for="material in store.modules"
         :key="material.id"
         class="grid gap-3 border-b border-gray-100 px-5 py-4 last:border-b-0 lg:grid-cols-[minmax(240px,1.4fr)_minmax(170px,1fr)_110px_120px_minmax(180px,1fr)_220px] lg:items-center"
       >
@@ -265,7 +261,6 @@ const contentTypeConfig: Record<MaterialContentType, { extensions: string[]; mim
 }
 const store = useTeacherStore()
 const router = useRouter()
-const search = ref('')
 const showForm = ref(false)
 const formError = ref('')
 const successMessage = ref('')
@@ -275,20 +270,6 @@ const isDraggingFile = ref(false)
 const form = ref<MaterialForm>(defaultForm())
 const editingMaterialId = ref<string | null>(null)
 
-const normalizedSearch = computed(() => search.value.trim().toLowerCase())
-const filteredMaterials = computed(() => store.modules.filter(material => {
-  if (!normalizedSearch.value) return true
-  return [
-    material.title,
-    material.description,
-    classNameFor(material.classId),
-    material.contentType,
-    material.week,
-    material.status,
-    material.fileName,
-    formatFileSize(material.fileSize),
-  ].some(value => String(value ?? '').toLowerCase().includes(normalizedSearch.value))
-}))
 const selectedClassLabel = computed(() => classNameFor(form.value.classId ? Number(form.value.classId) : null))
 const selectedContentType = computed(() => isSupportedContentType(form.value.contentType) ? form.value.contentType : 'PDF')
 const selectedContentTypeLabel = computed(() => contentTypeLabel(selectedContentType.value))
