@@ -305,10 +305,22 @@ function openSearchResult(result: DashboardSearchResult) {
 }
 
 function openDeadline(deadline: typeof content.deadlines[number]) {
-  if (deadline.item_type === 'Activity' && deadline.assessment_id) {
+  const itemType = deadline.item_type.toLowerCase()
+  if (itemType === 'activity' && deadline.assessment_id) {
     router.push({
-      name: 'HandSignLanguage',
-      query: { activityId: String(deadline.assessment_id) },
+      name: 'Activities',
+      query: { deadlineId: String(deadline.assessment_id) },
+    })
+    return
+  }
+
+  if (itemType === 'quiz' && deadline.assessment_id) {
+    router.push({
+      name: 'StudentQuiz',
+      query: {
+        deadlineId: String(deadline.assessment_id),
+        moduleId: deadline.module_id ? String(deadline.module_id) : undefined,
+      },
     })
     return
   }

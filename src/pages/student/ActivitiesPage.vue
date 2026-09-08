@@ -32,7 +32,10 @@
             <div
               v-for="act in activities"
               :key="act.id"
-              class="flex cursor-pointer flex-wrap items-center gap-3 border-[3px] border-brand-teal bg-white p-4 shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover sm:flex-nowrap sm:gap-4"
+              :class="[
+                'flex cursor-pointer flex-wrap items-center gap-3 border-[3px] bg-white p-4 shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover sm:flex-nowrap sm:gap-4',
+                selectedActivityId === act.id ? 'border-brand-amber ring-2 ring-brand-amber/30' : 'border-brand-teal',
+              ]"
               @click="openActivity(act)"
             >
               <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center border-[3px] border-brand-teal bg-brand-blue-soft text-xs font-black text-brand-blue">
@@ -92,7 +95,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useStudentContentStore } from '@/stores/studentContent'
 
 type ActivityStatus = 'In Progress' | 'Not Started' | 'Finished'
@@ -107,7 +110,9 @@ interface ActivityRow {
 }
 
 const router = useRouter()
+const route = useRoute()
 const content = useStudentContentStore()
+const selectedActivityId = computed(() => route.query.deadlineId ? Number(route.query.deadlineId) : null)
 
 const activities = computed<ActivityRow[]>(() => content.activities.map(assessment => ({
   id: assessment.id,

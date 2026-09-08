@@ -512,6 +512,11 @@ const quizTimerLabel = computed(() => {
 
 onMounted(async () => {
   await content.fetchModule(moduleId.value)
+  const requestedQuizId = route.query.quizId ? Number(route.query.quizId) : null
+  if (requestedQuizId && quizzes.value.some(quiz => quiz.id === requestedQuizId) && quizUnlocked.value) {
+    await selectQuiz(requestedQuizId)
+    return
+  }
   activeTopicId.value = hasAutoIntro.value ? null : topics.value[0]?.id ?? null
 })
 
