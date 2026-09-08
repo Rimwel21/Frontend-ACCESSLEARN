@@ -81,6 +81,21 @@
           </p>
         </section>
 
+        <section v-if="activeActivity && !isActivityCompleted" class="grid gap-3 border-[3px] border-brand-teal bg-white p-4 shadow-card sm:grid-cols-3">
+          <div class="border-[2px] border-brand-teal bg-surface p-3">
+            <div class="text-xs font-black text-brand-blue">1. Review</div>
+            <p class="mt-1 text-[11px] font-bold text-ink-soft">Read the prompt and inspect the answer choices.</p>
+          </div>
+          <div class="border-[2px] border-brand-teal bg-surface p-3">
+            <div class="text-xs font-black text-brand-blue">2. Respond</div>
+            <p class="mt-1 text-[11px] font-bold text-ink-soft">Use text input or Sign Language Mode for your answer.</p>
+          </div>
+          <div class="border-[2px] border-brand-teal bg-surface p-3">
+            <div class="text-xs font-black text-brand-blue">3. Confirm</div>
+            <p class="mt-1 text-[11px] font-bold text-ink-soft">Answered question buttons turn green before submission.</p>
+          </div>
+        </section>
+
         <HandCamera
           v-if="signLanguageMode && activeActivity && !isActivityCompleted"
           v-model:video-ref="videoRef"

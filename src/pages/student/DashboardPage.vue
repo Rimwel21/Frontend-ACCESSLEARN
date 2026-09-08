@@ -1,60 +1,40 @@
 <template>
   <div class="min-h-screen bg-surface">
     <div class="space-y-5 px-5 py-5 xl:px-7">
-      <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_250px]">
-        <div class="flex min-w-0 items-center gap-2 border-[3px] border-brand-teal bg-white px-4 py-2.5 shadow-card focus-within:border-brand-blue focus-within:ring-2 focus-within:ring-brand-blue/25">
-          <input v-model="search" type="text" placeholder="Search" class="min-w-0 flex-1 border-0 bg-transparent text-sm font-bold text-ink outline-none placeholder:text-ink-soft" />
-          <span class="text-xs font-black text-ink-soft">SEARCH</span>
+      <div>
+        <div class="flex min-w-0 items-center gap-3 border-[3px] border-brand-teal bg-white px-4 py-3 shadow-card transition-all focus-within:border-brand-blue focus-within:shadow-card-hover focus-within:ring-2 focus-within:ring-brand-blue/25">
+          <svg class="h-5 w-5 flex-shrink-0 text-brand-blue" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" />
+          </svg>
+          <input v-model="search" type="search" placeholder="Search lesson, quiz, activities" class="min-w-0 flex-1 border-0 bg-transparent text-sm font-bold text-ink outline-none placeholder:text-ink-soft" />
+          <button v-if="hasSearch" type="button" class="border-[2px] border-brand-teal px-3 py-1 text-[10px] font-black text-brand-blue transition-all hover:border-brand-rose hover:bg-brand-rose hover:text-white" @click="search = ''">
+            CLEAR
+          </button>
+          <span v-else class="text-xs font-black text-ink-soft">SEARCH</span>
         </div>
 
-        <div class="flex items-center justify-end gap-3">
-          <button
-            class="grid h-[42px] w-[42px] place-items-center border-[3px] border-brand-teal bg-white text-[10px] font-black text-brand-blue shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover"
-            type="button"
-            aria-label="Open profile setup"
-            @click="router.push('/profile/setup')"
-          >
-            PR
-          </button>
-          <button
-            class="grid h-[42px] w-[42px] place-items-center border-[3px] border-brand-teal bg-white text-[10px] font-black text-brand-blue shadow-card transition-all hover:-translate-y-1 hover:border-brand-rose hover:bg-brand-rose hover:text-white hover:shadow-card-hover"
-            type="button"
-            aria-label="Logout"
-            @click="logout"
-          >
-            OUT
-          </button>
-
-          <div class="relative">
-            <button
-              class="grid h-[42px] w-[42px] place-items-center overflow-hidden rounded-full border-[3px] border-brand-teal bg-white font-black text-brand-blue shadow-card transition-all hover:border-brand-amber hover:shadow-card-hover"
-              aria-label="Open student profile"
-              @click="showProfileMenu = !showProfileMenu"
-            >
-              <img v-if="profile.image?.file_url" :src="profile.image.file_url" alt="" class="h-full w-full object-cover" />
-              <span v-else>{{ profile.initial }}</span>
-            </button>
-
-            <div v-if="showProfileMenu" class="absolute right-0 top-12 z-40 w-72 border-[3px] border-brand-teal bg-white p-4 text-left shadow-card">
-              <div class="flex items-center gap-3 border-b-[3px] border-brand-teal/30 pb-3">
-                <img v-if="profile.image?.file_url" :src="profile.image.file_url" alt="" class="h-12 w-12 rounded-full border-[2px] border-brand-teal object-cover" />
-                <div v-else class="grid h-12 w-12 place-items-center rounded-full border-[2px] border-brand-teal bg-brand-blue font-black text-white">{{ profile.initial }}</div>
-                <div class="min-w-0">
-                  <div class="truncate font-black">{{ profile.displayName }}</div>
-                  <div class="truncate font-mono text-[10px] text-ink-soft">Student account</div>
-                </div>
-              </div>
-              <dl class="mt-3 grid gap-2 text-xs">
-                <div class="flex justify-between gap-3"><dt class="font-black text-ink-soft">Role</dt><dd class="font-bold">Student</dd></div>
-                <div class="flex justify-between gap-3"><dt class="font-black text-ink-soft">Type</dt><dd class="truncate font-bold">{{ studentType }}</dd></div>
-              </dl>
-              <div class="mt-4 grid grid-cols-2 gap-2">
-                <button class="border-[2px] border-brand-teal bg-brand-amber px-3 py-2 text-xs font-black text-white hover:bg-gradient-to-r hover:from-brand-amber hover:to-brand-rose" @click="router.push('/profile/setup')">Profile</button>
-                <button class="border-[2px] border-brand-teal bg-white px-3 py-2 text-xs font-black text-brand-blue hover:border-brand-rose hover:bg-brand-rose hover:text-white" @click="logout">Logout</button>
-              </div>
-            </div>
+        <section v-if="hasSearch" class="mt-3 border-[3px] border-brand-teal bg-white shadow-card">
+          <div class="flex items-center justify-between border-b-[3px] border-brand-teal/30 bg-brand-blue-soft px-4 py-2.5">
+            <h2 class="font-display text-xs font-black uppercase tracking-widest text-brand-blue">Search Results</h2>
+            <span class="font-mono text-[10px] font-black text-ink-soft">{{ searchResults.length }} found</span>
           </div>
-        </div>
+          <div v-if="searchResults.length === 0" class="p-4 text-sm font-bold text-ink-soft">
+            No lessons, quizzes, or activities match "{{ search.trim() }}".
+          </div>
+          <div v-else class="grid gap-2 p-3 sm:grid-cols-2 xl:grid-cols-4">
+            <button
+              v-for="result in searchResults"
+              :key="result.id"
+              type="button"
+              class="min-w-0 border-[2px] border-brand-teal bg-white p-3 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover"
+              @click="openSearchResult(result)"
+            >
+              <span class="inline-flex border border-brand-teal bg-surface px-2 py-0.5 font-mono text-[9px] font-black uppercase text-brand-blue">{{ result.type }}</span>
+              <div class="mt-2 truncate text-sm font-black text-ink">{{ result.title }}</div>
+              <div class="mt-1 truncate font-mono text-[10px] text-ink-soft">{{ result.meta }}</div>
+            </button>
+          </div>
+        </section>
       </div>
 
       <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_250px]">
@@ -75,8 +55,8 @@
             </div>
             <div v-if="content.loading" class="border-[3px] border-brand-teal bg-white p-6 text-sm font-black shadow-card">Loading modules...</div>
             <div v-else-if="filteredModules.length === 0" class="border-[3px] border-brand-teal bg-white p-8 text-center shadow-card">
-              <h3 class="font-display text-lg font-black">No learning materials are available yet.</h3>
-              <p class="mt-2 text-sm text-ink-soft">Published teacher uploads will appear here automatically.</p>
+              <h3 class="font-display text-lg font-black">{{ hasSearch ? 'No modules match your search.' : 'No learning materials are available yet.' }}</h3>
+              <p class="mt-2 text-sm text-ink-soft">{{ hasSearch ? 'Try searching by lesson, quiz, activity, or module title.' : 'Published teacher uploads will appear here automatically.' }}</p>
             </div>
             <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <article
@@ -102,9 +82,9 @@
               <h2 class="font-display text-sm font-black uppercase tracking-widest">Continue Progress</h2>
               <div class="h-[2.5px] flex-1 bg-brand-teal/40" />
             </div>
-            <div v-if="content.modules.length === 0" class="border-[3px] border-brand-teal bg-white p-6 text-sm font-black shadow-card">Start a module to track your progress here.</div>
+            <div v-if="filteredProgressModules.length === 0" class="border-[3px] border-brand-teal bg-white p-6 text-sm font-black shadow-card">{{ hasSearch ? 'No progress items match your search.' : 'Start a module to track your progress here.' }}</div>
             <div v-else class="space-y-3">
-              <article v-for="module in content.modules.slice(0, 3)" :key="module.id" class="flex flex-wrap items-center gap-4 border-[3px] border-brand-teal bg-white p-4 shadow-card transition-all hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover sm:flex-nowrap">
+              <article v-for="module in filteredProgressModules.slice(0, 3)" :key="module.id" class="flex flex-wrap items-center gap-4 border-[3px] border-brand-teal bg-white p-4 shadow-card transition-all hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover sm:flex-nowrap">
                 <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center border-[3px] border-brand-teal bg-surface text-xs font-black text-brand-blue">LM</div>
                 <div class="min-w-[180px] flex-1">
                   <div class="text-[15px] font-black">{{ module.title }}</div>
@@ -153,11 +133,11 @@
               <h2 class="font-display text-sm font-black uppercase tracking-widest text-white">Upcoming Deadlines</h2>
             </div>
             <div class="space-y-3 p-4">
-              <div v-for="deadline in content.deadlines" :key="deadline.id" class="border-[2px] border-brand-teal bg-white p-3 transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover">
+              <div v-for="deadline in filteredDeadlines" :key="deadline.id" class="border-[2px] border-brand-teal bg-white p-3 transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover">
                 <div class="text-xs font-black">{{ deadline.title }}</div>
                 <div class="mt-1 font-mono text-[10px] font-bold text-ink-soft">{{ deadline.item_type }} | {{ formatDeadline(deadline.due_at) }}</div>
               </div>
-              <div v-if="content.deadlines.length === 0" class="text-xs font-bold text-ink-soft">No deadlines yet.</div>
+              <div v-if="filteredDeadlines.length === 0" class="text-xs font-bold text-ink-soft">{{ hasSearch ? 'No deadlines match your search.' : 'No deadlines yet.' }}</div>
             </div>
           </section>
         </aside>
@@ -169,15 +149,23 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
 import { useStudentContentStore } from '@/stores/studentContent'
 
+type SearchResultType = 'Module' | 'Lesson' | 'Quiz' | 'Activity'
+
+interface DashboardSearchResult {
+  id: string
+  type: SearchResultType
+  title: string
+  meta: string
+  moduleId?: number | null
+  activityId?: number | null
+}
+
 const router = useRouter()
-const auth = useAuthStore()
 const profile = useProfileStore()
 const content = useStudentContentStore()
-const showProfileMenu = ref(false)
 const search = ref('')
 const calendarOffset = ref(0)
 
@@ -193,20 +181,73 @@ const calendarDays = computed(() => new Date(calendarYear.value, viewedDate.valu
 const calendarLeadingBlanks = computed(() => new Date(calendarYear.value, viewedDate.value.getMonth(), 1).getDay())
 
 const welcomeName = computed(() => profile.profile?.name ?? 'Student')
-const studentType = computed(() => {
-  const data = profile.profile
-  return data && 'student_type' in data ? data.student_type : 'Not provided'
-})
-const filteredModules = computed(() => content.modules.filter(module =>
-  !search.value || module.title.toLowerCase().includes(search.value.toLowerCase())
+const normalizedSearch = computed(() => search.value.trim().toLowerCase())
+const hasSearch = computed(() => normalizedSearch.value.length > 0)
+const filteredModules = computed(() => content.modules.filter(module => matchesModule(module)))
+const filteredProgressModules = computed(() => content.modules.filter(module => matchesModule(module)))
+const filteredDeadlines = computed(() => content.deadlines.filter(deadline =>
+  !hasSearch.value || matchesText(deadline.title, deadline.item_type)
 ))
+const searchResults = computed<DashboardSearchResult[]>(() => {
+  if (!hasSearch.value) return []
+
+  const results: DashboardSearchResult[] = []
+  for (const module of content.modules) {
+    if (matchesText(module.title, module.description, module.file_name, module.week, module.content_type)) {
+      results.push({
+        id: `module-${module.id}`,
+        type: 'Module',
+        title: module.title,
+        meta: module.file_name || module.description || 'Learning material',
+        moduleId: module.id,
+      })
+    }
+
+    for (const topic of module.topics) {
+      if (matchesText(topic.title, topic.description, topic.content, module.title)) {
+        results.push({
+          id: `lesson-${topic.id}`,
+          type: 'Lesson',
+          title: topic.title || `Lesson ${topic.sort_order}`,
+          meta: module.title,
+          moduleId: module.id,
+        })
+      }
+    }
+
+    for (const assessment of module.assessments) {
+      if (assessment.assessment_type === 'quiz' && matchesText(assessment.title, assessment.description, assessment.category, module.title)) {
+        results.push({
+          id: `quiz-${assessment.id}`,
+          type: 'Quiz',
+          title: assessment.title,
+          meta: module.title,
+          moduleId: module.id,
+        })
+      }
+    }
+  }
+
+  for (const activity of content.activities) {
+    if (matchesText(activity.title, activity.description, activity.category, activity.assessment_type)) {
+      results.push({
+        id: `activity-${activity.id}`,
+        type: 'Activity',
+        title: activity.title,
+        meta: activity.category || 'Activity',
+        activityId: activity.id,
+      })
+    }
+  }
+
+  return results.slice(0, 8)
+})
 
 onMounted(() => {
   if (!profile.profile) {
     profile.fetchProfile().catch(() => null)
   }
-  content.fetchModules()
-  content.fetchDeadlines()
+  loadDashboard()
 })
 
 function isToday(day: number) {
@@ -216,10 +257,42 @@ function isToday(day: number) {
     && calendarYear.value === today.getFullYear()
 }
 
-function logout() {
-  auth.logout()
-  profile.clear()
-  router.push('/')
+function loadDashboard() {
+  content.fetchModules()
+    .then(() => content.fetchActivities())
+    .then(() => content.fetchDeadlines())
+    .catch(() => null)
+}
+
+function matchesModule(module: typeof content.modules[number]) {
+  return !hasSearch.value || matchesText(
+    module.title,
+    module.description,
+    module.file_name,
+    module.week,
+    module.content_type,
+    ...module.topics.flatMap(topic => [topic.title, topic.description, topic.content]),
+    ...module.assessments.flatMap(assessment => [assessment.title, assessment.description, assessment.category, assessment.assessment_type])
+  )
+}
+
+function matchesText(...values: Array<string | number | null | undefined>) {
+  if (!hasSearch.value) return true
+  return values.some(value => String(value ?? '').toLowerCase().includes(normalizedSearch.value))
+}
+
+function openSearchResult(result: DashboardSearchResult) {
+  if (result.type === 'Activity' && result.activityId) {
+    router.push({
+      name: 'HandSignLanguage',
+      query: { activityId: String(result.activityId) },
+    })
+    return
+  }
+
+  if (result.moduleId) {
+    router.push(`/student/modules/${result.moduleId}`)
+  }
 }
 
 function formatDeadline(value: string) {

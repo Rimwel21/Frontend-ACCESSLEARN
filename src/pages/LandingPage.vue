@@ -19,9 +19,9 @@
     </header>
 
     <div v-if="isMobileMenuOpen" class="fixed inset-0 z-40 flex flex-col space-y-3 bg-[#e8f5f0] px-6 pt-20 lg:hidden">
-      <RouterLink to="/" class="flex items-center gap-3 rounded-xl border-l-[3px] border-[#f59e5b] bg-[#d7eef7] px-4 py-3 font-bold text-[#2d6e61]" @click="isMobileMenuOpen = false">Home</RouterLink>
-      <RouterLink to="/about" class="flex items-center gap-3 rounded-xl border-l-[3px] border-transparent px-4 py-3 font-bold text-[#5a8d82] hover:bg-[#c4e4da] hover:text-[#2d6e61]" @click="isMobileMenuOpen = false">About Us</RouterLink>
-      <RouterLink to="/portal" class="flex items-center gap-3 rounded-xl border-l-[3px] border-transparent px-4 py-3 font-bold text-[#5a8d82] hover:bg-[#c4e4da] hover:text-[#2d6e61]" @click="isMobileMenuOpen = false">Register / Log in</RouterLink>
+      <RouterLink to="/" class="public-mobile-link border-[#f59e5b] bg-[#d7eef7] text-[#2d6e61]" @click="isMobileMenuOpen = false">Home</RouterLink>
+      <RouterLink to="/about" class="public-mobile-link border-transparent text-[#5a8d82]" @click="isMobileMenuOpen = false">About Us</RouterLink>
+      <RouterLink to="/portal" class="public-mobile-link border-transparent text-[#5a8d82]" @click="isMobileMenuOpen = false">Register / Log in</RouterLink>
     </div>
 
     <aside class="sticky top-0 z-20 hidden h-screen w-[240px] shrink-0 flex-col justify-between border-r border-[#a5d8cc]/80 bg-[#e2f3ee] shadow-[4px_0_24px_rgba(45,110,97,0.06)] lg:flex">
@@ -39,7 +39,7 @@
         <nav class="space-y-3 px-4">
           <div class="relative flex items-center">
             <span class="absolute left-0 w-1.5 h-8 bg-[#f59e5b] rounded-full z-10"></span>
-            <RouterLink to="/" class="flex w-full items-center gap-3 rounded-xl bg-[#cdeae0] pl-6 pr-4 py-3 font-semibold text-[#2b7668] transition-all">
+            <RouterLink to="/" class="public-nav-link active flex w-full items-center gap-3 rounded-xl bg-[#cdeae0] pl-6 pr-4 py-3 font-semibold text-[#2b7668] transition-all">
               <svg class="h-6 w-6 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
@@ -47,14 +47,14 @@
             </RouterLink>
           </div>
 
-          <RouterLink to="/about" class="flex items-center gap-3 pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
+          <RouterLink to="/about" class="public-nav-link flex items-center gap-3 rounded-xl pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
             <svg class="h-6 w-6 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             About Us
           </RouterLink>
 
-          <RouterLink to="/portal" class="flex items-center gap-3 pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
+          <RouterLink to="/portal" class="public-nav-link flex items-center gap-3 rounded-xl pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
             <svg class="h-6 w-6 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
             </svg>
@@ -195,6 +195,39 @@ const features = [
 
 .text-shadow-sm {
   text-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.public-nav-link,
+.public-mobile-link {
+  position: relative;
+  transition: transform 0.22s ease, background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.public-mobile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-left-width: 3px;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+}
+
+.public-nav-link:hover,
+.public-nav-link:focus-visible,
+.public-nav-link.active,
+.public-mobile-link:hover,
+.public-mobile-link:focus-visible {
+  transform: translateX(0.35rem);
+  background: #cdeae0;
+  color: #2d6e61;
+  box-shadow: 0 10px 24px rgba(45, 110, 97, 0.1);
+  outline: none;
+}
+
+.public-mobile-link:hover,
+.public-mobile-link:focus-visible {
+  border-left-color: #f59e5b;
 }
 
 .system-footer {

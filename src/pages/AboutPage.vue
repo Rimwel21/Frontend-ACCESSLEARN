@@ -23,9 +23,9 @@
 
     <!-- Mobile Drawer -->
     <div v-if="isMobileMenuOpen" class="fixed inset-0 z-40 flex flex-col space-y-3 bg-[#e8f5f0] px-6 pt-20 lg:hidden">
-      <RouterLink to="/" class="flex items-center gap-3 rounded-xl border-l-[3px] border-transparent px-4 py-3 font-bold text-[#5a8d82] hover:bg-[#c4e4da] hover:text-[#2d6e61]" @click="isMobileMenuOpen = false">Home</RouterLink>
-      <RouterLink to="/about" class="flex items-center gap-3 rounded-xl border-l-[3px] border-[#f59e5b] bg-[#d7eef7] px-4 py-3 font-bold text-[#2d6e61]" @click="isMobileMenuOpen = false">About Us</RouterLink>
-      <RouterLink to="/portal" class="flex items-center gap-3 rounded-xl border-l-[3px] border-transparent px-4 py-3 font-bold text-[#5a8d82] hover:bg-[#c4e4da] hover:text-[#2d6e61]" @click="isMobileMenuOpen = false">Register / Log in</RouterLink>
+      <RouterLink to="/" class="public-mobile-link border-transparent text-[#5a8d82]" @click="isMobileMenuOpen = false">Home</RouterLink>
+      <RouterLink to="/about" class="public-mobile-link border-[#f59e5b] bg-[#d7eef7] text-[#2d6e61]" @click="isMobileMenuOpen = false">About Us</RouterLink>
+      <RouterLink to="/portal" class="public-mobile-link border-transparent text-[#5a8d82]" @click="isMobileMenuOpen = false">Register / Log in</RouterLink>
     </div>
 
     <!-- Desktop Sidebar -->
@@ -42,7 +42,7 @@
         </div>
 
         <nav class="space-y-3 px-4">
-          <RouterLink to="/" class="flex items-center gap-3 pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
+          <RouterLink to="/" class="public-nav-link flex items-center gap-3 rounded-xl pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
             <svg class="h-6 w-6 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
@@ -51,7 +51,7 @@
 
           <div class="relative flex items-center">
             <span class="absolute left-0 w-1.5 h-8 bg-[#f59e5b] rounded-full z-10"></span>
-            <RouterLink to="/about" class="flex w-full items-center gap-3 rounded-xl bg-[#cdeae0] pl-6 pr-4 py-3 font-semibold text-[#2b7668] transition-all">
+            <RouterLink to="/about" class="public-nav-link active flex w-full items-center gap-3 rounded-xl bg-[#cdeae0] pl-6 pr-4 py-3 font-semibold text-[#2b7668] transition-all">
               <svg class="h-6 w-6 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -59,7 +59,7 @@
             </RouterLink>
           </div>
 
-          <RouterLink to="/portal" class="flex items-center gap-3 pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
+          <RouterLink to="/portal" class="public-nav-link flex items-center gap-3 rounded-xl pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
             <svg class="h-6 w-6 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
             </svg>
@@ -85,7 +85,7 @@
       <div class="mx-auto flex w-full max-w-[1350px] flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
 
         <!-- Hero Title Banner -->
-        <section class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#2b7668] to-[#358071] p-6 sm:p-8 text-white shadow-md">
+        <section class="about-hero relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#2b7668] to-[#358071] p-6 sm:p-8 text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(45,110,97,0.18)]">
           <div class="relative z-10 max-w-3xl">
             <div class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-emerald-100 backdrop-blur-sm mb-3">
               <span>🏫 Claro M. Recto Memorial Central School</span>
@@ -99,13 +99,23 @@
             <p class="mt-3 text-xs sm:text-sm text-emerald-50/90 leading-relaxed">
               An Accessible and Inclusive E-Learning System for Intermediate Learners with Hearing Impairment
             </p>
+            <div class="mt-5 flex flex-wrap gap-2">
+              <button
+                v-for="pill in heroPills"
+                :key="pill"
+                type="button"
+                class="rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white transition-all hover:-translate-y-0.5 hover:border-[#f59e5b] hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/70"
+              >
+                {{ pill }}
+              </button>
+            </div>
           </div>
         </section>
 
         <!-- About & Our Purpose Split Row -->
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
           <!-- About SIGNHEAR -->
-          <section class="flex flex-col justify-between rounded-2xl border border-[#a5d8cc]/60 bg-white p-6 shadow-sm">
+          <section class="interactive-panel flex flex-col justify-between rounded-2xl border border-[#a5d8cc]/60 bg-white p-6 shadow-sm">
             <div>
               <div class="mb-3 flex items-center gap-3">
                 <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e2f3ee] text-xl">ℹ️</span>
@@ -118,7 +128,7 @@
           </section>
 
           <!-- Our Purpose -->
-          <section class="flex flex-col justify-between rounded-2xl border border-[#a5d8cc]/60 bg-white p-6 shadow-sm">
+          <section class="interactive-panel flex flex-col justify-between rounded-2xl border border-[#a5d8cc]/60 bg-white p-6 shadow-sm">
             <div>
               <div class="mb-3 flex items-center gap-3">
                 <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fef3e7] text-xl">🎯</span>
@@ -139,11 +149,27 @@
           </div>
 
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div v-for="feature in keyFeatures" :key="feature.title" class="flex flex-col rounded-xl border border-[#a5d8cc]/60 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-[#f59e5b] hover:shadow-md">
-              <div class="mb-3 text-3xl">{{ feature.icon }}</div>
+            <button
+              v-for="feature in keyFeatures"
+              :key="feature.title"
+              type="button"
+              :class="[
+                'group flex min-h-[178px] flex-col rounded-xl border bg-white p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-[#f59e5b] hover:shadow-[0_18px_32px_rgba(45,110,97,0.12)] focus:outline-none focus:ring-2 focus:ring-[#f59e5b]/70',
+                activeFeature === feature.title ? 'border-[#f59e5b] shadow-[0_18px_32px_rgba(45,110,97,0.12)]' : 'border-[#a5d8cc]/60'
+              ]"
+              @click="activeFeature = feature.title"
+              @mouseenter="activeFeature = feature.title"
+            >
+              <div class="mb-3 text-3xl transition-transform duration-300 group-hover:scale-110">{{ feature.icon }}</div>
               <h3 class="mb-1.5 text-sm font-bold text-[#2b7668]">{{ feature.title }}</h3>
               <p class="text-xs text-[#5a8d82] leading-relaxed">{{ feature.description }}</p>
-            </div>
+            </button>
+          </div>
+
+          <div class="rounded-xl border border-[#a5d8cc]/70 bg-white p-4 shadow-sm transition-all duration-300 hover:border-[#f59e5b] hover:shadow-md">
+            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-[#5a8d82]">Selected Feature</div>
+            <h3 class="mt-1 font-display text-lg font-bold text-[#2b7668]">{{ selectedFeature.title }}</h3>
+            <p class="mt-2 text-sm leading-relaxed text-[#4a6b63]">{{ selectedFeature.description }}</p>
           </div>
         </section>
 
@@ -154,9 +180,24 @@
             <h2 class="font-display text-2xl font-bold text-[#2b7668]">Who It Supports</h2>
           </div>
 
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="audience in audienceCards"
+              :key="audience.title"
+              type="button"
+              :class="[
+                'rounded-full border px-4 py-2 text-xs font-black transition-all hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#f59e5b]/70',
+                activeAudience === audience.title ? 'border-[#f59e5b] bg-[#f59e5b] text-white shadow-md' : 'border-[#a5d8cc] bg-white text-[#2b7668] hover:bg-[#cdeae0]'
+              ]"
+              @click="activeAudience = audience.title"
+            >
+              {{ audience.label }}
+            </button>
+          </div>
+
           <div class="grid grid-cols-1 gap-5 md:grid-cols-3">
             <!-- Learners -->
-            <div class="rounded-2xl border-t-4 border-[#358071] bg-white p-6 shadow-sm border-x border-b border-[#a5d8cc]/50">
+            <div :class="['audience-card rounded-2xl border-t-4 border-[#358071] bg-white p-6 shadow-sm border-x border-b border-[#a5d8cc]/50', activeAudience === 'Learners' ? 'is-active' : '']">
               <div class="mb-3 flex items-center gap-3">
                 <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e2f3ee] text-2xl">🎒</span>
                 <div>
@@ -170,7 +211,7 @@
             </div>
 
             <!-- Teachers -->
-            <div class="rounded-2xl border-t-4 border-[#f59e5b] bg-white p-6 shadow-sm border-x border-b border-[#a5d8cc]/50">
+            <div :class="['audience-card rounded-2xl border-t-4 border-[#f59e5b] bg-white p-6 shadow-sm border-x border-b border-[#a5d8cc]/50', activeAudience === 'Science Teachers' ? 'is-active' : '']">
               <div class="mb-3 flex items-center gap-3">
                 <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fef3e7] text-2xl">👩‍🏫</span>
                 <div>
@@ -184,7 +225,7 @@
             </div>
 
             <!-- Administrators -->
-            <div class="rounded-2xl border-t-4 border-[#0a7b79] bg-white p-6 shadow-sm border-x border-b border-[#a5d8cc]/50">
+            <div :class="['audience-card rounded-2xl border-t-4 border-[#0a7b79] bg-white p-6 shadow-sm border-x border-b border-[#a5d8cc]/50', activeAudience === 'Administrators' ? 'is-active' : '']">
               <div class="mb-3 flex items-center gap-3">
                 <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e0f2f1] text-2xl">🛡️</span>
                 <div>
@@ -202,7 +243,7 @@
         <!-- Inclusive Learning & Our Scope Side by Side -->
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
           <!-- Inclusive Learning -->
-          <section class="rounded-2xl border border-[#a5d8cc]/60 bg-white p-6 shadow-sm">
+          <section class="interactive-panel rounded-2xl border border-[#a5d8cc]/60 bg-white p-6 shadow-sm">
             <div class="mb-3 flex items-center gap-3">
               <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e2f3ee] text-xl">🤝</span>
               <h2 class="font-display text-xl font-bold text-[#2b7668]">Inclusive Learning</h2>
@@ -213,7 +254,7 @@
           </section>
 
           <!-- Our Scope -->
-          <section class="rounded-2xl border border-[#a5d8cc]/60 bg-white p-6 shadow-sm">
+          <section class="interactive-panel rounded-2xl border border-[#a5d8cc]/60 bg-white p-6 shadow-sm">
             <div class="mb-3 flex items-center gap-3">
               <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fef3e7] text-xl">🔍</span>
               <h2 class="font-display text-xl font-bold text-[#2b7668]">Our Scope & Limitations</h2>
@@ -232,7 +273,7 @@
           </div>
 
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="rounded-xl border border-[#a5d8cc]/60 bg-white p-5 shadow-sm">
+            <div class="tech-card rounded-xl border border-[#a5d8cc]/60 bg-white p-5 shadow-sm">
               <div class="mb-2.5 text-2xl">⚡</div>
               <h3 class="mb-1 text-sm font-bold text-[#2b7668]">PWA Technology</h3>
               <p class="text-xs text-[#5a8d82] leading-relaxed">
@@ -240,7 +281,7 @@
               </p>
             </div>
 
-            <div class="rounded-xl border border-[#a5d8cc]/60 bg-white p-5 shadow-sm">
+            <div class="tech-card rounded-xl border border-[#a5d8cc]/60 bg-white p-5 shadow-sm">
               <div class="mb-2.5 text-2xl">♿</div>
               <h3 class="mb-1 text-sm font-bold text-[#2b7668]">WCAG 2.2-Oriented Design</h3>
               <p class="text-xs text-[#5a8d82] leading-relaxed">
@@ -248,7 +289,7 @@
               </p>
             </div>
 
-            <div class="rounded-xl border border-[#a5d8cc]/60 bg-white p-5 shadow-sm">
+            <div class="tech-card rounded-xl border border-[#a5d8cc]/60 bg-white p-5 shadow-sm">
               <div class="mb-2.5 text-2xl">📖</div>
               <h3 class="mb-1 text-sm font-bold text-[#2b7668]">Visual Learning Content</h3>
               <p class="text-xs text-[#5a8d82] leading-relaxed">
@@ -256,7 +297,7 @@
               </p>
             </div>
 
-            <div class="rounded-xl border border-[#a5d8cc]/60 bg-white p-5 shadow-sm">
+            <div class="tech-card rounded-xl border border-[#a5d8cc]/60 bg-white p-5 shadow-sm">
               <div class="mb-2.5 text-2xl">📷</div>
               <h3 class="mb-1 text-sm font-bold text-[#2b7668]">Camera Alphabet Recognition</h3>
               <p class="text-xs text-[#5a8d82] leading-relaxed">
@@ -281,10 +322,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 const isMobileMenuOpen = ref(false)
+const activeFeature = ref('Accessible Science Lessons')
+const activeAudience = ref('Learners')
+
+const heroPills = ['Visual lessons', 'Sign support', 'Progress tracking']
 
 const keyFeatures = [
   {
@@ -328,6 +373,16 @@ const keyFeatures = [
     description: 'Dashboards for teachers to manage classes and administrators to handle users, sections, and audit logs.',
   },
 ]
+
+const audienceCards = [
+  { title: 'Learners', label: 'Students' },
+  { title: 'Science Teachers', label: 'Teachers' },
+  { title: 'Administrators', label: 'Administrators' },
+]
+
+const selectedFeature = computed(() =>
+  keyFeatures.find(feature => feature.title === activeFeature.value) ?? keyFeatures[0]
+)
 </script>
 
 <style scoped>
@@ -340,5 +395,69 @@ const keyFeatures = [
     linear-gradient(90deg, rgba(165, 216, 204, 0.3) 1px, transparent 1px);
   background-position: -1px -1px;
   background-size: 32px 32px;
+}
+
+.about-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -10% -45% auto;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 9999px;
+  background: rgba(245, 158, 91, 0.18);
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.about-hero:hover::after {
+  opacity: 0.9;
+  transform: translate(-1.5rem, -1rem) scale(1.08);
+}
+
+.public-nav-link,
+.public-mobile-link {
+  position: relative;
+  transition: transform 0.22s ease, background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.public-mobile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-left-width: 3px;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+}
+
+.public-nav-link:hover,
+.public-nav-link:focus-visible,
+.public-nav-link.active,
+.public-mobile-link:hover,
+.public-mobile-link:focus-visible {
+  transform: translateX(0.35rem);
+  background: #cdeae0;
+  color: #2d6e61;
+  box-shadow: 0 10px 24px rgba(45, 110, 97, 0.1);
+  outline: none;
+}
+
+.public-mobile-link:hover,
+.public-mobile-link:focus-visible {
+  border-left-color: #f59e5b;
+}
+
+.interactive-panel,
+.audience-card,
+.tech-card {
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.interactive-panel:hover,
+.audience-card:hover,
+.tech-card:hover,
+.audience-card.is-active {
+  transform: translateY(-0.35rem);
+  border-color: #f59e5b;
+  box-shadow: 0 18px 32px rgba(45, 110, 97, 0.12);
 }
 </style>

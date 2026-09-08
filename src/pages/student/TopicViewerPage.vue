@@ -177,13 +177,45 @@
             </div>
           </div>
 
+          <section class="grid gap-4 border-[3px] border-brand-teal bg-white p-4 shadow-card lg:grid-cols-[minmax(0,1fr)_280px]">
+            <div>
+              <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Sign-Supported Quiz Guide</div>
+              <h2 class="mt-1 font-display text-lg font-black text-ink">Use the visual guide while answering.</h2>
+              <div class="mt-3 grid gap-2 sm:grid-cols-3">
+                <div class="border-[2px] border-brand-teal bg-surface p-3">
+                  <div class="text-xs font-black text-brand-blue">1. Read</div>
+                  <p class="mt-1 text-[11px] font-bold text-ink-soft">Check the question text and answer choices.</p>
+                </div>
+                <div class="border-[2px] border-brand-teal bg-surface p-3">
+                  <div class="text-xs font-black text-brand-blue">2. Match</div>
+                  <p class="mt-1 text-[11px] font-bold text-ink-soft">Use the alphabet chart for letter or word clues.</p>
+                </div>
+                <div class="border-[2px] border-brand-teal bg-surface p-3">
+                  <div class="text-xs font-black text-brand-blue">3. Answer</div>
+                  <p class="mt-1 text-[11px] font-bold text-ink-soft">Select or type the answer before submitting.</p>
+                </div>
+              </div>
+            </div>
+            <figure class="overflow-hidden border-[2px] border-brand-teal bg-surface">
+              <img :src="sampleSigns" alt="Sign language alphabet reference chart for quiz support" class="h-full max-h-[220px] w-full object-contain" />
+            </figure>
+          </section>
+
           <div v-if="quizResult" class="border-[3px] border-brand-teal bg-green-50 p-4 font-black text-green-800">
             Score: {{ quizResult.score }} / {{ quizResult.total }}
           </div>
 
           <div v-for="(question, index) in activeQuiz.questions" :key="index" class="border-[3px] border-brand-teal bg-white p-5">
-            <label class="block text-sm font-black">Question {{ index + 1 }}</label>
-            <p class="mt-1 text-sm text-gray-700">{{ question.prompt }}</p>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <label class="block text-sm font-black">Question {{ index + 1 }}</label>
+              <span class="border-[2px] border-brand-teal bg-brand-blue-soft px-2 py-1 font-mono text-[9px] font-black uppercase text-brand-blue">
+                {{ quizQuestionTypeLabel(question.answer) }}
+              </span>
+            </div>
+            <div class="mt-3 border-[2px] border-brand-teal bg-surface p-3">
+              <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Visual Prompt</div>
+              <p class="mt-1 text-sm font-bold text-gray-700">{{ question.prompt }}</p>
+            </div>
 
             <!-- Multiple Choice -->
             <div v-if="parseQuestionOptions(question.answer).type === 'multiple_choice'" class="mt-3 space-y-2">
@@ -415,6 +447,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { API_BASE_URL } from '@/lib/api'
 import { useStudentContentStore } from '@/stores/studentContent'
+import sampleSigns from '@/assets/handsign/sample_signs.png'
 
 const route = useRoute()
 const content = useStudentContentStore()
@@ -689,5 +722,12 @@ function parseQuestionOptions(rawAnswer?: string | null) {
     }
   }
   return { type: 'identification', choices: [] as { letter: string; text: string }[] }
+}
+
+function quizQuestionTypeLabel(rawAnswer?: string | null) {
+  const type = parseQuestionOptions(rawAnswer).type
+  if (type === 'multiple_choice') return 'Multiple Choice'
+  if (type === 'true_false') return 'True or False'
+  return 'Identification'
 }
 </script>
