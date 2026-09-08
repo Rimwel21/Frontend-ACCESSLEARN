@@ -133,10 +133,19 @@
               <h2 class="font-display text-sm font-black uppercase tracking-widest text-white">Upcoming Deadlines</h2>
             </div>
             <div class="space-y-3 p-4">
-              <div v-for="deadline in filteredDeadlines" :key="deadline.id" class="border-[2px] border-brand-teal bg-white p-3 transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover">
+              <button
+                v-for="deadline in filteredDeadlines"
+                :key="deadline.id"
+                type="button"
+                class="group w-full border-[2px] border-brand-teal bg-white p-3 text-left transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+                @click="openDeadline(deadline)"
+              >
                 <div class="text-xs font-black">{{ deadline.title }}</div>
-                <div class="mt-1 font-mono text-[10px] font-bold text-ink-soft">{{ deadline.item_type }} | {{ formatDeadline(deadline.due_at) }}</div>
-              </div>
+                <div class="mt-1 flex items-center justify-between gap-2 font-mono text-[10px] font-bold text-ink-soft">
+                  <span>{{ deadline.item_type }} | {{ formatDeadline(deadline.due_at) }}</span>
+                  <span class="text-brand-blue opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100">OPEN</span>
+                </div>
+              </button>
               <div v-if="filteredDeadlines.length === 0" class="text-xs font-bold text-ink-soft">{{ hasSearch ? 'No deadlines match your search.' : 'No deadlines yet.' }}</div>
             </div>
           </section>
@@ -292,6 +301,20 @@ function openSearchResult(result: DashboardSearchResult) {
 
   if (result.moduleId) {
     router.push(`/student/modules/${result.moduleId}`)
+  }
+}
+
+function openDeadline(deadline: typeof content.deadlines[number]) {
+  if (deadline.item_type === 'Activity' && deadline.assessment_id) {
+    router.push({
+      name: 'HandSignLanguage',
+      query: { activityId: String(deadline.assessment_id) },
+    })
+    return
+  }
+
+  if (deadline.module_id) {
+    router.push(`/student/modules/${deadline.module_id}`)
   }
 }
 
