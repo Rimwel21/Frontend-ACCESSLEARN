@@ -38,6 +38,14 @@
       </nav>
 
       <div class="border-t-[3px] border-brand-teal/30 px-4 py-3">
+        <button
+          class="mb-2 w-full border-[2px] border-brand-teal/40 bg-brand-blue-soft px-3 py-2 text-xs font-bold text-brand-blue transition-all hover:border-brand-amber hover:bg-brand-amber hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+          type="button"
+          :disabled="pushButtonDisabled"
+          @click="enablePushNotifications"
+        >
+          {{ pushButtonLabel }}
+        </button>
         <button class="w-full border-[2px] border-brand-teal/40 bg-white px-3 py-2 text-xs font-bold text-ink-soft hover:border-brand-rose hover:bg-brand-rose hover:text-white" @click="logout">
           Logout
         </button>
@@ -84,6 +92,14 @@
         </nav>
 
         <div class="border-t-[3px] border-brand-teal/30 px-4 py-3">
+          <button
+            class="mb-2 w-full border-[2px] border-brand-teal/40 bg-brand-blue-soft px-3 py-2 text-xs font-bold text-brand-blue transition-all hover:border-brand-amber hover:bg-brand-amber hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            type="button"
+            :disabled="pushButtonDisabled"
+            @click="enablePushNotifications"
+          >
+            {{ pushButtonLabel }}
+          </button>
           <button class="w-full border-[2px] border-brand-teal/40 bg-white px-3 py-2 text-xs font-bold text-ink-soft hover:border-brand-rose hover:bg-brand-rose hover:text-white" @click="logout">
             Logout
           </button>
@@ -121,16 +137,19 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
+import { enableStudentPushNotifications, getPushNotificationStatus, type PushNotificationStatus } from '@/services/pushNotifications'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const profile = useProfileStore()
 const menuOpen = ref(false)
+const pushStatus = ref<PushNotificationStatus>('idle')
+const pushLoading = ref(false)
 
 const navItems = [
   { to: '/student/dashboard', label: 'Home', iconClass: 'rounded-full' },
@@ -140,6 +159,25 @@ const navItems = [
 
 onMounted(() => {
   profile.fetchProfile().catch(() => null)
+  refreshPushNotificationStatus()
+})
+
+const pushButtonLabel = computed(() => {
+  if (pushLoading.value) return 'Checking...'
+  if (pushStatus.value === 'enabled') return 'Notifications On'
+  if (pushStatus.value === 'unsupported') return 'Notifications Unavailable'
+  if (pushStatus.value === 'not-configured') return 'Notifications Need Setup'
+  if (pushStatus.value === 'permission-denied') return 'Notifications Blocked'
+  if (pushStatus.value === 'failed') return 'Try Notifications Again'
+  return 'Enable Notifications'
+})
+
+const pushButtonDisabled = computed(() => {
+  return pushLoading.value
+    || pushStatus.value === 'enabled'
+    || pushStatus.value === 'unsupported'
+    || pushStatus.value === 'not-configured'
+    || pushStatus.value === 'permission-denied'
 })
 
 function goToProfile() {
@@ -151,6 +189,21 @@ function goToNav(to?: string) {
   if (!to) return
   menuOpen.value = false
   router.push(to)
+}
+
+async function refreshPushNotificationStatus() {
+  pushStatus.value = await getPushNotificationStatus().catch(() => 'failed')
+}
+
+async function enablePushNotifications() {
+  pushLoading.value = true
+  try {
+    pushStatus.value = await enableStudentPushNotifications()
+  } catch {
+    pushStatus.value = 'failed'
+  } finally {
+    pushLoading.value = false
+  }
 }
 
 function logout() {

@@ -10,7 +10,7 @@ let applyingUpdate = false
 
 export function setupAppUpdateChecks() {
   if (import.meta.env.DEV) {
-    void clearDevelopmentServiceWorker()
+    void registerServiceWorker()
     return
   }
 

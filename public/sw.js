@@ -56,6 +56,34 @@ self.addEventListener('sync', (event) => {
   }
 })
 
+self.addEventListener('push', (event) => {
+  const data = readPushPayload(event)
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'SIGNHEAR', {
+      body: data.body || 'You have a new update.',
+      icon: data.icon || '/favicon.svg',
+      badge: data.badge || '/favicon.svg',
+      data: { url: data.url || '/student/dashboard' },
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const targetUrl = new URL(event.notification.data?.url || '/student/dashboard', self.location.origin)
+
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const existing = windows.find(client => new URL(client.url).origin === targetUrl.origin)
+    if (existing) {
+      await existing.focus()
+      existing.postMessage({ type: 'OPEN_NOTIFICATION_URL', url: targetUrl.pathname + targetUrl.search + targetUrl.hash })
+      return
+    }
+    await self.clients.openWindow(targetUrl.pathname + targetUrl.search + targetUrl.hash)
+  })())
+})
+
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName)
   const cached = await cache.match(request)
@@ -118,6 +146,15 @@ function isApiRequest(url) {
 async function notifyClientsToSync() {
   const clients = await self.clients.matchAll({ includeUncontrolled: true })
   clients.forEach(client => client.postMessage({ type: 'SYNC_PENDING_REQUESTS' }))
+}
+
+function readPushPayload(event) {
+  if (!event.data) return {}
+  try {
+    return event.data.json()
+  } catch {
+    return { body: event.data.text() }
+  }
 }
 
 function buildCacheVersion() {

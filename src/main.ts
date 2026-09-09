@@ -11,3 +11,14 @@ app.use(router)
 app.mount('#app')
 
 setupAppUpdateChecks()
+setupNotificationRouting()
+
+function setupNotificationRouting() {
+  if (!('serviceWorker' in navigator)) return
+
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'OPEN_NOTIFICATION_URL' && typeof event.data.url === 'string') {
+      router.push(event.data.url).catch(() => null)
+    }
+  })
+}
