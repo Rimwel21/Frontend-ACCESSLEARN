@@ -29,7 +29,7 @@
             class="input-field mt-2"
             :type="role === 'teacher' ? 'email' : 'text'"
             :autocomplete="role === 'teacher' ? 'email' : 'username'"
-            :placeholder="role === 'teacher' ? 'teacher@school.edu' : 'Enter username'"
+            :placeholder="role === 'teacher' ? 'Please enter your teacher email' : 'Enter username'"
             minlength="3" maxlength="60" required
           />
         </div>

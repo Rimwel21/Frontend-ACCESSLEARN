@@ -184,8 +184,32 @@
                     </select>
                   </div>
                   <div>
-                    <label class="figma-label">Due Date</label>
-                    <input v-model="form.releaseDate" class="figma-input" type="date" />
+                    <div class="flex items-center justify-between gap-3">
+                      <div>
+                        <label class="figma-label" for="module-has-deadline">Deadline</label>
+                        <p class="text-[11px] font-semibold text-ink-soft">Turn on only when this material has a due date.</p>
+                      </div>
+                      <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-bold text-brand-blue">
+                        <span>{{ form.hasDeadline ? 'On' : 'Off' }}</span>
+                        <input id="module-has-deadline" v-model="form.hasDeadline" class="sr-only" type="checkbox" />
+                        <span
+                          :class="[
+                            'relative h-7 w-14 rounded-full border-2 transition-all after:absolute after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all',
+                            form.hasDeadline
+                              ? 'border-brand-amber bg-brand-amber after:left-7'
+                              : 'border-brand-teal/40 bg-brand-blue-soft after:left-0.5',
+                          ]"
+                          aria-hidden="true"
+                        ></span>
+                      </label>
+                    </div>
+                    <input
+                      v-model="form.releaseDate"
+                      class="figma-input mt-3"
+                      type="date"
+                      :disabled="!form.hasDeadline"
+                      :class="!form.hasDeadline ? 'cursor-not-allowed bg-slate-100 text-ink-soft opacity-70' : ''"
+                    />
                   </div>
                 </div>
               </div>
@@ -199,6 +223,7 @@
                 <dl class="grid gap-2 text-xs">
                   <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">Class</dt><dd class="text-right font-semibold">{{ selectedClassLabel }}</dd></div>
                   <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">Week</dt><dd class="text-right font-semibold">{{ form.week || 'Not set' }}</dd></div>
+                  <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">Deadline</dt><dd class="text-right font-semibold">{{ form.hasDeadline && form.releaseDate ? form.releaseDate : 'No deadline' }}</dd></div>
                   <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">File</dt><dd class="max-w-44 truncate text-right font-semibold">{{ fileName || 'No file selected' }}</dd></div>
                 </dl>
               </div>
@@ -232,6 +257,7 @@ interface MaterialForm {
   contentType: MaterialContentType | ''
   week: string
   status: 'Published' | 'Unpublished'
+  hasDeadline: boolean
   releaseDate: string
   behaviorRequired: boolean
 }
@@ -290,6 +316,7 @@ function defaultForm(): MaterialForm {
     contentType: contentTypeOptions[0]?.value ?? '',
     week: '',
     status: 'Unpublished' as 'Published' | 'Unpublished',
+    hasDeadline: false,
     releaseDate: '',
     behaviorRequired: true,
   }
@@ -315,6 +342,7 @@ function openForm(material?: {
     contentType: isSupportedContentType(material.contentType) ? material.contentType : contentTypeOptions[0]?.value ?? '',
     week: material.week ?? '',
     status: material.status,
+    hasDeadline: Boolean(material.dueAt),
     releaseDate: toDateInputValue(material.dueAt),
     behaviorRequired: material.behaviorRequired ?? true,
   } : defaultForm()
@@ -382,7 +410,7 @@ async function submitMaterial() {
         week: form.value.week,
         status: form.value.status,
         behaviorRequired: form.value.behaviorRequired,
-        dueAt: toApiDateTime(form.value.releaseDate),
+        dueAt: moduleDueAt(),
       })
       if (selectedFile.value) {
         await store.replaceModuleFile(editingMaterialId.value, selectedFile.value)
@@ -396,7 +424,7 @@ async function submitMaterial() {
         week: form.value.week,
         status: form.value.status,
         behaviorRequired: form.value.behaviorRequired,
-        dueAt: toApiDateTime(form.value.releaseDate),
+        dueAt: moduleDueAt(),
         file: selectedFile.value,
       })
     }
@@ -457,6 +485,10 @@ function toApiDateTime(value: string) {
   return value ? `${value}T23:59:00` : null
 }
 
+function moduleDueAt() {
+  return form.value.hasDeadline ? toApiDateTime(form.value.releaseDate) : null
+}
+
 function toDateInputValue(value?: string | null) {
   return value ? value.slice(0, 10) : ''
 }
@@ -466,6 +498,12 @@ watch(() => form.value.contentType, () => {
     selectedFile.value = null
     fileName.value = ''
     formError.value = `Please select a ${selectedContentTypeLabel.value} file for this content type.`
+  }
+})
+
+watch(() => form.value.hasDeadline, (hasDeadline) => {
+  if (!hasDeadline) {
+    form.value.releaseDate = ''
   }
 })
 </script>
