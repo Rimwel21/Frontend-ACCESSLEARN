@@ -9,9 +9,9 @@
       <span class="rounded-full bg-[#D6E4FF] px-3 py-1 text-[11px] font-bold text-[#315ed8]">{{ form.questions.length }} question{{ form.questions.length === 1 ? '' : 's' }}</span>
     </div>
 
-    <div class="grid gap-2 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)]">
+    <div class="grid items-start gap-2 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)]">
       <!-- Left column: Information + Settings -->
-      <div class="grid gap-2">
+      <div class="grid gap-2 self-start">
         <!-- Information panel -->
         <section class="figma-panel">
           <div class="mb-4">
@@ -53,13 +53,59 @@
               <input id="assessment-due-date" v-model="form.dueDate" class="figma-input" type="date" />
             </div>
             <div>
+              <label class="figma-label" for="target-count">Target Sections</label>
+              <input
+                id="target-count"
+                v-model.number="form.targetCount"
+                class="figma-input"
+                min="1"
+                :max="Math.max(store.classes.length, 1)"
+                type="number"
+                :disabled="isEditing"
+                @input="syncTargetCount"
+                @keydown="blockInvalidNumberInput"
+              />
+            </div>
+            <div>
               <label class="figma-label" for="assessment-class">Target Class</label>
-              <select id="assessment-class" v-model="form.classId" class="figma-input" @change="selectClass">
-                <option value="">Select grade and section</option>
+              <select
+                id="assessment-class"
+                v-model="form.targetClassIds"
+                class="figma-input min-h-[46px]"
+                multiple
+                :size="isEditing ? undefined : Math.min(Math.max(form.targetCount, 1), 4)"
+                @change="selectClass"
+              >
+                <option v-if="isEditing" value="">Select grade and section</option>
                 <option v-for="cls in store.classes" :key="cls.id" :value="cls.id">
                   {{ cls.className }} - {{ gradeLabel(cls.gradeLevel) }} Section {{ cls.section }}
                 </option>
               </select>
+              <p class="mt-1 text-[11px] font-semibold text-ink-soft">
+                Select {{ isEditing ? 'the class' : `${form.targetCount} class${form.targetCount === 1 ? '' : 'es'}` }} to receive this {{ props.kind }}.
+              </p>
+            </div>
+            <div v-if="props.kind === 'quiz'" class="sm:col-span-2">
+              <label class="figma-label">Learning Material</label>
+              <div v-if="selectedTargetClasses.length === 0" class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-ink-soft">
+                Select a target class first.
+              </div>
+              <div v-else class="grid gap-2">
+                <div v-for="cls in selectedTargetClasses" :key="cls.id" class="grid gap-1">
+                  <label class="text-[11px] font-bold text-ink-soft">
+                    {{ cls.className }} - {{ gradeLabel(cls.gradeLevel) }} Section {{ cls.section }}
+                  </label>
+                  <select v-model="form.moduleIdsByClass[cls.id]" class="figma-input">
+                    <option value="">Select learning material...</option>
+                    <option v-for="module in materialsForClass(cls.id)" :key="module.id" :value="module.id">
+                      {{ module.title }}{{ module.week ? ` - ${module.week}` : '' }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <p class="mt-1 text-[11px] font-semibold text-ink-soft">
+                Quizzes appear for students inside the selected learning material.
+              </p>
             </div>
           </div>
         </section>
@@ -521,6 +567,10 @@ function blankQuestion(): QuestionDraft {
 function blankForm() {
   return {
     classId: '',
+    moduleId: '',
+    targetCount: 1,
+    targetClassIds: [] as string[],
+    moduleIdsByClass: {} as Record<string, string>,
     title: '',
     description: '',
     category: 'Identification',
@@ -540,6 +590,11 @@ const form = ref(blankForm())
 
 const saving = computed(() => props.kind === 'quiz' ? store.quizSaving : store.activitySaving)
 const isEditing = computed(() => Boolean(props.initialAssessment))
+const selectedTargetClasses = computed(() =>
+  form.value.targetClassIds
+    .map(id => store.classes.find(cls => cls.id === id))
+    .filter(Boolean) as typeof store.classes
+)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Answer encoding / decoding
@@ -727,7 +782,39 @@ function removeQuestion(index: number) {
 }
 
 function selectClass() {
-  store.selectedClassId = form.value.classId || null
+  normalizeTargetClasses()
+  const firstClassId = form.value.targetClassIds[0] ?? ''
+  form.value.classId = firstClassId
+  store.selectedClassId = firstClassId || null
+
+  if (props.kind !== 'quiz') return
+
+  for (const [classId, moduleId] of Object.entries(form.value.moduleIdsByClass)) {
+    const selectedModuleBelongsToClass = materialsForClass(classId).some(module => module.id === moduleId)
+    if (!form.value.targetClassIds.includes(classId) || !selectedModuleBelongsToClass) {
+      delete form.value.moduleIdsByClass[classId]
+    }
+  }
+}
+
+function syncTargetCount() {
+  const max = Math.max(store.classes.length, 1)
+  const nextCount = Math.min(Math.max(Number(form.value.targetCount) || 1, 1), max)
+  form.value.targetCount = nextCount
+  normalizeTargetClasses()
+}
+
+function normalizeTargetClasses() {
+  const uniqueIds = [...new Set(form.value.targetClassIds.filter(Boolean))]
+  form.value.targetClassIds = uniqueIds.slice(0, Math.max(Number(form.value.targetCount) || 1, 1))
+}
+
+function materialsForClass(classId: string | number) {
+  const selectedClassId = Number(classId)
+  if (!selectedClassId) return []
+  return store.modules.filter(module =>
+    module.classId === selectedClassId && module.status === 'Published'
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -766,9 +853,24 @@ async function saveAssessment() {
   success.value = ''
   tutorialUploadSummary.value = 0
 
-  if (!form.value.title || !form.value.description || !form.value.category || !form.value.week || !form.value.classId) {
+  normalizeTargetClasses()
+  const targetClassIds = form.value.targetClassIds
+  if (!form.value.title || !form.value.description || !form.value.category || !form.value.week || targetClassIds.length === 0) {
     error.value = `Please complete the ${props.title.toLowerCase()} information.`
     return
+  }
+
+  if (targetClassIds.length !== form.value.targetCount) {
+    error.value = `Select ${form.value.targetCount} target class${form.value.targetCount === 1 ? '' : 'es'}.`
+    return
+  }
+
+  if (props.kind === 'quiz') {
+    const missingMaterialClass = targetClassIds.find(classId => !form.value.moduleIdsByClass[classId])
+    if (missingMaterialClass) {
+      error.value = 'Select a learning material for each target class so students can find this quiz.'
+      return
+    }
   }
 
   const questionValidationError = validateQuestions()
@@ -799,9 +901,10 @@ async function saveAssessment() {
       return
     }
 
-    const payload = {
+    const buildPayload = (classId: string) => ({
       title: form.value.title,
-      classId: Number(form.value.classId),
+      classId: Number(classId),
+      moduleId: Number(form.value.moduleIdsByClass[classId]),
       description: form.value.description,
       quizType: form.value.category,
       week: form.value.week,
@@ -811,14 +914,16 @@ async function saveAssessment() {
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
       questions,
       dueAt: toApiDateTime(form.value.dueDate),
-    }
+    })
 
-    if (props.initialAssessment) await store.updateQuiz(props.initialAssessment.id, payload)
-    else await store.addQuiz(payload)
+    if (props.initialAssessment) await store.updateQuiz(props.initialAssessment.id, buildPayload(targetClassIds[0]))
+    else {
+      for (const classId of targetClassIds) await store.addQuiz(buildPayload(classId))
+    }
   } else {
-    const payload = {
+    const buildPayload = (classId: string) => ({
       title: form.value.title,
-      classId: Number(form.value.classId),
+      classId: Number(classId),
       moduleId: null,
       topicId: null,
       description: form.value.description,
@@ -829,10 +934,12 @@ async function saveAssessment() {
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
       questions,
       dueAt: toApiDateTime(form.value.dueDate),
-    }
+    })
 
-    if (props.initialAssessment) await store.updateActivity(props.initialAssessment.id, payload)
-    else await store.addActivity(payload)
+    if (props.initialAssessment) await store.updateActivity(props.initialAssessment.id, buildPayload(targetClassIds[0]))
+    else {
+      for (const classId of targetClassIds) await store.addActivity(buildPayload(classId))
+    }
 
     const tutorialUploadCount = await uploadPendingTutorialVideos(questionEntries)
     tutorialUploadSummary.value = tutorialUploadCount
@@ -1029,6 +1136,7 @@ watch(() => props.initialAssessment, () => { hydrateForm() }, { deep: true })
 
 onMounted(async () => {
   await store.fetchClasses()
+  if (props.kind === 'quiz') await store.fetchModules()
   hydrateForm()
 })
 
@@ -1055,6 +1163,10 @@ async function hydrateForm() {
 
   form.value = {
     classId: inferredClassId ? String(inferredClassId) : '',
+    moduleId: assessment.moduleId ? String(assessment.moduleId) : '',
+    targetCount: 1,
+    targetClassIds: inferredClassId ? [String(inferredClassId)] : [],
+    moduleIdsByClass: inferredClassId && assessment.moduleId ? { [String(inferredClassId)]: String(assessment.moduleId) } : {},
     title: assessment.title,
     description: assessment.description ?? '',
     category: resolvedCategory,

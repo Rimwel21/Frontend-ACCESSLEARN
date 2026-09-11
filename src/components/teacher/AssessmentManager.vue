@@ -62,6 +62,56 @@
       </div>
     </div>
 
+    <section class="card p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="font-display text-base font-bold">Retake Requests</h2>
+          <p class="text-xs font-semibold text-ink-soft">Approve only students who failed below half score or missed the deadline.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <select v-model="retakeStatusFilter" class="figma-input h-10 min-w-[140px] py-0 text-sm" @change="loadRetakeRequests">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">All</option>
+          </select>
+          <button class="figma-button" type="button" :disabled="store.retakeRequestsLoading" @click="loadRetakeRequests">
+            {{ store.retakeRequestsLoading ? 'Loading...' : 'Refresh' }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="store.retakeRequestsError" class="mt-3 text-sm font-semibold text-red-600">{{ store.retakeRequestsError }}</div>
+      <div v-else-if="retakeRequests.length === 0" class="mt-3 text-sm font-semibold text-ink-soft">
+        No {{ retakeStatusFilter }} {{ title.toLowerCase() }} retake requests.
+      </div>
+      <div v-else class="mt-3 grid gap-2">
+        <article
+          v-for="request in retakeRequests"
+          :key="request.id"
+          class="grid gap-3 rounded border border-gray-100 bg-surface p-3 text-sm md:grid-cols-[1fr_auto] md:items-center"
+        >
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="font-display font-bold">{{ request.studentName }}</span>
+              <span class="badge-blue badge">{{ retakeReasonLabel(request.requestType) }}</span>
+              <span class="badge">{{ request.status }}</span>
+            </div>
+            <p class="mt-1 truncate text-ink-soft">{{ request.assessmentTitle }}</p>
+            <p v-if="request.reason" class="mt-1 text-xs font-semibold text-ink-soft">{{ request.reason }}</p>
+          </div>
+          <div v-if="request.status === 'pending'" class="flex gap-2 md:justify-end">
+            <button class="figma-button" type="button" :disabled="reviewingRetakeId === request.id" @click="reviewRetake(request.id, 'approved')">
+              Approve
+            </button>
+            <button class="figma-button" type="button" :disabled="reviewingRetakeId === request.id" @click="reviewRetake(request.id, 'rejected')">
+              Reject
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+
     <div v-if="loading" class="empty-state">Loading {{ listTitle.toLowerCase() }}...</div>
     <div v-else-if="items.length === 0" class="card p-12 text-center">
       <h2 class="font-display text-xl font-bold">No {{ listTitle.toLowerCase() }} have been created yet.</h2>
@@ -126,16 +176,18 @@
 
     <Teleport to="body">
       <Transition name="modal">
-        <div v-if="showForm" class="fixed inset-0 z-50 overflow-y-auto bg-ink/40 p-4 backdrop-blur-sm" @click.self="closeForm">
-          <div class="mx-auto max-w-5xl rounded-lg bg-[#ededed] p-3 shadow-2xl">
-            <div class="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-gray-300 bg-white px-4 py-3 shadow-sm">
+        <div v-if="showForm" class="fixed inset-0 z-50 bg-ink/40 p-4 backdrop-blur-sm" @click.self="closeForm">
+          <div class="mx-auto flex max-h-[calc(100vh-2rem)] max-w-5xl flex-col overflow-hidden rounded-lg bg-[#ededed] p-3 shadow-2xl">
+            <div class="mb-3 flex flex-shrink-0 flex-wrap items-center justify-between gap-3 rounded-md border border-gray-300 bg-white px-4 py-3 shadow-sm">
               <div>
                 <h2 class="font-display text-base font-bold">{{ editingItem ? `Edit ${title}` : `Create ${title}` }}</h2>
                 <p class="mt-0.5 text-xs font-semibold text-ink-soft">Set the class, schedule, and questions in one place.</p>
               </div>
               <button class="figma-button" @click="closeForm">Close</button>
             </div>
-            <AssessmentDesigner :kind="kind" :title="title" :initial-assessment="editingItem" @saved="handleSaved" />
+            <div class="min-h-0 overflow-y-auto pr-1">
+              <AssessmentDesigner :kind="kind" :title="title" :initial-assessment="editingItem" @saved="handleSaved" />
+            </div>
           </div>
         </div>
       </Transition>
@@ -161,6 +213,8 @@ const successMessage = ref('')
 const errorMessage = ref('')
 const editingItem = ref<Quiz | Activity | null>(null)
 const deletingId = ref('')
+const reviewingRetakeId = ref<number | null>(null)
+const retakeStatusFilter = ref('pending')
 
 const listTitle = computed(() => props.kind === 'quiz' ? 'Quizzes' : 'Activities')
 const items = computed(() => props.kind === 'quiz' ? store.quizzes : store.activities)
@@ -195,12 +249,14 @@ const filteredCards = computed(() => items.value.map(item => {
     source: item,
   }
 }))
+const retakeRequests = computed(() => store.retakeRequests.filter(request => request.assessmentType === props.kind))
 
 onMounted(async () => {
   loading.value = true
   try {
     if (props.kind === 'quiz') await store.fetchModules()
     await store.fetchAssessments(props.kind)
+    await loadRetakeRequests()
   } finally {
     loading.value = false
   }
@@ -245,6 +301,35 @@ async function deleteItem(item: Quiz | Activity) {
   } finally {
     deletingId.value = ''
   }
+}
+
+async function loadRetakeRequests() {
+  await store.fetchRetakeRequests({
+    status: retakeStatusFilter.value,
+    assessmentType: props.kind,
+  }).catch(() => null)
+}
+
+async function reviewRetake(id: number, action: 'approved' | 'rejected') {
+  successMessage.value = ''
+  errorMessage.value = ''
+  reviewingRetakeId.value = id
+
+  try {
+    await store.reviewRetakeRequest(id, action)
+    await loadRetakeRequests()
+    successMessage.value = `Retake request ${action}.`
+  } catch (err) {
+    errorMessage.value = err instanceof Error ? err.message : 'Unable to review retake request.'
+  } finally {
+    reviewingRetakeId.value = null
+  }
+}
+
+function retakeReasonLabel(reason: string) {
+  if (reason === 'failed_low_score') return 'Low score'
+  if (reason === 'missed_deadline') return 'Missed deadline'
+  return reason
 }
 </script>
 

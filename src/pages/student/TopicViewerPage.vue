@@ -205,6 +205,23 @@
             Score: {{ quizResult.score }} / {{ quizResult.total }}
           </div>
 
+          <section v-if="activeQuiz.student_retake_eligible || activeQuiz.student_retake_status" class="border-[3px] border-brand-teal bg-white p-4 shadow-card">
+            <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Retake</div>
+            <p class="mt-1 text-sm font-bold text-ink">
+              {{ retakeStatusText(activeQuiz.student_retake_status, activeQuiz.student_retake_reason) }}
+            </p>
+            <p v-if="quizRetakeMessage" class="mt-2 text-xs font-black text-brand-blue">{{ quizRetakeMessage }}</p>
+            <button
+              v-if="canRequestQuizRetake"
+              type="button"
+              class="mt-3 border-[3px] border-brand-teal bg-brand-amber px-4 py-2 text-xs font-black transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="quizRetakeRequesting"
+              @click="requestActiveQuizRetake"
+            >
+              {{ quizRetakeRequesting ? 'Sending...' : 'Request Retake' }}
+            </button>
+          </section>
+
           <div v-for="(question, index) in activeQuiz.questions" :key="index" class="border-[3px] border-brand-teal bg-white p-5">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <label class="block text-sm font-black">Question {{ index + 1 }}</label>
@@ -460,6 +477,8 @@ const quizResult = ref<{ score: number; total: number } | null>(null)
 const quizRemainingSeconds = ref<number | null>(null)
 const quizSubmitting = ref(false)
 const quizTimeExpired = ref(false)
+const quizRetakeRequesting = ref(false)
+const quizRetakeMessage = ref('')
 let quizTimer: number | null = null
 
 const moduleId = computed(() => String(route.params.moduleId))
@@ -508,6 +527,10 @@ const quizLocked = computed(() => Boolean(quizResult.value) || quizTimeExpired.v
 const quizTimerLabel = computed(() => {
   if (quizRemainingSeconds.value === null) return ''
   return formatQuizTime(quizRemainingSeconds.value)
+})
+const canRequestQuizRetake = computed(() => {
+  if (!activeQuiz.value?.student_retake_eligible) return false
+  return activeQuiz.value.student_retake_status !== 'pending' && activeQuiz.value.student_retake_status !== 'approved'
 })
 
 onMounted(async () => {
@@ -561,6 +584,7 @@ async function selectQuiz(quizId: number) {
   if (!quizUnlocked.value) return
   const quiz = quizzes.value.find(item => item.id === quizId)
   if (!quiz) return
+  quizRetakeMessage.value = ''
   if (quiz.student_status === 'completed' || quiz.student_started_at || !hasQuizTimer(quiz)) {
     await openQuiz(quizId)
     return
@@ -634,6 +658,20 @@ async function submitActiveQuiz(autoSubmit = false) {
     clearQuizTimer()
   } finally {
     quizSubmitting.value = false
+  }
+}
+
+async function requestActiveQuizRetake() {
+  if (!activeQuiz.value) return
+  quizRetakeRequesting.value = true
+  quizRetakeMessage.value = ''
+  try {
+    await content.requestQuizRetake(moduleId.value, activeQuiz.value.id, retakeRequestReason(activeQuiz.value.student_retake_reason))
+    quizRetakeMessage.value = 'Retake request sent. Wait for teacher approval.'
+  } catch (err) {
+    quizRetakeMessage.value = err instanceof Error ? err.message : 'Unable to request retake.'
+  } finally {
+    quizRetakeRequesting.value = false
   }
 }
 
@@ -734,5 +772,20 @@ function quizQuestionTypeLabel(rawAnswer?: string | null) {
   if (type === 'multiple_choice') return 'Multiple Choice'
   if (type === 'true_false') return 'True or False'
   return 'Identification'
+}
+
+function retakeStatusText(status?: string | null, reason?: string | null) {
+  if (status === 'pending') return 'Your retake request is waiting for teacher approval.'
+  if (status === 'approved') return 'Your teacher approved the retake. You can answer again.'
+  if (status === 'rejected') return 'Your retake request was rejected. You may send another request if needed.'
+  if (reason === 'missed_deadline') return 'You missed the deadline. Request teacher approval to retake this quiz.'
+  if (reason === 'failed_low_score') return 'Your score is below half. Request teacher approval to retake this quiz.'
+  return 'Request teacher approval to retake this quiz.'
+}
+
+function retakeRequestReason(reason?: string | null) {
+  if (reason === 'missed_deadline') return 'I missed the deadline and need another chance.'
+  if (reason === 'failed_low_score') return 'My score is below half and I want to try again.'
+  return 'I want to request a retake.'
 }
 </script>

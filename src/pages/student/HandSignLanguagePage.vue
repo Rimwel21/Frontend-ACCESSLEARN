@@ -72,7 +72,7 @@
               >
                 {{ choice.letter }}
               </span>
-              <span class="text-sm font-bold">{{ choice.text }}</span>
+              <span class="text-sm font-bold">{{ choiceDisplayText(choice) }}</span>
             </button>
           </div>
 
@@ -121,7 +121,7 @@
           <PredictionDisplay
             v-model:text-answer="textAnswer"
             :sign-mode="signLanguageMode"
-            :answer="answer"
+            :answer="visibleAnswer"
             :detection="detection"
             :disabled="isActivityCompleted"
           />
@@ -166,6 +166,9 @@
           >
             {{ isActivityCompleted ? 'Submitted' : 'Submit Answer' }}
           </button>
+          <p v-if="submitMessage" class="w-full border-[3px] border-brand-teal bg-brand-blue-soft px-3 py-2 text-xs font-black text-brand-blue">
+            {{ submitMessage }}
+          </p>
         </div>
 
         <section v-if="shouldShowTutorialStatus" class="border-[3px] border-brand-teal bg-white p-4">
@@ -309,7 +312,20 @@
         </figure>
 
         <p v-if="isAlphabetOnly" class="mt-4 border-[3px] border-brand-teal bg-brand-blue-soft px-3 py-2 text-xs font-black">Available offline after first visit.</p>
-        <p v-else-if="submitMessage" class="mt-4 border-[3px] border-brand-teal bg-brand-blue-soft px-3 py-2 text-xs font-black">{{ submitMessage }}</p>
+        <section v-else-if="activeActivity?.student_retake_eligible || activeActivity?.student_retake_status" class="mt-4 border-[3px] border-brand-teal bg-white p-3">
+          <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Retake</div>
+          <p class="mt-1 text-xs font-black text-ink">{{ retakeStatusText }}</p>
+          <p v-if="retakeMessage" class="mt-2 text-xs font-black text-brand-blue">{{ retakeMessage }}</p>
+          <button
+            v-if="canRequestRetake"
+            type="button"
+            class="mt-3 w-full border-[3px] border-brand-teal bg-brand-amber px-4 py-2 text-xs font-black disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="retakeRequesting"
+            @click="requestRetake"
+          >
+            {{ retakeRequesting ? 'Sending...' : 'Request Retake' }}
+          </button>
+        </section>
       </aside>
     </div>
 
@@ -486,6 +502,8 @@ const signLanguageMode = ref(false)
 const defaultWasApplied = ref(false)
 const textAnswer = ref('')
 const submitMessage = ref('')
+const retakeMessage = ref('')
+const retakeRequesting = ref(false)
 const activeQuestionIndex = ref(0)
 const answers = ref<Record<string, string>>({})
 const result = ref<{ score: number; total: number } | null>(null)
@@ -616,7 +634,7 @@ function selectAlphabetSign(sign: AlphabetSign) {
 }
 
 function isSelectedChoice(choice: { letter: string; text: string }) {
-  const current = (answers.value[String(activeQuestionIndex.value)] || currentAnswer.value || textAnswer.value || '').trim().toUpperCase()
+  const current = normalizeAnswerForQuestion(answers.value[String(activeQuestionIndex.value)] || currentAnswer.value || textAnswer.value).toUpperCase()
   const letter = choice.letter.trim().toUpperCase()
   const text = choice.text.trim().toUpperCase()
   return current === letter || current === text
@@ -624,14 +642,16 @@ function isSelectedChoice(choice: { letter: string; text: string }) {
 
 function selectChoice(choice: { letter: string; text: string }) {
   if (isActivityCompleted.value) return
-  textAnswer.value = choice.letter
-  answers.value[String(activeQuestionIndex.value)] = choice.letter
+  const value = normalizeAnswerForQuestion(choice.letter)
+  textAnswer.value = value
+  answers.value[String(activeQuestionIndex.value)] = value
 }
 
 function saveCurrentAnswer() {
-  const ans = (currentAnswer.value || textAnswer.value || '').trim()
+  const ans = normalizeAnswerForQuestion(currentAnswer.value || textAnswer.value)
   if (ans) {
     answers.value[String(activeQuestionIndex.value)] = ans
+    textAnswer.value = ans
   }
 }
 const isHearingImpaired = computed(() => {
@@ -641,6 +661,14 @@ const isHearingImpaired = computed(() => {
 const studentTypeLabel = computed(() => isHearingImpaired.value ? 'Student with Hearing Impairment' : 'Regular Student')
 const defaultModeLabel = computed(() => isHearingImpaired.value ? 'Sign Language Mode on' : 'Text input')
 const currentAnswer = computed(() => signLanguageMode.value ? answer.value : textAnswer.value)
+const visibleAnswer = computed(() => {
+  const normalized = normalizeAnswerForQuestion(currentAnswer.value)
+  if (activeQuestionParsed.value.type === 'true_false') {
+    if (normalized === 'TRUE') return 'True'
+    if (normalized === 'FALSE') return 'False'
+  }
+  return normalized || answer.value
+})
 const isActivityCompleted = computed(() => activeActivity.value?.student_status === 'completed')
 const expectedTutorialAnswer = computed(() => activeActivity.value?.questions.find(question => question.answer?.trim())?.answer?.trim() ?? '')
 const canonicalTutorialWord = computed(() => tutorial.value?.word ?? canonicalPreview(expectedTutorialAnswer.value))
@@ -659,6 +687,20 @@ const scoreLabel = computed(() => {
   }
   return 'Not submitted'
 })
+const canRequestRetake = computed(() => {
+  if (!activeActivity.value?.student_retake_eligible) return false
+  return activeActivity.value.student_retake_status !== 'pending' && activeActivity.value.student_retake_status !== 'approved'
+})
+const retakeStatusText = computed(() => {
+  const status = activeActivity.value?.student_retake_status
+  const reason = activeActivity.value?.student_retake_reason
+  if (status === 'pending') return 'Your retake request is waiting for teacher approval.'
+  if (status === 'approved') return 'Your teacher approved the retake. You can answer again.'
+  if (status === 'rejected') return 'Your retake request was rejected. You may send another request if needed.'
+  if (reason === 'missed_deadline') return 'You missed the deadline. Request teacher approval to retake this activity.'
+  if (reason === 'failed_low_score') return 'Your score is below half. Request teacher approval to retake this activity.'
+  return 'Request teacher approval to retake this activity.'
+})
 
 watch(signLanguageMode, async (enabled) => {
   if (isActivityCompleted.value) {
@@ -672,6 +714,14 @@ watch(signLanguageMode, async (enabled) => {
   } else {
     stop()
   }
+})
+
+watch(answer, value => {
+  if (!signLanguageMode.value || isActivityCompleted.value) return
+  const normalized = normalizeAnswerForQuestion(value)
+  if (!normalized) return
+  textAnswer.value = normalized
+  answers.value[String(activeQuestionIndex.value)] = normalized
 })
 
 onMounted(async () => {
@@ -735,6 +785,20 @@ async function submitAnswer() {
   stop()
   openResultPopup(submitted, submittedMode)
   await loadTutorial(true)
+}
+
+async function requestRetake() {
+  if (!activityId.value) return
+  retakeRequesting.value = true
+  retakeMessage.value = ''
+  try {
+    await content.requestActivityRetake(activityId.value, retakeRequestReason())
+    retakeMessage.value = 'Retake request sent. Wait for teacher approval.'
+  } catch (err) {
+    retakeMessage.value = err instanceof Error ? err.message : 'Unable to request retake.'
+  } finally {
+    retakeRequesting.value = false
+  }
 }
 
 
@@ -829,5 +893,35 @@ function canonicalPreview(value: string) {
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/\s+/g, '_')
+}
+
+function normalizeAnswerForQuestion(value?: string | null) {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  const upper = raw.toUpperCase()
+  if (activeQuestionParsed.value.type === 'true_false') {
+    if (upper === 'T' || upper === 'TRUE' || upper === 'YES') return 'TRUE'
+    if (upper === 'F' || upper === 'FALSE' || upper === 'NO') return 'FALSE'
+  }
+  if (activeQuestionParsed.value.type === 'multiple_choice') {
+    const choice = activeQuestionParsed.value.choices.find(item =>
+      item.letter.toUpperCase() === upper || item.text.toUpperCase() === upper
+    )
+    return choice?.letter ?? raw
+  }
+  return raw
+}
+
+function choiceDisplayText(choice: { letter: string; text: string }) {
+  if (choice.text) return choice.text
+  if (choice.letter.toUpperCase() === 'TRUE') return 'True'
+  if (choice.letter.toUpperCase() === 'FALSE') return 'False'
+  return choice.letter
+}
+
+function retakeRequestReason() {
+  if (activeActivity.value?.student_retake_reason === 'missed_deadline') return 'I missed the deadline and need another chance.'
+  if (activeActivity.value?.student_retake_reason === 'failed_low_score') return 'My score is below half and I want to try again.'
+  return 'I want to request a retake.'
 }
 </script>

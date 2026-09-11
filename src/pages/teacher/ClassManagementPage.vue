@@ -31,7 +31,7 @@
           <div
             v-for="cls in store.classes"
             :key="cls.id"
-            @click="store.selectClass(cls.id)"
+            @click="selectClass(cls.id)"
             :class="['card-hover relative min-h-[142px] cursor-pointer border-2 p-4 transition-all', store.selectedClassId === cls.id ? 'border-brand-blue bg-brand-blue-soft/20' : 'border-transparent']"
           >
             <button @click.stop="confirmDeleteClass(cls.id)" class="absolute top-2 right-2 w-6 h-6 rounded-full hover:bg-rose-50 text-gray-300 hover:text-brand-rose flex items-center justify-center text-xs transition-all">x</button>
@@ -74,10 +74,10 @@
           <div class="card p-5">
               <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 class="font-display text-base font-semibold">Students</h3>
+                  <h3 class="font-display text-base font-semibold">Total Students</h3>
                   <p class="text-xs text-ink-soft">Automatically enrolled from matching grade level and section.</p>
                 </div>
-                <button class="figma-button" @click="store.fetchClassStudents(store.selectedClass!.id)">Refresh</button>
+                <button class="figma-button" @click="refreshClassData">Refresh</button>
               </div>
 
               <div v-if="store.classStudentsLoading" class="text-sm text-ink-soft">Loading students...</div>
@@ -114,20 +114,190 @@
               </div>
           </div>
 
-          <div v-for="section in sections" :key="section.title" class="card-hover cursor-pointer" @click="router.push(section.to)">
-            <div class="flex">
-              <div :class="`w-1.5 flex-shrink-0 rounded-l-xl ${section.accent}`" />
-              <div class="flex-1 p-5">
-                <h3 class="font-display text-base font-semibold mb-2">{{ section.title }}</h3>
-                <p class="text-sm text-ink-soft leading-relaxed">{{ section.description }}</p>
-                <div class="flex items-center justify-between mt-4 gap-3">
-                  <div class="flex flex-wrap gap-4">
-                    <span v-for="meta in section.meta" :key="meta" class="text-[11.5px] text-ink-soft">{{ meta }}</span>
-                  </div>
-                  <button :class="`text-white text-xs font-bold px-4 py-2 rounded-full ${section.btnClass}`">{{ section.btnLabel }}</button>
+          <div class="card overflow-hidden">
+            <div class="px-5 py-5">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h3 class="font-display text-2xl font-bold text-ink">Student Records</h3>
+                  <p class="mt-1 max-w-2xl text-sm text-ink-soft">Review activity, quiz, learning material, and Handsign practice performance without crowding the Home dashboard.</p>
+                </div>
+                <button class="btn-primary" type="button" :disabled="store.studentRecordsLoading" @click="loadClassRecords">
+                  {{ store.studentRecordsLoading ? 'Loading...' : 'Refresh' }}
+                </button>
+              </div>
+
+              <div class="mt-5 grid gap-4 md:grid-cols-4">
+                <div class="card p-5 shadow-none ring-1 ring-gray-100">
+                  <div class="font-mono text-[11px] uppercase tracking-widest text-ink-soft">Students</div>
+                  <div class="mt-2 font-display text-3xl font-bold">{{ store.studentRecords.length }}</div>
+                </div>
+                <div class="card p-5 shadow-none ring-1 ring-gray-100">
+                  <div class="font-mono text-[11px] uppercase tracking-widest text-ink-soft">Completed Records</div>
+                  <div class="mt-2 font-display text-3xl font-bold">{{ completedAssessmentCount }}</div>
+                </div>
+                <div class="card p-5 shadow-none ring-1 ring-gray-100">
+                  <div class="font-mono text-[11px] uppercase tracking-widest text-ink-soft">Handsign Practices</div>
+                  <div class="mt-2 font-display text-3xl font-bold">{{ handsignPracticeCount }}</div>
+                </div>
+                <div class="card p-5 shadow-none ring-1 ring-gray-100">
+                  <div class="font-mono text-[11px] uppercase tracking-widest text-ink-soft">Avg. Practice</div>
+                  <div class="mt-2 font-display text-3xl font-bold">{{ averageHandsignScore }}%</div>
                 </div>
               </div>
             </div>
+
+            <section class="mx-5 mb-5 rounded-xl border border-gray-100 bg-white p-4">
+              <div class="grid gap-3 lg:grid-cols-[minmax(180px,1fr)_160px_160px_minmax(180px,1fr)_auto] lg:items-end">
+                <div>
+                  <label class="figma-label" for="class-records-class">Class</label>
+                  <select id="class-records-class" v-model="recordFilters.classId" class="input-field h-10" @change="loadClassRecords">
+                    <option value="">All classes</option>
+                    <option v-for="cls in store.classes" :key="cls.id" :value="cls.id">{{ cls.className }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="figma-label" for="class-records-type">Type</label>
+                  <select id="class-records-type" v-model="recordFilters.assessmentType" class="input-field h-10" @change="loadClassRecords">
+                    <option value="">All</option>
+                    <option value="activity">Activities</option>
+                    <option value="quiz">Quizzes</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="figma-label" for="class-records-status">Status</label>
+                  <select id="class-records-status" v-model="recordFilters.status" class="input-field h-10" @change="loadClassRecords">
+                    <option value="">All</option>
+                    <option value="completed">Completed</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="Needs Help">Needs Help</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="figma-label" for="class-records-search">Search Student</label>
+                  <input id="class-records-search" v-model="recordFilters.search" class="input-field h-10" placeholder="Student name" @keyup.enter="loadClassRecords" />
+                </div>
+                <button class="btn-secondary h-10" type="button" @click="loadClassRecords">Apply</button>
+              </div>
+              <p v-if="store.studentRecordsError" class="status-error mt-3" role="alert">{{ store.studentRecordsError }}</p>
+            </section>
+
+            <div class="border-b border-gray-50 px-5 py-4">
+              <h3 class="font-display text-base font-semibold">Full Student Progress</h3>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[980px] border-collapse text-left">
+                <thead class="bg-surface text-ink-soft">
+                  <tr>
+                    <th class="table-th">Student</th>
+                    <th class="table-th">Class</th>
+                    <th class="table-th">Learning Materials</th>
+                    <th class="table-th">Activities</th>
+                    <th class="table-th">Latest Quiz</th>
+                    <th class="table-th">Handsign</th>
+                    <th class="table-th">Status</th>
+                    <th class="table-th">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="record in store.studentRecords" :key="record.studentId" class="transition-colors hover:bg-gray-50">
+                    <td class="table-td">
+                      <div class="flex items-center gap-2.5">
+                        <div :class="`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${record.avatarGradient} text-xs font-bold text-white`">{{ record.initials }}</div>
+                        <div class="min-w-0">
+                          <div class="truncate text-[13px] font-semibold">{{ record.studentName }}</div>
+                          <div class="text-[11px] text-ink-soft">Last: {{ record.lastActivity }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="table-td text-xs">{{ classLabel(record) }}</td>
+                    <td class="table-td w-48">
+                      <div class="flex items-center gap-2.5">
+                        <div class="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
+                          <div class="h-full rounded-full bg-gradient-to-r from-brand-teal to-brand-green" :style="{ width: record.overallPercent + '%' }"></div>
+                        </div>
+                        <span class="min-w-[34px] text-right font-mono text-[11px] text-ink-soft">{{ record.overallPercent }}%</span>
+                      </div>
+                      <div class="mt-1 font-mono text-[11px] text-ink-soft">{{ record.learningMaterialsCompleted }}/{{ record.learningMaterialsTotal }}</div>
+                    </td>
+                    <td class="table-td font-mono text-xs">
+                      <div>{{ record.activitiesCompleted }}/{{ record.activitiesTotal }}</div>
+                      <div class="mt-1 text-[11px] text-ink-soft">{{ record.activityPercent }}%</div>
+                    </td>
+                    <td class="table-td text-xs">{{ record.quizActivity }}</td>
+                    <td class="table-td font-mono text-xs">
+                      <div>{{ record.handsignPractice.length }} practice{{ record.handsignPractice.length === 1 ? '' : 's' }}</div>
+                      <div class="mt-1 text-[11px] text-ink-soft">Best {{ bestPracticeScore(record) }}</div>
+                    </td>
+                    <td class="table-td"><span :class="statusBadge(record.status)">{{ record.status }}</span></td>
+                    <td class="table-td">
+                      <button class="btn-secondary px-3 py-1.5 text-xs" type="button" @click="toggleSelectedRecord(record)">
+                        {{ selectedRecord?.studentId === record.studentId ? 'Hide Details' : 'View Details' }}
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="!store.studentRecordsLoading && store.studentRecords.length === 0">
+                    <td colspan="8" class="table-td text-center text-ink-soft">No student records found.</td>
+                  </tr>
+                  <tr v-if="store.studentRecordsLoading">
+                    <td colspan="8" class="table-td text-center text-ink-soft">Loading student records...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <section v-if="selectedRecord" class="border-t border-gray-100 p-5">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 class="font-display text-xl font-bold text-ink">{{ selectedRecord.studentName }}</h3>
+                  <p class="mt-1 text-sm text-ink-soft">{{ classLabel(selectedRecord) }} - {{ selectedRecord.status }}</p>
+                </div>
+                <button class="btn-secondary px-3 py-1.5 text-xs" type="button" @click="selectedRecord = null">Close</button>
+              </div>
+
+              <div class="mt-5 grid gap-4 lg:grid-cols-2">
+                <div>
+                  <h4 class="font-display text-base font-semibold">Activities and Quizzes</h4>
+                  <div class="mt-3 space-y-3">
+                    <div v-for="item in selectedRecord.assessments" :key="`${item.assessmentType}-${item.assessmentId}`" class="rounded-xl border border-gray-100 bg-surface p-4">
+                      <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <div class="text-sm font-semibold text-ink">{{ item.title }}</div>
+                          <div class="mt-0.5 font-mono text-[11px] uppercase text-ink-soft">{{ item.assessmentType }} - {{ item.status }}</div>
+                        </div>
+                        <span class="badge badge-blue">{{ scoreText(item.score, item.total) }}</span>
+                      </div>
+                      <div class="mt-3 grid gap-2 text-xs text-ink-soft sm:grid-cols-2">
+                        <div><span class="font-semibold text-ink">Expected:</span> {{ item.expectedAnswers.join(', ') || 'No answer key' }}</div>
+                        <div><span class="font-semibold text-ink">Submitted:</span> {{ formatAnswers(item.answers) }}</div>
+                        <div><span class="font-semibold text-ink">Completed:</span> {{ formatDate(item.completedAt) }}</div>
+                        <div><span class="font-semibold text-ink">Submission:</span> {{ item.submissionType || 'Manual' }}</div>
+                      </div>
+                    </div>
+                    <div v-if="selectedRecord.assessments.length === 0" class="rounded-xl border border-gray-100 bg-surface p-4 text-sm text-ink-soft">No submitted activities or quizzes yet.</div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 class="font-display text-base font-semibold">Handsign Tutorial Practice</h4>
+                  <div class="mt-3 space-y-3">
+                    <div v-for="practice in selectedRecord.handsignPractice" :key="practice.id" class="rounded-xl border border-gray-100 bg-surface p-4">
+                      <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <div class="text-sm font-semibold text-ink">{{ practice.activityTitle || `Activity #${practice.activityId}` }}</div>
+                          <div class="mt-0.5 font-mono text-[11px] uppercase text-ink-soft">Word: {{ practice.word }}</div>
+                        </div>
+                        <span class="badge badge-green">Best {{ practice.highestScore }}%</span>
+                      </div>
+                      <div class="mt-3 text-xs text-ink-soft">
+                        Attempts: {{ practice.attemptScores.map(score => `${score}%`).join(', ') || 'No attempts' }}
+                      </div>
+                      <div class="mt-1 text-xs text-ink-soft">Completed: {{ formatDate(practice.completedAt) }}</div>
+                    </div>
+                    <div v-if="selectedRecord.handsignPractice.length === 0" class="rounded-xl border border-gray-100 bg-surface p-4 text-sm text-ink-soft">No Handsign practice record yet.</div>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       </template>
@@ -201,13 +371,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useTeacherStore } from '@/stores/teacher'
+import type { StudentRecord } from '@/stores/teacher'
 import { fetchGradeLevelOptions, type GradeLevelOption } from '@/lib/gradeSections'
 import { useAuthStore } from '@/stores/auth'
 
-const router = useRouter()
 const store = useTeacherStore()
 const auth = useAuthStore()
 
@@ -216,47 +385,25 @@ const showAddClass = ref(false)
 const newClass = ref(defaultClassForm())
 const deleteTargetId = ref<string | null>(null)
 const gradeLevels = ref<GradeLevelOption[]>([])
+const selectedRecord = ref<StudentRecord | null>(null)
+const recordFilters = reactive({
+  classId: '',
+  assessmentType: '',
+  status: '',
+  search: '',
+})
 
 const classModules = computed(() => store.modules.filter(module => module.classId === Number(store.selectedClassId)))
 
-const sections = computed(() => [
-  {
-    title: 'Modules / Learning Materials',
-    description: 'Manage class learning materials, upload resources, and track published content.',
-    accent: 'bg-gradient-to-b from-brand-blue to-brand-violet',
-    btnClass: 'bg-gradient-to-r from-brand-blue to-brand-violet',
-    btnLabel: 'Manage',
-    to: '/teacher/modules',
-    meta: [`${classModules.value.length} materials`, `${classModules.value.filter(module => module.status === 'Published').length} published`],
-  },
-  {
-    title: 'Activities',
-    description: 'Create and manage student activities for the selected class content.',
-    accent: 'bg-gradient-to-b from-brand-teal to-brand-green',
-    btnClass: 'bg-gradient-to-r from-brand-teal to-brand-green',
-    btnLabel: 'Manage',
-    to: '/teacher/activities',
-    meta: [`${store.activities.length} activities`, `${store.atRiskStudents.length} students need help`],
-  },
-  {
-    title: 'Student Records',
-    description: 'Review student activity answers, quiz performance, learning progress, and Handsign practice scores for this class.',
-    accent: 'bg-gradient-to-b from-brand-blue to-brand-teal',
-    btnClass: 'bg-gradient-to-r from-brand-blue to-brand-teal',
-    btnLabel: 'View Records',
-    to: '/teacher/records',
-    meta: [`${store.selectedClass?.studentCount ?? 0} students`, 'Class records'],
-  },
-  {
-    title: 'Quizzes',
-    description: 'Create, schedule, and review quizzes linked to class learning materials.',
-    accent: 'bg-gradient-to-b from-brand-amber to-brand-rose',
-    btnClass: 'bg-gradient-to-r from-brand-amber to-brand-rose',
-    btnLabel: 'Review',
-    to: '/teacher/quizzes',
-    meta: [`${store.quizzes.length} quizzes`, 'Class scoped by material'],
-  },
-])
+const completedAssessmentCount = computed(() => store.studentRecords.reduce((total, record) => (
+  total + record.assessments.filter(item => item.status === 'completed').length
+), 0))
+const handsignPracticeCount = computed(() => store.studentRecords.reduce((total, record) => total + record.handsignPractice.length, 0))
+const averageHandsignScore = computed(() => {
+  const scores = store.studentRecords.flatMap(record => record.handsignPractice.map(item => item.highestScore))
+  if (!scores.length) return 0
+  return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+})
 
 onMounted(async () => {
   await Promise.allSettled([
@@ -264,6 +411,12 @@ onMounted(async () => {
     store.fetchClasses(),
     store.fetchModules(),
   ])
+  await loadClassRecords()
+})
+
+watch(() => store.selectedClassId, (classId) => {
+  if (classId && !recordFilters.classId) recordFilters.classId = classId
+  void loadClassRecords()
 })
 
 function defaultClassForm() {
@@ -310,8 +463,71 @@ async function performDelete() {
   deleteTargetId.value = null
 }
 
+async function selectClass(id: string) {
+  await store.selectClass(id)
+  recordFilters.classId = id
+  await loadClassRecords()
+}
+
+async function refreshClassData() {
+  if (!store.selectedClass) return
+  await Promise.allSettled([
+    store.fetchClassStudents(store.selectedClass.id),
+    loadClassRecords(),
+  ])
+}
+
+async function loadClassRecords() {
+  await store.fetchStudentRecords({
+    classId: recordFilters.classId || null,
+    assessmentType: recordFilters.assessmentType || null,
+    status: recordFilters.status || null,
+    search: recordFilters.search || null,
+  })
+  if (selectedRecord.value) {
+    selectedRecord.value = store.studentRecords.find(record => record.studentId === selectedRecord.value?.studentId) ?? null
+  }
+}
+
 function gradeLabel(value: string) {
   return value
+}
+
+function classLabel(record: StudentRecord) {
+  return [record.gradeLevel, record.section].filter(Boolean).join(' - ') || 'No class'
+}
+
+function bestPracticeScore(record: StudentRecord) {
+  const scores = record.handsignPractice.map(item => item.highestScore)
+  return scores.length ? `${Math.max(...scores)}%` : '-'
+}
+
+function statusBadge(status: string) {
+  const normalized = status.toLowerCase()
+  if (normalized === 'complete' || normalized === 'completed') return 'badge badge-green'
+  if (normalized === 'needs help') return 'badge badge-red'
+  return 'badge badge-blue'
+}
+
+function toggleSelectedRecord(record: StudentRecord) {
+  selectedRecord.value = selectedRecord.value?.studentId === record.studentId ? null : record
+}
+
+function scoreText(score?: number | null, total?: number | null) {
+  if (score === null || score === undefined || total === null || total === undefined) return 'No score'
+  return `${score}/${total}`
+}
+
+function formatAnswers(answers: Record<string, string>) {
+  const values = Object.values(answers || {}).filter(Boolean)
+  return values.length ? values.join(', ') : 'No answer'
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return 'Not completed'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Not completed'
+  return date.toLocaleDateString()
 }
 
 async function loadGradeLevels() {

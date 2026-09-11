@@ -290,6 +290,34 @@ interface TeacherStudentRecordResponse {
   handsign_practice: TeacherStudentRecordHandsignResponse[]
 }
 
+export interface RetakeRequest {
+  id: number
+  assessmentId: number
+  assessmentTitle: string
+  assessmentType: 'quiz' | 'activity'
+  studentId: number
+  studentName: string
+  status: 'pending' | 'approved' | 'rejected'
+  reason?: string | null
+  requestType: 'failed_low_score' | 'missed_deadline' | string
+  createdAt: string
+  reviewedAt?: string | null
+}
+
+interface RetakeRequestResponse {
+  id: number
+  assessment_id: number
+  assessment_title: string
+  assessment_type: 'quiz' | 'activity'
+  student_id: number
+  student_name: string
+  status: 'pending' | 'approved' | 'rejected'
+  reason?: string | null
+  request_type: string
+  created_at: string
+  reviewed_at?: string | null
+}
+
 export interface StudentAssessmentRecord {
   assessmentId: number
   title: string
@@ -360,6 +388,9 @@ export const useTeacherStore = defineStore('teacher', () => {
   const studentRecords = ref<StudentRecord[]>([])
   const studentRecordsLoading = ref(false)
   const studentRecordsError = ref('')
+  const retakeRequests = ref<RetakeRequest[]>([])
+  const retakeRequestsLoading = ref(false)
+  const retakeRequestsError = ref('')
 
   const performers = ref<Performer[]>([
     { name: 'Penagrin, Aguiluz Emmanuelle O.', initials: 'FE', gradient: 'from-brand-blue to-brand-violet', assignments: 80, quiz: 183, activities: 80, total: 343, avg: '95%' },
@@ -687,6 +718,7 @@ export const useTeacherStore = defineStore('teacher', () => {
 
   async function addQuiz(payload: {
     classId?: number | null
+    moduleId?: number | null
     title: string
     description: string
     quizType: string
@@ -710,6 +742,7 @@ export const useTeacherStore = defineStore('teacher', () => {
         body: JSON.stringify({
           assessment_type: 'quiz',
           class_id: payload.classId ?? null,
+          module_id: payload.moduleId ?? null,
           title: payload.title,
           description: payload.description,
           category: payload.quizType,
@@ -806,6 +839,7 @@ export const useTeacherStore = defineStore('teacher', () => {
 
   async function updateQuiz(id: string, payload: {
     classId?: number | null
+    moduleId?: number | null
     title: string
     description: string
     quizType: string
@@ -828,6 +862,7 @@ export const useTeacherStore = defineStore('teacher', () => {
         token: auth.token,
         body: JSON.stringify({
           class_id: payload.classId ?? null,
+          module_id: payload.moduleId ?? null,
           title: payload.title,
           description: payload.description,
           category: payload.quizType,
@@ -944,6 +979,39 @@ export const useTeacherStore = defineStore('teacher', () => {
     }
   }
 
+  async function fetchRetakeRequests(filters: { status?: string; assessmentType?: 'quiz' | 'activity' | null } = {}) {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    retakeRequestsLoading.value = true
+    retakeRequestsError.value = ''
+    try {
+      const params = new URLSearchParams()
+      params.set('status', filters.status ?? 'pending')
+      if (filters.assessmentType) params.set('assessment_type', filters.assessmentType)
+      const data = await apiFetch<RetakeRequestResponse[]>(`/teacher/assessments/retake-requests?${params.toString()}`, { token: auth.token })
+      retakeRequests.value = data.map(mapRetakeRequestResponse)
+    } catch (err) {
+      retakeRequestsError.value = err instanceof Error ? err.message : 'Unable to load retake requests'
+      throw err
+    } finally {
+      retakeRequestsLoading.value = false
+    }
+  }
+
+  async function reviewRetakeRequest(id: number, action: 'approved' | 'rejected') {
+    const auth = useAuthStore()
+    if (!auth.token) throw new Error('Please login first')
+    await apiFetch<{ detail: string; reset_count: number }>(`/teacher/assessments/retake-requests/${id}`, {
+      method: 'PATCH',
+      token: auth.token,
+      body: JSON.stringify({ action }),
+    })
+    await fetchRetakeRequests({ status: 'pending' })
+    await fetchAssessments('quiz')
+    await fetchAssessments('activity')
+    await fetchDashboardSummary()
+  }
+
   async function fetchAvailableClasses() {
     const auth = useAuthStore()
     if (!auth.token) return
@@ -1002,10 +1070,11 @@ export const useTeacherStore = defineStore('teacher', () => {
     classes, availableClasses, selectedClassId, selectedClass, hasClasses,
     modulesLoading, moduleSaving, moduleError, quizSaving, quizError, activitySaving, activityError,
     classesLoading, classSaving, classError, classStudents, classStudentsLoading, studentRecords, studentRecordsLoading, studentRecordsError, activityLogsLoading, activityLogsError,
+    retakeRequests, retakeRequestsLoading, retakeRequestsError,
     publishedModules, unpublishedModules, atRiskStudents,
     fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchActivityLogs, fetchStudentRecords, fetchAssessments, addQuiz, updateQuiz, deleteQuiz, addActivity, updateActivity, deleteActivity,
     fetchClasses, addClass, selectClass, deleteClass, fetchClassStudents,
-    fetchAvailableClasses, selectClassAction, unselectClassAction,
+    fetchAvailableClasses, selectClassAction, unselectClassAction, fetchRetakeRequests, reviewRetakeRequest,
   }
 })
 
@@ -1251,5 +1320,21 @@ function mapActivitySubmissionResponse(submission: {
     total: submission.total,
     answers: submission.answers ?? {},
     completedAt: submission.completed_at ?? null,
+  }
+}
+
+function mapRetakeRequestResponse(item: RetakeRequestResponse): RetakeRequest {
+  return {
+    id: item.id,
+    assessmentId: item.assessment_id,
+    assessmentTitle: item.assessment_title,
+    assessmentType: item.assessment_type,
+    studentId: item.student_id,
+    studentName: item.student_name,
+    status: item.status,
+    reason: item.reason,
+    requestType: item.request_type,
+    createdAt: item.created_at,
+    reviewedAt: item.reviewed_at ?? null,
   }
 }

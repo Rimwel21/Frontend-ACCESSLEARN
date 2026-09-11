@@ -155,7 +155,7 @@ const menuOpen = ref(false)
 const navItems = [
   {
     to: '/teacher/dashboard',
-    label: 'Home',
+    label: 'Teacher Dashboard',
     iconPaths: ['m3 10.5 9-7 9 7', 'M5 9.5V20h14V9.5', 'M9.5 20v-6h5v6'],
   },
   {
@@ -181,7 +181,7 @@ const navItems = [
 ]
 
 const titleMap: Record<string, string> = {
-  TeacherDashboard:  'Home',
+  TeacherDashboard:  'Teacher Dashboard',
   ClassManagement:   'Class Management',
   TeacherStudentRecords: 'Student Records',
   Modules:           'Learning Materials',

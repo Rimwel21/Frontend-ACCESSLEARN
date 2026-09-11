@@ -54,6 +54,9 @@ export interface StudentAssessment {
   student_remaining_seconds?: number | null
   student_submission_type?: string | null
   student_answers?: Record<string, string>
+  student_retake_eligible?: boolean
+  student_retake_reason?: string | null
+  student_retake_status?: string | null
 }
 
 export interface StudentDeadline {
@@ -246,6 +249,18 @@ export const useStudentContentStore = defineStore('studentContent', () => {
     })
   }
 
+  async function requestQuizRetake(moduleId: string | number, quizId: number, reason = '') {
+    const auth = useAuthStore()
+    if (!auth.token) throw new Error('Please login first')
+    const result = await apiFetch<{ detail: string; status: string }>(`/student/modules/${moduleId}/quizzes/${quizId}/retake-request`, {
+      method: 'POST',
+      token: auth.token,
+      body: JSON.stringify({ reason: reason || null }),
+    })
+    await fetchModule(moduleId)
+    return result
+  }
+
   async function fetchActivities() {
     const auth = useAuthStore()
     if (!auth.token) return
@@ -326,6 +341,19 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       }
     }
     await fetchDeadlines()
+    return result
+  }
+
+  async function requestActivityRetake(activityId: string | number, reason = '') {
+    const auth = useAuthStore()
+    if (!auth.token) throw new Error('Please login first')
+    const result = await apiFetch<{ detail: string; status: string }>(`/student/activities/${activityId}/retake-request`, {
+      method: 'POST',
+      token: auth.token,
+      body: JSON.stringify({ reason: reason || null }),
+    })
+    await fetchActivity(activityId)
+    await fetchActivities()
     return result
   }
 
@@ -457,6 +485,6 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   return {
     modules, activities, currentActivity, currentModule, deadlines, progress, progressByModule, sortedTopics, loading, error,
     fetchModules, fetchModule, fetchActivities, fetchActivity, fetchProgress, fetchAllProgress,
-    fetchDeadlines, markTopic, startQuiz, saveQuizAnswers, submitQuiz, submitAssessment, submitActivity,
+    fetchDeadlines, markTopic, startQuiz, saveQuizAnswers, requestQuizRetake, submitQuiz, submitAssessment, submitActivity, requestActivityRetake,
   }
 })
