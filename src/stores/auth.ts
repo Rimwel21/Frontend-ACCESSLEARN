@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { apiFetch } from '@/lib/api'
+import { ApiError, apiFetch } from '@/lib/api'
 
 type Role = 'student' | 'teacher' | 'admin'
 
@@ -302,6 +302,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('role')
     localStorage.removeItem('selectedRole')
     localStorage.removeItem('account_identity')
+    localStorage.removeItem('offline_trusted_user')
     localStorage.removeItem('profile_completed')
     localStorage.removeItem('profile_data')
     localStorage.removeItem('profile_image')
@@ -336,6 +337,11 @@ export const useAuthStore = defineStore('auth', () => {
         return currentUser
       })
       .catch((err) => {
+        const cachedUser = getCachedTrustedUser()
+        if (err instanceof ApiError && err.status === 0 && cachedUser?.role === 'student') {
+          setTrustedUserState(cachedUser, { persist: false })
+          return cachedUser
+        }
         logout()
         throw err
       })
@@ -346,13 +352,16 @@ export const useAuthStore = defineStore('auth', () => {
     return hydrationRequest
   }
 
-  function setTrustedUserState(user: CurrentUserResponse) {
+  function setTrustedUserState(user: CurrentUserResponse, options: { persist?: boolean } = {}) {
     role.value = user.role
     currentUser.value = user
     accountIdentity.value = user.username ?? user.email ?? ''
     profileCompleted.value = user.role === 'admin' ? true : user.profile_completed
     hydrated.value = true
     localStorage.setItem('account_identity', accountIdentity.value)
+    if (options.persist !== false) {
+      localStorage.setItem('offline_trusted_user', JSON.stringify(user))
+    }
     localStorage.removeItem('role')
     localStorage.removeItem('profile_completed')
   }
@@ -362,6 +371,17 @@ export const useAuthStore = defineStore('auth', () => {
     currentUser.value = null
     accountIdentity.value = ''
     profileCompleted.value = false
+  }
+
+  function getCachedTrustedUser() {
+    const raw = localStorage.getItem('offline_trusted_user')
+    if (!raw) return null
+    try {
+      return JSON.parse(raw) as CurrentUserResponse
+    } catch {
+      localStorage.removeItem('offline_trusted_user')
+      return null
+    }
   }
 
   return {
