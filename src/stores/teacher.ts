@@ -259,6 +259,7 @@ interface TeacherStudentRecordAssessmentResponse {
   answers?: Record<string, string>
   completed_at?: string | null
   submission_type?: string | null
+  retake_status?: string | null
 }
 
 interface TeacherStudentRecordHandsignResponse {
@@ -297,7 +298,7 @@ export interface RetakeRequest {
   assessmentType: 'quiz' | 'activity'
   studentId: number
   studentName: string
-  status: 'pending' | 'approved' | 'rejected'
+  status: string
   reason?: string | null
   requestType: 'failed_low_score' | 'missed_deadline' | string
   createdAt: string
@@ -311,7 +312,7 @@ interface RetakeRequestResponse {
   assessment_type: 'quiz' | 'activity'
   student_id: number
   student_name: string
-  status: 'pending' | 'approved' | 'rejected'
+  status: string
   reason?: string | null
   request_type: string
   created_at: string
@@ -329,6 +330,7 @@ export interface StudentAssessmentRecord {
   answers: Record<string, string>
   completedAt?: string | null
   submissionType?: string | null
+  retakeStatus?: string | null
 }
 
 export interface StudentHandsignRecord {
@@ -991,7 +993,7 @@ export const useTeacherStore = defineStore('teacher', () => {
       const data = await apiFetch<RetakeRequestResponse[]>(`/teacher/assessments/retake-requests?${params.toString()}`, { token: auth.token })
       retakeRequests.value = data.map(mapRetakeRequestResponse)
     } catch (err) {
-      retakeRequestsError.value = err instanceof Error ? err.message : 'Unable to load retake requests'
+      retakeRequestsError.value = err instanceof Error ? err.message : 'Unable to load retake access records'
       throw err
     } finally {
       retakeRequestsLoading.value = false
@@ -1009,6 +1011,18 @@ export const useTeacherStore = defineStore('teacher', () => {
     await fetchRetakeRequests({ status: 'pending' })
     await fetchAssessments('quiz')
     await fetchAssessments('activity')
+    await fetchDashboardSummary()
+  }
+
+  async function setRetakeAccess(assessmentId: number, studentId: string | number, action: 'approved' | 'rejected') {
+    const auth = useAuthStore()
+    if (!auth.token) throw new Error('Please login first')
+    await apiFetch<{ detail: string; status: string; reset_count: number }>(`/teacher/assessments/${assessmentId}/students/${studentId}/retake-access`, {
+      method: 'PATCH',
+      token: auth.token,
+      body: JSON.stringify({ action }),
+    })
+    await fetchStudentRecords()
     await fetchDashboardSummary()
   }
 
@@ -1074,7 +1088,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     publishedModules, unpublishedModules, atRiskStudents,
     fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchActivityLogs, fetchStudentRecords, fetchAssessments, addQuiz, updateQuiz, deleteQuiz, addActivity, updateActivity, deleteActivity,
     fetchClasses, addClass, selectClass, deleteClass, fetchClassStudents,
-    fetchAvailableClasses, selectClassAction, unselectClassAction, fetchRetakeRequests, reviewRetakeRequest,
+    fetchAvailableClasses, selectClassAction, unselectClassAction, fetchRetakeRequests, reviewRetakeRequest, setRetakeAccess,
   }
 })
 
@@ -1203,6 +1217,7 @@ function mapStudentRecordResponse(record: TeacherStudentRecordResponse): Student
       answers: item.answers ?? {},
       completedAt: item.completed_at ?? null,
       submissionType: item.submission_type ?? null,
+      retakeStatus: item.retake_status ?? null,
     })),
     handsignPractice: (record.handsign_practice ?? []).map(item => ({
       id: item.id,

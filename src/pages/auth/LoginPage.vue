@@ -266,7 +266,7 @@ async function submitLogin() {
       return
     }
 
-    router.push(role.value === 'teacher' ? '/teacher/class' : '/student/dashboard')
+    router.push(role.value === 'teacher' ? '/teacher/dashboard' : '/student/dashboard')
   } catch (err) {
     if (err instanceof ApiError && err.status === 403) {
       if (err.message.toLowerCase().includes('admin approval') || err.message.toLowerCase().includes('wait for admin')) {

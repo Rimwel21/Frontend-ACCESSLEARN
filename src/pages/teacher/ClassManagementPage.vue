@@ -272,6 +272,25 @@
                         <div><span class="font-semibold text-ink">Completed:</span> {{ formatDate(item.completedAt) }}</div>
                         <div><span class="font-semibold text-ink">Submission:</span> {{ item.submissionType || 'Manual' }}</div>
                       </div>
+                      <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+                        <span class="text-xs font-semibold text-ink-soft">Retake access: {{ retakeAccessLabel(item.retakeStatus) }}</span>
+                        <button
+                          class="figma-button px-3 py-1.5 text-xs"
+                          type="button"
+                          :disabled="retakeSavingKey === retakeKey(selectedRecord.studentId, item.assessmentId)"
+                          @click="setRetakeAccess(selectedRecord.studentId, item, 'approved')"
+                        >
+                          Allow Retake
+                        </button>
+                        <button
+                          class="figma-button px-3 py-1.5 text-xs"
+                          type="button"
+                          :disabled="retakeSavingKey === retakeKey(selectedRecord.studentId, item.assessmentId)"
+                          @click="setRetakeAccess(selectedRecord.studentId, item, 'rejected')"
+                        >
+                          Disable Retake
+                        </button>
+                      </div>
                     </div>
                     <div v-if="selectedRecord.assessments.length === 0" class="rounded-xl border border-gray-100 bg-surface p-4 text-sm text-ink-soft">No submitted activities or quizzes yet.</div>
                   </div>
@@ -373,7 +392,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useTeacherStore } from '@/stores/teacher'
-import type { StudentRecord } from '@/stores/teacher'
+import type { StudentAssessmentRecord, StudentRecord } from '@/stores/teacher'
 import { fetchGradeLevelOptions, type GradeLevelOption } from '@/lib/gradeSections'
 import { useAuthStore } from '@/stores/auth'
 
@@ -386,6 +405,7 @@ const newClass = ref(defaultClassForm())
 const deleteTargetId = ref<string | null>(null)
 const gradeLevels = ref<GradeLevelOption[]>([])
 const selectedRecord = ref<StudentRecord | null>(null)
+const retakeSavingKey = ref<string | null>(null)
 const recordFilters = reactive({
   classId: '',
   assessmentType: '',
@@ -511,6 +531,28 @@ function statusBadge(status: string) {
 
 function toggleSelectedRecord(record: StudentRecord) {
   selectedRecord.value = selectedRecord.value?.studentId === record.studentId ? null : record
+}
+
+function retakeKey(studentId: string, assessmentId: number) {
+  return `${studentId}:${assessmentId}`
+}
+
+function retakeAccessLabel(status?: string | null) {
+  if (status === 'approved') return 'Allowed'
+  if (status === 'rejected') return 'Disabled'
+  if (status === 'consumed') return 'Used'
+  return 'Not set'
+}
+
+async function setRetakeAccess(studentId: string, item: StudentAssessmentRecord, action: 'approved' | 'rejected') {
+  const key = retakeKey(studentId, item.assessmentId)
+  retakeSavingKey.value = key
+  try {
+    await store.setRetakeAccess(item.assessmentId, studentId, action)
+    await loadClassRecords()
+  } finally {
+    retakeSavingKey.value = null
+  }
 }
 
 function scoreText(score?: number | null, total?: number | null) {

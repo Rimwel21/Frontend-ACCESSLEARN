@@ -157,6 +157,25 @@
                     <div><span class="font-semibold text-ink">Completed:</span> {{ formatDate(item.completedAt) }}</div>
                     <div><span class="font-semibold text-ink">Submission:</span> {{ item.submissionType || 'Manual' }}</div>
                   </div>
+                  <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+                    <span class="text-xs font-semibold text-ink-soft">Retake access: {{ retakeAccessLabel(item.retakeStatus) }}</span>
+                    <button
+                      class="figma-button px-3 py-1.5 text-xs"
+                      type="button"
+                      :disabled="retakeSavingKey === retakeKey(selectedRecord.studentId, item.assessmentId)"
+                      @click="setRetakeAccess(selectedRecord.studentId, item, 'approved')"
+                    >
+                      Allow Retake
+                    </button>
+                    <button
+                      class="figma-button px-3 py-1.5 text-xs"
+                      type="button"
+                      :disabled="retakeSavingKey === retakeKey(selectedRecord.studentId, item.assessmentId)"
+                      @click="setRetakeAccess(selectedRecord.studentId, item, 'rejected')"
+                    >
+                      Disable Retake
+                    </button>
+                  </div>
                 </div>
                 <div v-if="selectedRecord.assessments.length === 0" class="rounded-xl border border-gray-100 bg-surface p-4 text-sm text-ink-soft">No submitted activities or quizzes yet.</div>
               </div>
@@ -190,10 +209,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useTeacherStore, type StudentRecord } from '@/stores/teacher'
+import { useTeacherStore, type StudentAssessmentRecord, type StudentRecord } from '@/stores/teacher'
 
 const store = useTeacherStore()
 const selectedRecord = ref<StudentRecord | null>(null)
+const retakeSavingKey = ref<string | null>(null)
 const filters = reactive({
   classId: '',
   assessmentType: '',
@@ -251,6 +271,31 @@ function formatDate(value?: string | null) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return 'Not completed'
   return date.toLocaleDateString()
+}
+
+function retakeKey(studentId: string, assessmentId: number) {
+  return `${studentId}:${assessmentId}`
+}
+
+function retakeAccessLabel(status?: string | null) {
+  if (status === 'approved') return 'Allowed'
+  if (status === 'rejected') return 'Disabled'
+  if (status === 'consumed') return 'Used'
+  return 'Not set'
+}
+
+async function setRetakeAccess(studentId: string, item: StudentAssessmentRecord, action: 'approved' | 'rejected') {
+  const key = retakeKey(studentId, item.assessmentId)
+  retakeSavingKey.value = key
+  try {
+    await store.setRetakeAccess(item.assessmentId, studentId, action)
+    await loadRecords()
+    if (selectedRecord.value) {
+      selectedRecord.value = store.studentRecords.find(record => record.studentId === selectedRecord.value?.studentId) ?? null
+    }
+  } finally {
+    retakeSavingKey.value = null
+  }
 }
 
 function statusBadge(status: string) {

@@ -315,16 +315,6 @@
         <section v-else-if="activeActivity?.student_retake_eligible || activeActivity?.student_retake_status" class="mt-4 border-[3px] border-brand-teal bg-white p-3">
           <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Retake</div>
           <p class="mt-1 text-xs font-black text-ink">{{ retakeStatusText }}</p>
-          <p v-if="retakeMessage" class="mt-2 text-xs font-black text-brand-blue">{{ retakeMessage }}</p>
-          <button
-            v-if="canRequestRetake"
-            type="button"
-            class="mt-3 w-full border-[3px] border-brand-teal bg-brand-amber px-4 py-2 text-xs font-black disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="retakeRequesting"
-            @click="requestRetake"
-          >
-            {{ retakeRequesting ? 'Sending...' : 'Request Retake' }}
-          </button>
         </section>
       </aside>
     </div>
@@ -502,8 +492,6 @@ const signLanguageMode = ref(false)
 const defaultWasApplied = ref(false)
 const textAnswer = ref('')
 const submitMessage = ref('')
-const retakeMessage = ref('')
-const retakeRequesting = ref(false)
 const activeQuestionIndex = ref(0)
 const answers = ref<Record<string, string>>({})
 const result = ref<{ score: number; total: number } | null>(null)
@@ -687,19 +675,14 @@ const scoreLabel = computed(() => {
   }
   return 'Not submitted'
 })
-const canRequestRetake = computed(() => {
-  if (!activeActivity.value?.student_retake_eligible) return false
-  return activeActivity.value.student_retake_status !== 'pending' && activeActivity.value.student_retake_status !== 'approved'
-})
 const retakeStatusText = computed(() => {
   const status = activeActivity.value?.student_retake_status
   const reason = activeActivity.value?.student_retake_reason
-  if (status === 'pending') return 'Your retake request is waiting for teacher approval.'
-  if (status === 'approved') return 'Your teacher approved the retake. You can answer again.'
-  if (status === 'rejected') return 'Your retake request was rejected. You may send another request if needed.'
-  if (reason === 'missed_deadline') return 'You missed the deadline. Request teacher approval to retake this activity.'
-  if (reason === 'failed_low_score') return 'Your score is below half. Request teacher approval to retake this activity.'
-  return 'Request teacher approval to retake this activity.'
+  if (status === 'approved') return 'Your teacher allowed a retake. You can answer again.'
+  if (status === 'rejected') return 'Retake access is currently disabled by your teacher.'
+  if (reason === 'missed_deadline') return 'You missed the deadline. Ask your teacher if another attempt is needed.'
+  if (reason === 'failed_low_score') return 'Your score is below half. Your teacher may allow another attempt if needed.'
+  return 'Your teacher controls retake access for this activity.'
 })
 
 watch(signLanguageMode, async (enabled) => {
@@ -786,21 +769,6 @@ async function submitAnswer() {
   openResultPopup(submitted, submittedMode)
   await loadTutorial(true)
 }
-
-async function requestRetake() {
-  if (!activityId.value) return
-  retakeRequesting.value = true
-  retakeMessage.value = ''
-  try {
-    await content.requestActivityRetake(activityId.value, retakeRequestReason())
-    retakeMessage.value = 'Retake request sent. Wait for teacher approval.'
-  } catch (err) {
-    retakeMessage.value = err instanceof Error ? err.message : 'Unable to request retake.'
-  } finally {
-    retakeRequesting.value = false
-  }
-}
-
 
 function openResultPopup(submitted: { score: number; total: number }, submittedMode: string) {
   const isCorrect = submitted.total > 0 && submitted.score === submitted.total
@@ -919,9 +887,4 @@ function choiceDisplayText(choice: { letter: string; text: string }) {
   return choice.letter
 }
 
-function retakeRequestReason() {
-  if (activeActivity.value?.student_retake_reason === 'missed_deadline') return 'I missed the deadline and need another chance.'
-  if (activeActivity.value?.student_retake_reason === 'failed_low_score') return 'My score is below half and I want to try again.'
-  return 'I want to request a retake.'
-}
 </script>

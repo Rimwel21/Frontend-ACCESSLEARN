@@ -102,7 +102,7 @@ router.beforeEach(async (to) => {
 
   if (to.meta.role && auth.role && to.meta.role !== auth.role) {
     return auth.role === 'teacher'
-      ? { path: '/teacher/class' }
+      ? { path: '/teacher/dashboard' }
       : auth.role === 'admin'
         ? { path: '/admin/dashboard' }
         : { path: '/student/dashboard' }
@@ -116,7 +116,7 @@ router.beforeEach(async (to) => {
     }
 
     return auth.role === 'teacher'
-      ? { path: '/teacher/class' }
+      ? { path: '/teacher/dashboard' }
       : auth.role === 'admin'
         ? { path: '/admin/dashboard' }
         : { path: '/student/dashboard' }

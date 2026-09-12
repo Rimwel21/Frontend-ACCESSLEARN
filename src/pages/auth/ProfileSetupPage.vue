@@ -258,12 +258,12 @@ async function submitProfile() {
   message.value = profile.imageUploadWarning || 'Profile saved. Opening dashboard...'
 
   setTimeout(() => {
-    router.push(auth.role === 'student' ? '/student/dashboard' : '/teacher/class')
+    router.push(auth.role === 'student' ? '/student/dashboard' : '/teacher/dashboard')
   }, 500)
 }
 
 function goBackFromProfile() {
-  router.push(auth.role === 'student' ? '/student/dashboard' : '/teacher/class')
+  router.push(auth.role === 'student' ? '/student/dashboard' : '/teacher/dashboard')
 }
 
 function normalizeStudentPayload() {

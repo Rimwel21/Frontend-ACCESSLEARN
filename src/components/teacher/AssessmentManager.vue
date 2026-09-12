@@ -63,13 +63,13 @@
     </div>
 
     <section class="card p-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
         <div>
-          <h2 class="font-display text-base font-bold">Retake Requests</h2>
-          <p class="text-xs font-semibold text-ink-soft">Approve only students who failed below half score or missed the deadline.</p>
+          <h2 class="font-display text-base font-bold">Retake Access</h2>
+          <p class="mt-1 text-xs font-semibold text-ink-soft">Allow or deny additional attempts for selected students.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <select v-model="retakeStatusFilter" class="figma-input h-10 min-w-[140px] py-0 text-sm" @change="loadRetakeRequests">
+        <div class="flex flex-wrap items-center gap-2 md:justify-end">
+          <select v-model="retakeStatusFilter" class="figma-input h-10 w-auto min-w-[160px] py-0 text-sm" @change="loadRetakeRequests">
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
@@ -83,7 +83,7 @@
 
       <div v-if="store.retakeRequestsError" class="mt-3 text-sm font-semibold text-red-600">{{ store.retakeRequestsError }}</div>
       <div v-else-if="retakeRequests.length === 0" class="mt-3 text-sm font-semibold text-ink-soft">
-        No {{ retakeStatusFilter }} {{ title.toLowerCase() }} retake requests.
+        No {{ retakeStatusFilter }} {{ title.toLowerCase() }} retake access records.
       </div>
       <div v-else class="mt-3 grid gap-2">
         <article
@@ -320,7 +320,7 @@ async function reviewRetake(id: number, action: 'approved' | 'rejected') {
     await loadRetakeRequests()
     successMessage.value = `Retake request ${action}.`
   } catch (err) {
-    errorMessage.value = err instanceof Error ? err.message : 'Unable to review retake request.'
+    errorMessage.value = err instanceof Error ? err.message : 'Unable to update retake access.'
   } finally {
     reviewingRetakeId.value = null
   }
