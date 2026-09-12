@@ -28,7 +28,9 @@
                 : 'border-transparent text-brand-blue/80 hover:translate-x-1 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
             ]"
           >
-            <span :class="['nav-icon-box', item.iconClass]" aria-hidden="true"></span>
+            <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path v-for="path in item.iconPaths" :key="path" :d="path" />
+            </svg>
             {{ item.label }}
           </button>
         </RouterLink>
@@ -71,7 +73,9 @@
                   : 'border-transparent text-brand-blue/80 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
               ]"
             >
-              <span :class="['nav-icon-box', item.iconClass]" aria-hidden="true"></span>
+              <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path v-for="path in item.iconPaths" :key="path" :d="path" />
+              </svg>
               {{ item.label }}
             </button>
           </RouterLink>
@@ -122,9 +126,21 @@ const auth = useAuthStore()
 const menuOpen = ref(false)
 
 const navItems = [
-  { to: '/admin/dashboard', label: 'Admin Dashboard', iconClass: 'rounded-full' },
-  { to: '/admin/sections', label: 'Section Management', iconClass: 'rounded-sm' },
-  { to: '/admin/audit-log', label: 'Audit Log', iconClass: 'rounded' },
+  {
+    to: '/admin/dashboard',
+    label: 'Admin Dashboard',
+    iconPaths: ['M3 11.5 12 4l9 7.5', 'M5 10.5V20h14v-9.5', 'M9 20v-5h6v5'],
+  },
+  {
+    to: '/admin/sections',
+    label: 'Section Management',
+    iconPaths: ['M4 5h16', 'M6 5v14h12V5', 'M9 9h6', 'M9 13h6', 'M9 17h4'],
+  },
+  {
+    to: '/admin/audit-log',
+    label: 'Audit Log',
+    iconPaths: ['M6 3h9l3 3v15H6z', 'M15 3v4h4', 'M9 11h6', 'M9 15h6', 'M9 19h3'],
+  },
 ]
 
 const titleMap: Record<string, string> = {

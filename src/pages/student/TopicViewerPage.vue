@@ -177,30 +177,6 @@
             </div>
           </div>
 
-          <section class="grid gap-4 border-[3px] border-brand-teal bg-white p-4 shadow-card lg:grid-cols-[minmax(0,1fr)_280px]">
-            <div>
-              <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Sign-Supported Quiz Guide</div>
-              <h2 class="mt-1 font-display text-lg font-black text-ink">Use the visual guide while answering.</h2>
-              <div class="mt-3 grid gap-2 sm:grid-cols-3">
-                <div class="border-[2px] border-brand-teal bg-surface p-3">
-                  <div class="text-xs font-black text-brand-blue">1. Read</div>
-                  <p class="mt-1 text-[11px] font-bold text-ink-soft">Check the question text and answer choices.</p>
-                </div>
-                <div class="border-[2px] border-brand-teal bg-surface p-3">
-                  <div class="text-xs font-black text-brand-blue">2. Match</div>
-                  <p class="mt-1 text-[11px] font-bold text-ink-soft">Use the alphabet chart for letter or word clues.</p>
-                </div>
-                <div class="border-[2px] border-brand-teal bg-surface p-3">
-                  <div class="text-xs font-black text-brand-blue">3. Answer</div>
-                  <p class="mt-1 text-[11px] font-bold text-ink-soft">Select or type the answer before submitting.</p>
-                </div>
-              </div>
-            </div>
-            <figure class="overflow-hidden border-[2px] border-brand-teal bg-surface">
-              <img :src="sampleSigns" alt="Sign language alphabet reference chart for quiz support" class="h-full max-h-[220px] w-full object-contain" />
-            </figure>
-          </section>
-
           <div v-if="quizResult" class="border-[3px] border-brand-teal bg-green-50 p-4 font-black text-green-800">
             Score: {{ quizResult.score }} / {{ quizResult.total }}
           </div>
@@ -451,12 +427,12 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL } from '@/lib/api'
 import { useStudentContentStore } from '@/stores/studentContent'
-import sampleSigns from '@/assets/handsign/sample_signs.png'
 
 const route = useRoute()
+const router = useRouter()
 const content = useStudentContentStore()
 const sidebarOpen = ref(false)
 const activeTopicId = ref<number | null>(null)
@@ -503,7 +479,8 @@ const quizzes = computed(() => (moduleData.value?.assessments ?? []).filter(item
 const activeQuiz = computed(() => quizzes.value.find(quiz => quiz.id === activeQuizId.value) ?? null)
 const activeIndex = computed(() => activeTopic.value ? topics.value.findIndex(topic => topic.id === activeTopic.value?.id) : 0)
 const quizUnlocked = computed(() => topics.value.length > 0 && progress.value.completed_topics >= topics.value.length)
-const hasAutoIntro = computed(() => !isPagedMaterial(moduleData.value?.content_type))
+const hasTopicIntro = computed(() => topics.value.some(topic => isIntroductionTitle(topic.title)))
+const hasAutoIntro = computed(() => !isPagedMaterial(moduleData.value?.content_type) && !hasTopicIntro.value)
 const isIntroActive = computed(() => hasAutoIntro.value && !activeTopicId.value && !activeQuizId.value)
 const headerTitle = computed(() => activeQuiz.value?.title || moduleData.value?.title || 'Learning Content')
 const headerDescription = computed(() => {
@@ -639,6 +616,9 @@ async function submitActiveQuiz(autoSubmit = false) {
     const result = await content.submitQuiz(moduleId.value, activeQuiz.value.id, quizAnswers.value)
     if (result) quizResult.value = { score: result.score, total: result.total }
     clearQuizTimer()
+    if (result) {
+      await router.push('/student/quiz')
+    }
   } finally {
     quizSubmitting.value = false
   }
@@ -658,6 +638,10 @@ function assetUrl(url?: string | null) {
 function isPagedMaterial(contentType?: string | null) {
   // PDF uses page-image rendering; PPTX/PPT now uses structured JSON viewer
   return contentType === 'PDF'
+}
+
+function isIntroductionTitle(title?: string | null) {
+  return String(title ?? '').trim().toLowerCase() === 'introduction'
 }
 
 function startQuizTimer(initialRemainingSeconds: number) {

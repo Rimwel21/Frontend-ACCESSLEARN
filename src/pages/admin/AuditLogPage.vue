@@ -15,32 +15,32 @@
       <button class="font-bold" @click="errorMsg = ''">x</button>
     </div>
 
-    <section class="card p-4">
-      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-        <input v-model.trim="filters.search" class="input-field xl:col-span-2" placeholder="Search user, role, activity" @input="debouncedFetch" />
-        <select v-model="filters.role" class="input-field" @change="fetchLogs">
+    <section class="card p-4 sm:p-5">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+        <input v-model.trim="filters.search" class="input-field sm:col-span-2 xl:col-span-2" placeholder="Search user, role, activity" @input="debouncedFetch" />
+        <select v-model="filters.role" class="input-field" @change="applyFilters">
           <option value="">All Roles</option>
           <option value="admin">Administrator</option>
           <option value="teacher">Teacher</option>
           <option value="student">Student</option>
         </select>
-        <select v-model="filters.activityType" class="input-field" @change="fetchLogs">
+        <select v-model="filters.activityType" class="input-field" @change="applyFilters">
           <option value="">All Activity Types</option>
           <option v-for="type in activityTypes" :key="type" :value="type">{{ type }}</option>
         </select>
-        <select v-model="filters.status" class="input-field" @change="fetchLogs">
+        <select v-model="filters.status" class="input-field" @change="applyFilters">
           <option value="">All Statuses</option>
           <option value="success">Success</option>
           <option value="failed">Failed</option>
         </select>
-        <div class="grid gap-2 sm:grid-cols-2 xl:col-span-1">
+        <div class="grid gap-2 sm:col-span-2 sm:grid-cols-2 lg:col-span-2 xl:col-span-1">
           <label class="space-y-1">
             <span class="text-[10px] font-bold uppercase tracking-widest text-ink-soft">From</span>
-            <input v-model="filters.date_from" class="input-field" type="date" @change="fetchLogs" />
+            <input v-model="filters.date_from" class="input-field" type="date" @change="applyFilters" />
           </label>
           <label class="space-y-1">
             <span class="text-[10px] font-bold uppercase tracking-widest text-ink-soft">To</span>
-            <input v-model="filters.date_to" class="input-field" type="date" @change="fetchLogs" />
+            <input v-model="filters.date_to" class="input-field" type="date" @change="applyFilters" />
           </label>
         </div>
       </div>
@@ -48,7 +48,7 @@
 
     <section class="card overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[760px] border-collapse">
+        <table class="w-full min-w-[720px] border-collapse">
           <thead>
             <tr class="bg-surface">
               <th class="table-th">Date & Time</th>
@@ -82,13 +82,13 @@
         </table>
       </div>
 
-      <div class="flex flex-col gap-3 border-t border-gray-50 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col gap-3 border-t border-gray-50 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div class="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
-          Showing {{ filteredLogs.length }} of {{ totalLogs }} records
+          Showing {{ pageStart }}-{{ pageEnd }} of {{ totalLogs }} records · Page {{ filters.page }} of {{ totalPages }}
         </div>
-        <div class="flex gap-2">
-          <button class="btn-secondary !px-4 !py-2 !text-xs" :disabled="filters.page === 1" @click="changePage(-1)">Previous</button>
-          <button class="btn-secondary !px-4 !py-2 !text-xs" :disabled="filteredLogs.length < filters.per_page" @click="changePage(1)">Next</button>
+        <div class="grid w-full grid-cols-2 gap-2 sm:w-auto">
+          <button class="btn-secondary justify-center !px-4 !py-2 !text-xs" :disabled="!canGoPrevious || loading" @click="changePage(-1)">Previous</button>
+          <button class="btn-secondary justify-center !px-4 !py-2 !text-xs" :disabled="!canGoNext || loading" @click="changePage(1)">Next</button>
         </div>
       </div>
     </section>
@@ -138,6 +138,12 @@ const filteredLogs = computed(() => {
   })
 })
 
+const totalPages = computed(() => Math.max(1, Math.ceil(totalLogs.value / filters.value.per_page)))
+const pageStart = computed(() => totalLogs.value === 0 ? 0 : ((filters.value.page - 1) * filters.value.per_page) + 1)
+const pageEnd = computed(() => Math.min(totalLogs.value, (filters.value.page - 1) * filters.value.per_page + logs.value.length))
+const canGoPrevious = computed(() => filters.value.page > 1)
+const canGoNext = computed(() => filters.value.page < totalPages.value)
+
 async function fetchLogs() {
   loading.value = true
   errorMsg.value = ''
@@ -154,6 +160,10 @@ async function fetchLogs() {
     const res = await adminService.getAuditLogs(params)
     logs.value = res.items
     totalLogs.value = res.total
+    if (totalLogs.value > 0 && filters.value.page > totalPages.value) {
+      filters.value.page = totalPages.value
+      await fetchLogs()
+    }
   } catch (err) {
     errorMsg.value = err instanceof ApiError ? err.message : 'Failed to load audit logs.'
     logs.value = []
@@ -164,7 +174,14 @@ async function fetchLogs() {
 }
 
 function changePage(delta: number) {
-  filters.value.page = Math.max(1, filters.value.page + delta)
+  const nextPage = Math.min(totalPages.value, Math.max(1, filters.value.page + delta))
+  if (nextPage === filters.value.page) return
+  filters.value.page = nextPage
+  fetchLogs()
+}
+
+function applyFilters() {
+  filters.value.page = 1
   fetchLogs()
 }
 

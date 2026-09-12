@@ -1,10 +1,19 @@
 <template>
-  <main class="min-h-screen bg-[#f0f2f8] flex items-center justify-center px-4 py-10">
-    <div class="w-full max-w-2xl bg-white rounded-[24px] shadow-[0_8px_40px_rgba(15,23,42,0.10)] p-8">
+  <main class="flex min-h-screen items-center justify-center bg-[#f0f2f8] px-4 py-6 sm:py-10">
+    <div class="w-full max-w-2xl rounded-[20px] bg-white p-5 shadow-[0_8px_40px_rgba(15,23,42,0.10)] sm:rounded-[24px] sm:p-8">
 
       <!-- Back link -->
-      <RouterLink to="/portal" class="inline-flex items-center gap-1.5 text-sm font-bold text-brand-blue hover:text-blue-700 transition-colors mb-6">
+      <RouterLink
+        to="/portal"
+        class="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-teal/40 bg-white px-3.5 py-2 text-[0px] font-black text-brand-blue shadow-sm transition-all hover:-translate-x-0.5 hover:border-brand-amber hover:bg-brand-blue-soft focus:outline-none focus:ring-2 focus:ring-brand-teal/30"
+        aria-label="Return to portal"
+      >
         ← Back
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6" />
+          <path d="M9 12h11" />
+        </svg>
+        <span class="text-xs sm:text-sm">Back to portal</span>
       </RouterLink>
 
       <!-- Role badge -->
@@ -13,7 +22,7 @@
       </p>
 
       <!-- Title -->
-      <h1 class="font-display text-[2rem] font-bold text-ink leading-tight mb-1">
+      <h1 class="mb-1 font-display text-3xl font-bold leading-tight text-ink sm:text-[2rem]">
         Create Account
       </h1>
       <p class="text-sm text-ink-soft mb-6">Join as a {{ roleLabel.toLowerCase() }} and start using inclusive learning tools right away.</p>
@@ -80,7 +89,7 @@
 
             <div>
               <label class="field-label" for="student-password">Password</label>
-              <div class="mt-2 grid grid-cols-[1fr_auto] gap-2">
+              <div class="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
                 <input id="student-password" v-model="password" class="input-field" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" required />
                 <button type="button" class="btn-secondary rounded-lg" @click="showPassword = !showPassword">{{ showPassword ? 'Hide' : 'Show' }}</button>
               </div>
@@ -220,7 +229,7 @@
 
             <div>
               <label class="field-label" for="teacher-password">Password</label>
-              <div class="mt-2 grid grid-cols-[1fr_auto] gap-2">
+              <div class="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
                 <input id="teacher-password" v-model="password" class="input-field" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" required />
                 <button type="button" class="btn-secondary rounded-lg" @click="showPassword = !showPassword">{{ showPassword ? 'Hide' : 'Show' }}</button>
               </div>
