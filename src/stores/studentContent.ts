@@ -44,7 +44,12 @@ export interface StudentAssessment {
   time_limit?: string | null
   time_limit_seconds?: number | null
   due_at?: string | null
-  questions: Array<{ prompt: string; answer?: string | null }>
+  questions: Array<{
+    prompt: string
+    answer?: string | null
+    question_type?: 'identification' | 'multiple_choice' | 'true_false'
+    options?: string[]
+  }>
   student_status?: string | null
   student_score?: number | null
   student_total?: number | null
@@ -456,10 +461,22 @@ export const useStudentContentStore = defineStore('studentContent', () => {
     const total = questions.length
     const score = questions.reduce((sum, question, index) => {
       const expected = String(question.answer ?? '').trim().toLowerCase()
-      const submitted = String(answers[String(index)] ?? '').trim().toLowerCase()
+      const submitted = resolveSignedChoice(question, String(answers[String(index)] ?? '')).trim().toLowerCase()
       return expected && submitted === expected ? sum + 1 : sum
     }, 0)
     return { score, total }
+  }
+
+  function resolveSignedChoice(question: StudentAssessment['questions'][number], submitted: string) {
+    const letter = submitted.trim().toUpperCase()
+    if (question.question_type === 'multiple_choice' && /^[A-D]$/.test(letter)) {
+      return question.options?.[letter.charCodeAt(0) - 65] ?? submitted
+    }
+    if (question.question_type === 'true_false') {
+      if (letter === 'A') return 'True'
+      if (letter === 'B') return 'False'
+    }
+    return submitted
   }
 
   async function fetchDeadlines() {

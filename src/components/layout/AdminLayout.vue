@@ -132,6 +132,11 @@ const navItems = [
     iconPaths: ['M3 11.5 12 4l9 7.5', 'M5 10.5V20h14v-9.5', 'M9 20v-5h6v5'],
   },
   {
+    to: '/admin/handsign-dataset',
+    label: 'Handsign Dataset',
+    iconPaths: ['M12 3v18', 'M3 12h18', 'M5.5 5.5l13 13', 'M18.5 5.5l-13 13'],
+  },
+  {
     to: '/admin/sections',
     label: 'Section Management',
     iconPaths: ['M4 5h16', 'M6 5v14h12V5', 'M9 9h6', 'M9 13h6', 'M9 17h4'],
@@ -145,6 +150,7 @@ const navItems = [
 
 const titleMap: Record<string, string> = {
   AdminDashboard: 'Admin Dashboard',
+  AdminHandsignDataset: 'Handsign Dataset',
   AdminSections: 'Section Management',
   AdminAuditLog: 'Audit Log',
 }

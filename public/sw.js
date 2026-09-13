@@ -124,12 +124,9 @@ async function networkFirstNavigation(request) {
 }
 
 function isStaticAsset(request, url) {
-  return request.destination === 'script'
-    || request.destination === 'style'
-    || request.destination === 'font'
+  return request.destination === 'font'
     || request.destination === 'image'
     || request.destination === 'video'
-    || request.destination === 'document'
     || url.pathname.startsWith('/assets/')
     || url.pathname.startsWith('/static/')
 }

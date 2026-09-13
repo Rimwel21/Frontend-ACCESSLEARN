@@ -1,25 +1,23 @@
 <template>
   <div class="min-h-screen bg-white">
-    <div class="border-b-[3px] border-brand-teal bg-gradient-to-r from-brand-blue to-brand-teal px-8 py-5 shadow-[0_10px_30px_rgba(17,94,89,0.18)]">
+    <div class="border-b-[3px] border-brand-teal bg-brand-blue px-8 py-6">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="font-display text-[32px] font-black text-white">Activity Viewer</h1>
-          <p class="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-white">{{ activeActivity?.title || 'Sign Language Mode' }}</p>
+          <h1 class="font-display text-[28px] font-black text-white">Activity Viewer</h1>
+          <p class="font-mono text-[11px] font-bold uppercase tracking-widest text-white">{{ activeActivity?.title || 'Sign Language Alphabet Reference' }}</p>
         </div>
         <button
           type="button"
-          class="border-[3px] border-brand-teal bg-white px-5 py-2.5 text-xs font-black text-brand-blue shadow-[3px_3px_0_rgba(0,0,0,0.12)] transition-all hover:-translate-y-0.5 hover:bg-brand-blue-soft"
+          class="border-[3px] border-brand-teal bg-white px-4 py-2 text-xs font-black"
           @click="router.push('/student/activities')"
         >
-          ← Back
+          Back
         </button>
       </div>
     </div>
 
-    <div class="grid gap-5 px-7 py-6 xl:grid-cols-[minmax(0,1fr)_365px]">
+    <div class="grid gap-5 px-7 py-6 xl:grid-cols-[minmax(0,1fr)_330px]">
       <div class="space-y-5">
-        <SignLanguageToggle v-if="activeActivity" v-model="signLanguageMode" :disabled="isActivityCompleted" />
-
         <section v-if="content.loading" class="border-[3px] border-brand-teal bg-white p-5 text-sm font-black">
           Loading activity...
         </section>
@@ -30,102 +28,55 @@
 
         <section v-else-if="isAlphabetOnly" class="border-[3px] border-brand-teal bg-brand-amber p-5">
           <div class="font-mono text-[10px] font-black uppercase tracking-widest">Offline-ready reference</div>
-          <h2 class="mt-2 font-display text-xl font-black">Guide Sign Language Alphabet</h2>
+          <h2 class="mt-2 font-display text-xl font-black">Sign Language Alphabet</h2>
           <p class="mt-2 text-sm font-bold text-gray-700">
             Review the alphabet hand signs using the reference chart. This page remains available offline after it has been opened once.
           </p>
         </section>
 
-        <section v-else-if="activeActivity" class="border-[3px] border-brand-teal bg-brand-amber p-5 shadow-[0_14px_35px_rgba(251,146,60,0.18)]">
-          <div class="flex items-center justify-between gap-2 font-mono text-[10px] font-black uppercase tracking-widest">
-            <span>Question {{ activeQuestionIndex + 1 }} of {{ activeActivity.questions.length }}</span>
-            <span v-if="activeQuestionParsed.type !== 'identification'" class="rounded border border-black/20 bg-black/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider">
-              {{ activeQuestionParsed.type === 'multiple_choice' ? 'Multiple Choice' : 'True or False' }}
-            </span>
-          </div>
+        <section v-else-if="activeActivity" class="border-[3px] border-brand-teal bg-brand-amber p-5">
+          <div class="font-mono text-[10px] font-black uppercase tracking-widest">Question {{ activeQuestionIndex + 1 }} of {{ activeActivity.questions.length }}</div>
           <h2 class="mt-2 font-display text-xl font-black">{{ activeQuestion?.prompt }}</h2>
-
-          <!-- Display choices for Multiple Choice or True / False -->
-          <div v-if="activeQuestionParsed.choices.length" class="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
-            <button
-              v-for="choice in activeQuestionParsed.choices"
-              :key="choice.letter"
-              type="button"
-              :disabled="isActivityCompleted"
-              :class="[
-                'flex min-h-[74px] items-center gap-3 border-[2.5px] border-brand-teal bg-white p-4 text-left font-black transition-all hover:-translate-y-0.5 hover:shadow-[4px_4px_0_rgba(0,0,0,0.12)]',
-                isSelectedChoice(choice)
-                  ? 'bg-brand-blue text-white shadow-[2px_2px_0_#000]'
-                  : 'bg-white text-ink hover:bg-brand-blue-soft',
-                isActivityCompleted ? 'cursor-not-allowed opacity-60' : ''
-              ]"
-              @click="selectChoice(choice)"
-            >
-              <span
-                v-if="activeQuestionParsed.type === 'multiple_choice'"
-                :class="[
-                  'grid h-6 w-6 shrink-0 place-items-center rounded-full border-[2px] border-current text-xs font-black',
-                  isSelectedChoice(choice)
-                    ? 'bg-white text-brand-blue'
-                    : 'bg-surface text-ink'
-                ]"
-              >
-                {{ choice.letter }}
-              </span>
-              <span class="text-sm font-bold">{{ choiceDisplayText(choice) }}</span>
-            </button>
-          </div>
-
-          <p v-if="activeActivity.description" class="mt-3 text-xs font-bold text-gray-700/80 border-t border-black/10 pt-2">
-            {{ activeActivity.description }}
-          </p>
+          <p class="mt-2 text-sm font-bold text-gray-700">{{ activeActivity.description }}</p>
         </section>
 
-        <section v-if="activeActivity && !isActivityCompleted" class="grid gap-3 border-[3px] border-brand-teal bg-white p-4 shadow-card sm:grid-cols-3">
-          <div class="flex gap-3 border-[2px] border-brand-teal bg-surface p-4">
-            <div class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-blue text-sm font-black text-white">1</div>
-            <div>
-              <div class="text-xs font-black text-brand-blue">Review</div>
-              <p class="mt-1 text-[11px] font-bold text-ink-soft">Read the question and look at the answer choices.</p>
+        <HandCamera
+          v-if="activeActivity && !isActivityCompleted"
+          v-model:video-ref="videoRef"
+          v-model:canvas-ref="canvasRef"
+          :detection="detection"
+          :is-running="isRunning"
+          :is-detecting="isDetecting"
+          :error="error"
+          :retry-message="retryMessage"
+          @start="start"
+        />
+
+        <PredictionDisplay
+          v-if="activeActivity"
+          :answer="answer"
+          :detection="detection"
+        />
+
+        <section v-if="activeActivity && !isIdentificationQuestion" class="border-[3px] border-brand-teal bg-white p-4">
+          <h2 class="font-display text-sm font-black uppercase tracking-widest">Sign the letter of your answer</h2>
+          <div v-if="activeQuestion?.question_type === 'multiple_choice'" class="mt-4 grid gap-2">
+            <div v-for="(option, index) in activeQuestion.options ?? []" :key="`${index}-${option}`" class="flex items-center gap-3 border-[3px] border-brand-teal bg-surface p-3 text-sm font-bold">
+              <span class="grid size-8 place-items-center border-[3px] border-brand-teal bg-brand-amber font-display text-base">{{ String.fromCharCode(65 + index) }}</span>
+              <span>{{ option }}</span>
             </div>
           </div>
-          <div class="flex gap-3 border-[2px] border-brand-teal bg-surface p-4">
-            <div class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-blue text-sm font-black text-white">2</div>
-            <div>
-              <div class="text-xs font-black text-brand-blue">Respond</div>
-              <p class="mt-1 text-[11px] font-bold text-ink-soft">Show your answer using sign language in front of the camera.</p>
+          <div v-else class="mt-4 grid gap-2 sm:grid-cols-2">
+            <div class="flex items-center gap-3 border-[3px] border-brand-teal bg-surface p-3 text-sm font-bold">
+              <span class="grid size-8 place-items-center border-[3px] border-brand-teal bg-brand-amber font-display text-base">A</span>
+              <span>True</span>
             </div>
-          </div>
-          <div class="flex gap-3 border-[2px] border-brand-teal bg-surface p-4">
-            <div class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-blue text-sm font-black text-white">3</div>
-            <div>
-              <div class="text-xs font-black text-brand-blue">Confirm</div>
-              <p class="mt-1 text-[11px] font-bold text-ink-soft">Review your recognized answer, then submit.</p>
+            <div class="flex items-center gap-3 border-[3px] border-brand-teal bg-surface p-3 text-sm font-bold">
+              <span class="grid size-8 place-items-center border-[3px] border-brand-teal bg-brand-amber font-display text-base">B</span>
+              <span>False</span>
             </div>
           </div>
         </section>
-
-        <div v-if="activeActivity" class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.55fr)]">
-          <HandCamera
-            v-if="signLanguageMode && !isActivityCompleted"
-            v-model:video-ref="videoRef"
-            v-model:canvas-ref="canvasRef"
-            :detection="detection"
-            :is-running="isRunning"
-            :is-detecting="isDetecting"
-            :error="error"
-            :retry-message="retryMessage"
-            @start="start"
-          />
-
-          <PredictionDisplay
-            v-model:text-answer="textAnswer"
-            :sign-mode="signLanguageMode"
-            :answer="visibleAnswer"
-            :detection="detection"
-            :disabled="isActivityCompleted"
-          />
-        </div>
 
         <div v-if="activeActivity" class="flex flex-wrap gap-2">
           <button
@@ -143,7 +94,7 @@
 
         <div class="flex flex-wrap items-center justify-between gap-3 border-[3px] border-brand-teal bg-white p-4">
           <CameraControls
-            v-if="signLanguageMode && !isActivityCompleted"
+            v-if="!isActivityCompleted"
             :is-running="isRunning"
             @start="start"
             @stop="stop"
@@ -166,9 +117,6 @@
           >
             {{ isActivityCompleted ? 'Submitted' : 'Submit Answer' }}
           </button>
-          <p v-if="submitMessage" class="w-full border-[3px] border-brand-teal bg-brand-blue-soft px-3 py-2 text-xs font-black text-brand-blue">
-            {{ submitMessage }}
-          </p>
         </div>
 
         <section v-if="shouldShowTutorialStatus" class="border-[3px] border-brand-teal bg-white p-4">
@@ -225,7 +173,7 @@
         </section>
 
         <div v-if="isAlphabetOnly" class="overflow-hidden border-[3px] border-brand-teal bg-white">
-          <img :src="activeAlphabetChart" alt="Guide sign language alphabet chart" class="w-full object-contain" />
+          <img :src="sampleSigns" alt="Sign language alphabet chart" class="w-full object-contain" />
         </div>
       </div>
 
@@ -250,72 +198,8 @@
             <dd class="text-right font-bold">{{ tutorial.can_practice ? 'Available' : 'Unavailable' }}</dd>
           </div>
         </dl>
-
-        <figure class="mt-5 overflow-hidden border-[3px] border-brand-teal bg-white">
-          <figcaption class="border-b-[3px] border-brand-teal bg-white px-3 py-2 font-mono text-[10px] font-black uppercase tracking-widest text-brand-blue">
-            Guide Sign Language Alphabet
-          </figcaption>
-          <button
-            type="button"
-            class="block w-full bg-white p-2 text-left transition-all hover:bg-brand-blue-soft focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
-            @click="isAlphabetModalOpen = true"
-          >
-            <div
-              v-if="selectedAlphabet"
-              class="mx-auto aspect-[16/15] w-full max-w-[190px] overflow-hidden border-[3px] border-brand-teal bg-white"
-              role="img"
-              :aria-label="`Zoomed guide sign language letter ${selectedAlphabet.letter}`"
-            >
-              <img
-                v-if="selectedAlphabetImage"
-                :src="selectedAlphabetImage"
-                :alt="`Guide sign language letter ${selectedAlphabet.letter}`"
-                class="h-full w-full object-contain p-1"
-              />
-              <div
-                v-else
-                class="h-full w-full bg-white bg-no-repeat"
-                :style="selectedAlphabetStyle"
-              ></div>
-            </div>
-            <img
-              v-else
-              :src="activeAlphabetChart"
-              alt="Guide sign language alphabet reference chart"
-              class="max-h-[260px] w-full object-contain"
-            />
-            <span class="mt-2 block text-center font-mono text-[10px] font-black uppercase tracking-wide text-brand-blue">
-              {{ selectedAlphabet ? 'Tap to view full reference' : 'Tap to view larger reference' }}
-            </span>
-            <span v-if="selectedAlphabet" class="mt-1 block text-center font-display text-3xl font-black leading-none text-brand-blue">
-              {{ selectedAlphabet.letter }}
-            </span>
-          </button>
-          <div class="border-t-[3px] border-brand-teal bg-white p-2">
-            <div class="grid grid-cols-3 gap-1.5 min-[380px]:grid-cols-4 sm:grid-cols-6">
-              <button
-                v-for="sign in alphabetSigns"
-                :key="sign.letter"
-                type="button"
-                :class="[
-                  'grid min-h-8 place-items-center rounded px-1 text-center font-display text-xs font-black transition-all focus:outline-none focus:ring-2 focus:ring-brand-blue/30',
-                  selectedAlphabet?.letter === sign.letter
-                    ? 'bg-brand-blue text-white shadow-[2px_2px_0_rgba(0,0,0,0.18)]'
-                    : 'bg-brand-blue-soft text-brand-blue hover:-translate-y-0.5 hover:bg-brand-amber'
-                ]"
-                @click="selectAlphabetSign(sign)"
-              >
-                {{ sign.letter }}
-              </button>
-            </div>
-          </div>
-        </figure>
-
         <p v-if="isAlphabetOnly" class="mt-4 border-[3px] border-brand-teal bg-brand-blue-soft px-3 py-2 text-xs font-black">Available offline after first visit.</p>
-        <section v-else-if="activeActivity?.student_retake_eligible || activeActivity?.student_retake_status" class="mt-4 border-[3px] border-brand-teal bg-white p-3">
-          <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Retake</div>
-          <p class="mt-1 text-xs font-black text-ink">{{ retakeStatusText }}</p>
-        </section>
+        <p v-else-if="submitMessage" class="mt-4 border-[3px] border-brand-teal bg-brand-blue-soft px-3 py-2 text-xs font-black">{{ submitMessage }}</p>
       </aside>
     </div>
 
@@ -376,97 +260,20 @@
         </div>
       </div>
     </Teleport>
-
-    <Teleport to="body">
-      <div
-        v-if="isAlphabetModalOpen"
-        class="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4 py-6"
-        role="dialog"
-        aria-modal="true"
-        @click.self="isAlphabetModalOpen = false"
-      >
-        <section class="max-h-[92vh] w-full max-w-4xl overflow-y-auto border-[3px] border-brand-teal bg-white shadow-[8px_8px_0_rgba(0,0,0,0.18)]">
-          <div class="flex flex-wrap items-center justify-between gap-3 border-b-[3px] border-brand-teal bg-brand-amber px-4 py-3">
-            <h2 class="font-display text-lg font-black text-ink">Guide Sign Language Alphabet</h2>
-            <button
-              type="button"
-              class="border-[3px] border-brand-teal bg-white px-3 py-1.5 text-xs font-black"
-              @click="isAlphabetModalOpen = false"
-            >
-              Close
-            </button>
-          </div>
-
-          <div class="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_240px]">
-            <img
-              :src="activeAlphabetChart"
-              alt="Large guide sign language alphabet reference chart"
-              class="w-full border-[3px] border-brand-teal bg-white object-contain"
-            />
-            <div class="h-fit border-[3px] border-brand-teal bg-surface p-3">
-              <div class="border-[3px] border-brand-teal bg-white p-2">
-                <div class="mb-2 font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Selected Sign</div>
-                <div
-                  v-if="selectedAlphabet"
-                  class="aspect-[16/15] w-full overflow-hidden border-[3px] border-brand-teal bg-white"
-                  role="img"
-                  :aria-label="`Selected guide sign language letter ${selectedAlphabet.letter}`"
-                >
-                  <img
-                    v-if="selectedAlphabetImage"
-                    :src="selectedAlphabetImage"
-                    :alt="`Guide sign language letter ${selectedAlphabet.letter}`"
-                    class="h-full w-full object-contain p-1"
-                  />
-                  <div
-                    v-else
-                    class="h-full w-full bg-white bg-no-repeat"
-                    :style="selectedAlphabetStyle"
-                  ></div>
-                </div>
-                <div v-else class="grid aspect-[16/15] w-full place-items-center border-[3px] border-brand-teal bg-surface p-4 text-center text-xs font-black text-ink-soft">
-                  Choose a letter below
-                </div>
-                <div class="mt-2 text-center font-display text-3xl font-black text-brand-blue">{{ selectedAlphabet?.letter || '-' }}</div>
-              </div>
-
-              <div class="mb-2 mt-3 font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Letter Guide</div>
-              <div class="grid grid-cols-3 gap-2">
-                <button
-                  v-for="sign in alphabetSigns"
-                  :key="`modal-${sign.letter}`"
-                  type="button"
-                  :class="[
-                    'grid min-h-10 place-items-center rounded px-2 text-center font-display text-base font-black shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-brand-blue/30',
-                    selectedAlphabet?.letter === sign.letter
-                      ? 'bg-brand-blue text-white'
-                      : 'bg-white text-brand-blue hover:bg-brand-amber'
-                  ]"
-                  @click="selectAlphabetSign(sign)"
-                >
-                  {{ sign.letter }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HandCamera from '@/components/handsign/HandCamera.vue'
 import PredictionDisplay from '@/components/handsign/PredictionDisplay.vue'
-import SignLanguageToggle from '@/components/handsign/SignLanguageToggle.vue'
 import CameraControls from '@/components/handsign/CameraControls.vue'
 import { useHandSign } from '@/composables/useHandSign'
 import { getTutorialStatus, handsignErrorMessage, tutorialVideoUrl } from '@/services/handsign'
 import { useProfileStore } from '@/stores/profile'
 import { useStudentContentStore } from '@/stores/studentContent'
-import fallbackAlphabetChart from '@/assets/handsign/sample_signs.png'
+import sampleSigns from '@/assets/handsign/sample_signs.png'
 import type { TutorialStatus } from '@/types/handsign'
 
 const router = useRouter()
@@ -488,9 +295,6 @@ const {
   backspace,
 } = useHandSign()
 
-const signLanguageMode = ref(false)
-const defaultWasApplied = ref(false)
-const textAnswer = ref('')
 const submitMessage = ref('')
 const activeQuestionIndex = ref(0)
 const answers = ref<Record<string, string>>({})
@@ -500,163 +304,21 @@ const tutorial = ref<TutorialStatus | null>(null)
 const tutorialLoading = ref(false)
 const tutorialError = ref('')
 const tutorialModalOpen = ref(false)
-const isAlphabetModalOpen = ref(false)
 const openTutorialAfterResult = ref(false)
 const tutorialVideoRef = ref<HTMLVideoElement | null>(null)
-type AlphabetSign = {
-  letter: string
-  row: number
-  col: number
-  columns?: number
-}
-
-const importedAslLetterImages = import.meta.glob('../../assets/handsign/asl_letters/*.{png,jpg,jpeg,webp}', {
-  eager: true,
-  import: 'default',
-  query: '?url',
-})
-const aslLetterImages = Object.fromEntries(
-  Object.entries(importedAslLetterImages).map(([path, src]) => {
-    const fileName = path.split('/').pop()?.split('.')[0].toUpperCase() ?? ''
-    return [fileName, src as string]
-  }),
-)
-const importedAlphabetCharts = import.meta.glob('../../assets/handsign/asl_alphabet_chart.{png,jpg,jpeg,webp}', {
-  eager: true,
-  import: 'default',
-  query: '?url',
-})
-const activeAlphabetChart = computed(() => Object.values(importedAlphabetCharts)[0] as string | undefined ?? fallbackAlphabetChart)
-
-const alphabetSigns: AlphabetSign[] = [
-  { letter: 'A', row: 0, col: 0, columns: 5 },
-  { letter: 'B', row: 0, col: 1, columns: 5 },
-  { letter: 'C', row: 0, col: 2, columns: 5 },
-  { letter: 'D', row: 0, col: 3, columns: 5 },
-  { letter: 'E', row: 0, col: 4, columns: 5 },
-  { letter: 'F', row: 1, col: 0, columns: 5 },
-  { letter: 'G', row: 1, col: 1, columns: 5 },
-  { letter: 'H', row: 1, col: 2, columns: 5 },
-  { letter: 'I', row: 1, col: 3, columns: 5 },
-  { letter: 'J', row: 1, col: 4, columns: 5 },
-  { letter: 'K', row: 2, col: 0, columns: 5 },
-  { letter: 'L', row: 2, col: 1, columns: 5 },
-  { letter: 'M', row: 2, col: 2, columns: 5 },
-  { letter: 'N', row: 2, col: 3, columns: 5 },
-  { letter: 'O', row: 2, col: 4, columns: 5 },
-  { letter: 'P', row: 3, col: 0, columns: 5 },
-  { letter: 'Q', row: 3, col: 1, columns: 5 },
-  { letter: 'R', row: 3, col: 2, columns: 5 },
-  { letter: 'S', row: 3, col: 3, columns: 5 },
-  { letter: 'T', row: 3, col: 4, columns: 5 },
-  { letter: 'U', row: 4, col: 0, columns: 6 },
-  { letter: 'V', row: 4, col: 1, columns: 6 },
-  { letter: 'W', row: 4, col: 2, columns: 6 },
-  { letter: 'X', row: 4, col: 3, columns: 6 },
-  { letter: 'Y', row: 4, col: 4, columns: 6 },
-  { letter: 'Z', row: 4, col: 5, columns: 6 },
-]
-const selectedAlphabet = ref<AlphabetSign | null>(null)
 
 const activityId = computed(() => route.query.activityId ? Number(route.query.activityId) : null)
 const isAlphabetOnly = computed(() => !activityId.value)
 const activeActivity = computed(() => content.currentActivity)
 const activeQuestion = computed(() => activeActivity.value?.questions[activeQuestionIndex.value] ?? null)
-
-function parseQuestionOptions(rawAnswer?: string | null) {
-  if (!rawAnswer) return { type: 'identification', choices: [] as { letter: string; text: string }[] }
-  const up = rawAnswer.trim().toUpperCase()
-  if (up === 'TRUE' || up === 'FALSE') {
-    return {
-      type: 'true_false',
-      choices: [
-        { letter: 'TRUE', text: 'True' },
-        { letter: 'FALSE', text: 'False' },
-      ],
-    }
-  }
-  if (rawAnswer.includes('CORRECT:') && rawAnswer.includes('|')) {
-    const parts = rawAnswer.split('|')
-    const choices: { letter: string; text: string }[] = []
-    for (const part of parts) {
-      if (part.includes(':')) {
-        const colonIdx = part.indexOf(':')
-        const k = part.slice(0, colonIdx).trim()
-        const v = part.slice(colonIdx + 1).trim()
-        if (k !== 'CORRECT' && k) {
-          choices.push({ letter: k, text: v })
-        }
-      }
-    }
-    if (choices.length >= 2) {
-      return { type: 'multiple_choice', choices }
-    }
-  }
-  return { type: 'identification', choices: [] as { letter: string; text: string }[] }
-}
-
-const activeQuestionParsed = computed(() => parseQuestionOptions(activeQuestion.value?.answer))
-const selectedAlphabetImage = computed(() => {
-  if (!selectedAlphabet.value) return ''
-  return aslLetterImages[selectedAlphabet.value.letter] ?? ''
-})
-const selectedAlphabetStyle = computed(() => {
-  if (!selectedAlphabet.value) return {}
-  const columns = selectedAlphabet.value.columns ?? 5
-  const rows = 5
-  const x = columns === 1 ? 50 : (selectedAlphabet.value.col / (columns - 1)) * 100
-  const y = (selectedAlphabet.value.row / (rows - 1)) * 100
-  const isBottomRow = selectedAlphabet.value.row === rows - 1
-  const zoomColumns = isBottomRow ? 4.85 : 4.45
-  const zoomRows = isBottomRow ? 4.35 : 4.55
-  return {
-    backgroundImage: `url(${activeAlphabetChart.value})`,
-    backgroundSize: `${zoomColumns * 100}% ${zoomRows * 100}%`,
-    backgroundPosition: `${x}% ${y}%`,
-    backgroundOrigin: 'border-box',
-  }
-})
-
-function selectAlphabetSign(sign: AlphabetSign) {
-  selectedAlphabet.value = sign
-}
-
-function isSelectedChoice(choice: { letter: string; text: string }) {
-  const current = normalizeAnswerForQuestion(answers.value[String(activeQuestionIndex.value)] || currentAnswer.value || textAnswer.value).toUpperCase()
-  const letter = choice.letter.trim().toUpperCase()
-  const text = choice.text.trim().toUpperCase()
-  return current === letter || current === text
-}
-
-function selectChoice(choice: { letter: string; text: string }) {
-  if (isActivityCompleted.value) return
-  const value = normalizeAnswerForQuestion(choice.letter)
-  textAnswer.value = value
-  answers.value[String(activeQuestionIndex.value)] = value
-}
-
-function saveCurrentAnswer() {
-  const ans = normalizeAnswerForQuestion(currentAnswer.value || textAnswer.value)
-  if (ans) {
-    answers.value[String(activeQuestionIndex.value)] = ans
-    textAnswer.value = ans
-  }
-}
+const isIdentificationQuestion = computed(() => (activeQuestion.value?.question_type ?? 'identification') === 'identification')
 const isHearingImpaired = computed(() => {
   const data = profile.profile
   return Boolean(data && 'student_type' in data && data.student_type === 'hearing impaired')
 })
 const studentTypeLabel = computed(() => isHearingImpaired.value ? 'Student with Hearing Impairment' : 'Regular Student')
-const defaultModeLabel = computed(() => isHearingImpaired.value ? 'Sign Language Mode on' : 'Text input')
-const currentAnswer = computed(() => signLanguageMode.value ? answer.value : textAnswer.value)
-const visibleAnswer = computed(() => {
-  const normalized = normalizeAnswerForQuestion(currentAnswer.value)
-  if (activeQuestionParsed.value.type === 'true_false') {
-    if (normalized === 'TRUE') return 'True'
-    if (normalized === 'FALSE') return 'False'
-  }
-  return normalized || answer.value
-})
+const defaultModeLabel = computed(() => 'Sign language answer')
+const currentAnswer = computed(() => answer.value)
 const isActivityCompleted = computed(() => activeActivity.value?.student_status === 'completed')
 const expectedTutorialAnswer = computed(() => activeActivity.value?.questions.find(question => question.answer?.trim())?.answer?.trim() ?? '')
 const canonicalTutorialWord = computed(() => tutorial.value?.word ?? canonicalPreview(expectedTutorialAnswer.value))
@@ -675,37 +337,6 @@ const scoreLabel = computed(() => {
   }
   return 'Not submitted'
 })
-const retakeStatusText = computed(() => {
-  const status = activeActivity.value?.student_retake_status
-  const reason = activeActivity.value?.student_retake_reason
-  if (status === 'approved') return 'Your teacher allowed a retake. You can answer again.'
-  if (status === 'rejected') return 'Retake access is currently disabled by your teacher.'
-  if (reason === 'missed_deadline') return 'You missed the deadline. Ask your teacher if another attempt is needed.'
-  if (reason === 'failed_low_score') return 'Your score is below half. Your teacher may allow another attempt if needed.'
-  return 'Your teacher controls retake access for this activity.'
-})
-
-watch(signLanguageMode, async (enabled) => {
-  if (isActivityCompleted.value) {
-    stop()
-    return
-  }
-  submitMessage.value = ''
-  if (enabled) {
-    await nextTick()
-    await start()
-  } else {
-    stop()
-  }
-})
-
-watch(answer, value => {
-  if (!signLanguageMode.value || isActivityCompleted.value) return
-  const normalized = normalizeAnswerForQuestion(value)
-  if (!normalized) return
-  textAnswer.value = normalized
-  answers.value[String(activeQuestionIndex.value)] = normalized
-})
 
 onMounted(async () => {
   if (!profile.profile) {
@@ -720,16 +351,11 @@ onMounted(async () => {
     submitMessage.value = `Already submitted. Score: ${scoreLabel.value}`
     await loadTutorial(false)
   }
-  if (!defaultWasApplied.value) {
-    signLanguageMode.value = isHearingImpaired.value
-    defaultWasApplied.value = true
-  }
 })
 
 function selectQuestion(index: number) {
   saveCurrentAnswer()
   activeQuestionIndex.value = index
-  textAnswer.value = answers.value[String(index)] ?? ''
   void reset()
 }
 
@@ -756,7 +382,7 @@ async function submitAnswer() {
     return
   }
 
-  const submittedMode = signLanguageMode.value ? 'Sign Language Mode' : 'Text Mode'
+  const submittedMode = 'answer'
   const submitted = await content.submitActivity(activityId.value, answers.value).catch((err) => {
     submitMessage.value = err instanceof Error ? err.message : 'Unable to submit activity.'
     return null
@@ -768,6 +394,10 @@ async function submitAnswer() {
   stop()
   openResultPopup(submitted, submittedMode)
   await loadTutorial(true)
+}
+
+function saveCurrentAnswer() {
+  answers.value[String(activeQuestionIndex.value)] = currentAnswer.value.trim()
 }
 
 function openResultPopup(submitted: { score: number; total: number }, submittedMode: string) {
@@ -849,7 +479,6 @@ function goToPractice() {
 function hydrateSubmittedAnswers() {
   const submitted = activeActivity.value?.student_answers ?? {}
   answers.value = { ...submitted }
-  textAnswer.value = answers.value[String(activeQuestionIndex.value)] ?? ''
 }
 
 function canonicalPreview(value: string) {
@@ -862,29 +491,4 @@ function canonicalPreview(value: string) {
     .trim()
     .replace(/\s+/g, '_')
 }
-
-function normalizeAnswerForQuestion(value?: string | null) {
-  const raw = String(value || '').trim()
-  if (!raw) return ''
-  const upper = raw.toUpperCase()
-  if (activeQuestionParsed.value.type === 'true_false') {
-    if (upper === 'T' || upper === 'TRUE' || upper === 'YES') return 'TRUE'
-    if (upper === 'F' || upper === 'FALSE' || upper === 'NO') return 'FALSE'
-  }
-  if (activeQuestionParsed.value.type === 'multiple_choice') {
-    const choice = activeQuestionParsed.value.choices.find(item =>
-      item.letter.toUpperCase() === upper || item.text.toUpperCase() === upper
-    )
-    return choice?.letter ?? raw
-  }
-  return raw
-}
-
-function choiceDisplayText(choice: { letter: string; text: string }) {
-  if (choice.text) return choice.text
-  if (choice.letter.toUpperCase() === 'TRUE') return 'True'
-  if (choice.letter.toUpperCase() === 'FALSE') return 'False'
-  return choice.letter
-}
-
 </script>

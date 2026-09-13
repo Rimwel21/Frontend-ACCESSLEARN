@@ -69,6 +69,8 @@ interface DashboardSummary {
 export interface AssessmentQuestion {
   prompt: string
   answer?: string | null
+  question_type?: 'identification' | 'multiple_choice' | 'true_false'
+  options?: string[]
 }
 
 export interface ActivitySubmission {
