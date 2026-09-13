@@ -57,6 +57,19 @@
                 </button>
               </div>
 
+              <div v-else-if="countdown !== null" class="absolute inset-0 grid place-items-center bg-black/60 p-6 text-center text-white">
+                <div>
+                  <div class="font-mono text-xs font-black uppercase tracking-widest">Get ready to sign</div>
+                  <div class="mt-2 font-display text-7xl font-black">{{ countdown }}</div>
+                </div>
+              </div>
+
+              <div v-else-if="canRunAttempt(nextAttemptIndex)" class="absolute inset-0 grid place-items-center bg-black/20 p-6 text-center">
+                <button class="border-[3px] border-brand-teal bg-brand-amber px-6 py-4 text-sm font-black shadow-[4px_4px_0_rgba(0,0,0,0.2)]" type="button" @click="runPracticeAttempt(nextAttemptIndex)">
+                  Start Attempt {{ nextAttemptIndex + 1 }}
+                </button>
+              </div>
+
               <div v-if="practiceBusy" class="absolute left-0 top-0 h-2 bg-[#22C55E]" :style="{ width: `${captureProgress}%` }"></div>
               <div v-if="practiceBusy" class="absolute left-3 top-3 border-[3px] border-brand-teal bg-white px-3 py-2 font-mono text-[10px] font-black uppercase">
                 Capturing {{ captureProgress }}%
@@ -64,14 +77,6 @@
             </div>
 
             <div class="flex flex-wrap gap-2">
-              <button
-                type="button"
-                class="border-[3px] border-brand-teal bg-brand-amber px-4 py-2 text-xs font-black disabled:cursor-not-allowed disabled:opacity-50"
-                :disabled="cameraOn || practiceBusy"
-                @click="startCamera"
-              >
-                Start Camera
-              </button>
               <button
                 type="button"
                 class="border-[3px] border-brand-teal bg-white px-4 py-2 text-xs font-black disabled:cursor-not-allowed disabled:opacity-50"
@@ -110,14 +115,9 @@
                 <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Attempt {{ index + 1 }}</div>
                 <div class="mt-1 text-sm font-black">{{ attemptScores[index] === null ? 'Not started' : `${attemptScores[index]}%` }}</div>
               </div>
-              <button
-                type="button"
-                class="border-[3px] border-brand-teal bg-white px-3 py-2 text-xs font-black disabled:cursor-not-allowed disabled:opacity-50"
-                :disabled="!canRunAttempt(index)"
-                @click="runPracticeAttempt(index)"
-              >
-                {{ index === nextAttemptIndex ? 'Run' : 'Wait' }}
-              </button>
+              <span class="border-[3px] border-brand-teal bg-white px-3 py-2 text-xs font-black text-ink-soft">
+                {{ attemptScores[index] === null && index === nextAttemptIndex ? 'Ready' : attemptScores[index] === null ? 'Locked' : 'Done' }}
+              </span>
             </div>
           </div>
         </div>
@@ -145,7 +145,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   getTutorialStatus,
@@ -168,6 +168,7 @@ const practiceBusy = ref(false)
 const practiceMessage = ref('')
 const practiceError = ref('')
 const captureProgress = ref(0)
+const countdown = ref<number | null>(null)
 const attemptScores = ref<(number | null)[]>([null, null, null])
 const practiceSaving = ref(false)
 const practiceResult = ref<PracticeResultOut | null>(null)
@@ -187,10 +188,6 @@ const recognizedLabel = computed(() => recognizedWord.value || 'Waiting for atte
 
 onMounted(async () => {
   await loadTutorial()
-  if (tutorial.value?.can_practice) {
-    await nextTick()
-    await startCamera()
-  }
 })
 
 onBeforeUnmount(() => {
@@ -267,8 +264,13 @@ async function runPracticeAttempt(index: number) {
     }
     if (!cameraOn.value) return
 
-    practiceMessage.value = `Attempt ${index + 1}: get ready.`
-    await wait(900)
+    for (let seconds = 3; seconds >= 1; seconds -= 1) {
+      countdown.value = seconds
+      practiceMessage.value = `Attempt ${index + 1} starts in ${seconds}.`
+      await wait(1000)
+    }
+    countdown.value = null
+    practiceMessage.value = `Attempt ${index + 1}: sign now.`
     const images = await captureAttemptFrames()
     practiceMessage.value = `Attempt ${index + 1}: scoring your sign.`
     const score = await scoreWordPracticeFrames(tutorial.value.word, images)
@@ -284,6 +286,7 @@ async function runPracticeAttempt(index: number) {
   } finally {
     practiceBusy.value = false
     captureProgress.value = 0
+    countdown.value = null
   }
 }
 

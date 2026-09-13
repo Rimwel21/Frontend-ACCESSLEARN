@@ -9,7 +9,7 @@
     </div>
 
     <div class="grid gap-2 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)]">
-      <div class="grid gap-2">
+      <div class="grid h-fit gap-2 lg:sticky lg:top-3 lg:self-start">
         <section class="figma-panel">
           <div class="mb-4">
             <h2 class="figma-card-title mb-1">{{ title }} Information</h2>
@@ -124,15 +124,14 @@
         </section>
       </div>
 
-      <section class="figma-panel">
+      <section class="figma-panel flex min-h-0 flex-col lg:max-h-[calc(100vh-8rem)]">
         <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 class="figma-card-title mb-1">Questions</h2>
             <p class="text-xs font-semibold text-ink-soft">Add clear prompts and exact answers for automatic scoring.</p>
           </div>
-          <button class="figma-button" type="button" @click="addQuestion">Add Question</button>
         </div>
-        <div class="rounded-md bg-gray-100 p-3">
+        <div class="min-h-0 flex-1 overflow-y-auto rounded-md bg-gray-100 p-3">
           <div class="grid gap-3">
             <div v-for="(question, index) in form.questions" :key="index" class="grid gap-2 rounded-md border border-gray-200 bg-white p-3">
               <div class="flex items-center justify-between gap-2">
@@ -146,8 +145,34 @@
                   Remove
                 </button>
               </div>
+              <div>
+                <label class="figma-label" :for="`question-type-${index}`">Question Type</label>
+                <select :id="`question-type-${index}`" v-model="question.question_type" class="figma-input" @change="normalizeQuestionForType(question)">
+                  <option value="identification">Identification</option>
+                  <option value="multiple_choice">Multiple Choice</option>
+                  <option value="true_false">True or False</option>
+                </select>
+              </div>
               <input v-model.trim="question.prompt" class="figma-input min-w-0 bg-white" :placeholder="`Prompt for question ${index + 1}`" />
-              <input v-model.trim="question.answer" class="figma-input bg-white" placeholder="Correct answer (optional)" />
+              <template v-if="question.question_type === 'multiple_choice'">
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <input v-for="(_, optionIndex) in question.options" :key="optionIndex" v-model.trim="question.options[optionIndex]" class="figma-input bg-white" :placeholder="`Option ${String.fromCharCode(65 + optionIndex)}`" />
+                </div>
+                <select v-model="question.answer" class="figma-input bg-white">
+                  <option value="">Select the correct option</option>
+                  <option v-for="(option, optionIndex) in question.options" :key="optionIndex" :value="option" :disabled="!option.trim()">
+                    {{ String.fromCharCode(65 + optionIndex) }}. {{ option || `Option ${String.fromCharCode(65 + optionIndex)}` }}
+                  </option>
+                </select>
+              </template>
+              <template v-else-if="question.question_type === 'true_false'">
+                <select v-model="question.answer" class="figma-input bg-white">
+                  <option value="">Select the correct answer</option>
+                  <option value="True">True</option>
+                  <option value="False">False</option>
+                </select>
+              </template>
+              <input v-else v-model.trim="question.answer" class="figma-input bg-white" placeholder="Correct answer (optional)" />
               <div v-if="props.kind === 'activity'" class="rounded-md border border-gray-200 bg-gray-50 p-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <div>
@@ -206,6 +231,7 @@
             </div>
           </div>
         </div>
+        <button class="figma-button mt-3 self-start" type="button" @click="addQuestion">Add Question</button>
       </section>
     </div>
 
@@ -283,7 +309,7 @@ function blankForm() {
   shuffleQuestions: true,
   showAnswersAfterSubmission: true,
   questions: [
-    { prompt: '', answer: '' },
+    { prompt: '', answer: '', question_type: 'identification' as QuestionType, options: [] },
   ],
   }
 }
@@ -319,7 +345,27 @@ onMounted(async () => {
 const availableModules = computed(() => store.modules.filter(module => form.value.classId && module.classId === Number(form.value.classId)))
 
 function addQuestion() {
-  form.value.questions.push({ prompt: '', answer: '' })
+  form.value.questions.push({ prompt: '', answer: '', question_type: 'identification', options: [] })
+}
+
+type QuestionType = 'identification' | 'multiple_choice' | 'true_false'
+type QuestionForm = {
+  prompt: string
+  answer: string
+  question_type: QuestionType
+  options: string[]
+}
+
+function normalizeQuestionForType(question: QuestionForm) {
+  if (question.question_type === 'multiple_choice') {
+    question.options = question.options.length === 4 ? question.options : ['', '', '', '']
+    if (!question.options.includes(question.answer)) question.answer = ''
+    return
+  }
+  question.options = []
+  if (question.question_type === 'true_false' && !['True', 'False'].includes(question.answer)) {
+    question.answer = ''
+  }
 }
 
 function removeQuestion(index: number) {
@@ -356,9 +402,23 @@ async function saveAssessment() {
   const questionEntries = form.value.questions
     .map((question, index) => ({ question, index }))
     .filter(({ question }) => question.prompt.trim())
+
+  const invalidChoiceQuestion = questionEntries.find(({ question }) => {
+    if (question.question_type === 'multiple_choice') {
+      return question.options.filter(option => option.trim()).length !== 4 || !question.options.includes(question.answer)
+    }
+    return question.question_type === 'true_false' && !['True', 'False'].includes(question.answer)
+  })
+  if (invalidChoiceQuestion) {
+    error.value = `Complete the choices and correct answer for question ${invalidChoiceQuestion.index + 1}.`
+    return
+  }
+
   const questions = questionEntries.map(({ question }) => ({
     prompt: question.prompt,
     answer: question.answer,
+    question_type: question.question_type,
+    options: question.question_type === 'multiple_choice' ? question.options.filter(option => option.trim()) : [],
   }))
 
   if (questions.length === 0) {
@@ -635,8 +695,10 @@ async function hydrateForm() {
       ? assessment.questions.map(question => ({
           prompt: question.prompt,
           answer: question.answer ?? '',
+          question_type: question.question_type ?? 'identification',
+          options: question.options ?? [],
         }))
-      : [{ prompt: '', answer: '' }],
+      : [{ prompt: '', answer: '', question_type: 'identification', options: [] }],
   }
 
   if (props.kind === 'quiz' && form.value.moduleId) {

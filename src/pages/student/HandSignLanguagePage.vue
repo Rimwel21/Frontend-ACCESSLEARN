@@ -18,8 +18,6 @@
 
     <div class="grid gap-5 px-7 py-6 xl:grid-cols-[minmax(0,1fr)_330px]">
       <div class="space-y-5">
-        <SignLanguageToggle v-if="activeActivity" v-model="signLanguageMode" :disabled="isActivityCompleted" />
-
         <section v-if="content.loading" class="border-[3px] border-brand-teal bg-white p-5 text-sm font-black">
           Loading activity...
         </section>
@@ -43,7 +41,7 @@
         </section>
 
         <HandCamera
-          v-if="signLanguageMode && activeActivity && !isActivityCompleted"
+          v-if="activeActivity && !isActivityCompleted"
           v-model:video-ref="videoRef"
           v-model:canvas-ref="canvasRef"
           :detection="detection"
@@ -56,12 +54,29 @@
 
         <PredictionDisplay
           v-if="activeActivity"
-          v-model:text-answer="textAnswer"
-          :sign-mode="signLanguageMode"
           :answer="answer"
           :detection="detection"
-          :disabled="isActivityCompleted"
         />
+
+        <section v-if="activeActivity && !isIdentificationQuestion" class="border-[3px] border-brand-teal bg-white p-4">
+          <h2 class="font-display text-sm font-black uppercase tracking-widest">Sign the letter of your answer</h2>
+          <div v-if="activeQuestion?.question_type === 'multiple_choice'" class="mt-4 grid gap-2">
+            <div v-for="(option, index) in activeQuestion.options ?? []" :key="`${index}-${option}`" class="flex items-center gap-3 border-[3px] border-brand-teal bg-surface p-3 text-sm font-bold">
+              <span class="grid size-8 place-items-center border-[3px] border-brand-teal bg-brand-amber font-display text-base">{{ String.fromCharCode(65 + index) }}</span>
+              <span>{{ option }}</span>
+            </div>
+          </div>
+          <div v-else class="mt-4 grid gap-2 sm:grid-cols-2">
+            <div class="flex items-center gap-3 border-[3px] border-brand-teal bg-surface p-3 text-sm font-bold">
+              <span class="grid size-8 place-items-center border-[3px] border-brand-teal bg-brand-amber font-display text-base">A</span>
+              <span>True</span>
+            </div>
+            <div class="flex items-center gap-3 border-[3px] border-brand-teal bg-surface p-3 text-sm font-bold">
+              <span class="grid size-8 place-items-center border-[3px] border-brand-teal bg-brand-amber font-display text-base">B</span>
+              <span>False</span>
+            </div>
+          </div>
+        </section>
 
         <div v-if="activeActivity" class="flex flex-wrap gap-2">
           <button
@@ -79,7 +94,7 @@
 
         <div class="flex flex-wrap items-center justify-between gap-3 border-[3px] border-brand-teal bg-white p-4">
           <CameraControls
-            v-if="signLanguageMode && !isActivityCompleted"
+            v-if="!isActivityCompleted"
             :is-running="isRunning"
             @start="start"
             @stop="stop"
@@ -249,11 +264,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HandCamera from '@/components/handsign/HandCamera.vue'
 import PredictionDisplay from '@/components/handsign/PredictionDisplay.vue'
-import SignLanguageToggle from '@/components/handsign/SignLanguageToggle.vue'
 import CameraControls from '@/components/handsign/CameraControls.vue'
 import { useHandSign } from '@/composables/useHandSign'
 import { getTutorialStatus, handsignErrorMessage, tutorialVideoUrl } from '@/services/handsign'
@@ -281,9 +295,6 @@ const {
   backspace,
 } = useHandSign()
 
-const signLanguageMode = ref(false)
-const defaultWasApplied = ref(false)
-const textAnswer = ref('')
 const submitMessage = ref('')
 const activeQuestionIndex = ref(0)
 const answers = ref<Record<string, string>>({})
@@ -300,13 +311,14 @@ const activityId = computed(() => route.query.activityId ? Number(route.query.ac
 const isAlphabetOnly = computed(() => !activityId.value)
 const activeActivity = computed(() => content.currentActivity)
 const activeQuestion = computed(() => activeActivity.value?.questions[activeQuestionIndex.value] ?? null)
+const isIdentificationQuestion = computed(() => (activeQuestion.value?.question_type ?? 'identification') === 'identification')
 const isHearingImpaired = computed(() => {
   const data = profile.profile
   return Boolean(data && 'student_type' in data && data.student_type === 'hearing impaired')
 })
 const studentTypeLabel = computed(() => isHearingImpaired.value ? 'Student with Hearing Impairment' : 'Regular Student')
-const defaultModeLabel = computed(() => isHearingImpaired.value ? 'Sign Language Mode on' : 'Text input')
-const currentAnswer = computed(() => signLanguageMode.value ? answer.value : textAnswer.value)
+const defaultModeLabel = computed(() => 'Sign language answer')
+const currentAnswer = computed(() => answer.value)
 const isActivityCompleted = computed(() => activeActivity.value?.student_status === 'completed')
 const expectedTutorialAnswer = computed(() => activeActivity.value?.questions.find(question => question.answer?.trim())?.answer?.trim() ?? '')
 const canonicalTutorialWord = computed(() => tutorial.value?.word ?? canonicalPreview(expectedTutorialAnswer.value))
@@ -326,20 +338,6 @@ const scoreLabel = computed(() => {
   return 'Not submitted'
 })
 
-watch(signLanguageMode, async (enabled) => {
-  if (isActivityCompleted.value) {
-    stop()
-    return
-  }
-  submitMessage.value = ''
-  if (enabled) {
-    await nextTick()
-    await start()
-  } else {
-    stop()
-  }
-})
-
 onMounted(async () => {
   if (!profile.profile) {
     await profile.fetchProfile().catch(() => null)
@@ -353,16 +351,11 @@ onMounted(async () => {
     submitMessage.value = `Already submitted. Score: ${scoreLabel.value}`
     await loadTutorial(false)
   }
-  if (!defaultWasApplied.value) {
-    signLanguageMode.value = isHearingImpaired.value
-    defaultWasApplied.value = true
-  }
 })
 
 function selectQuestion(index: number) {
   saveCurrentAnswer()
   activeQuestionIndex.value = index
-  textAnswer.value = answers.value[String(index)] ?? ''
   void reset()
 }
 
@@ -389,7 +382,7 @@ async function submitAnswer() {
     return
   }
 
-  const submittedMode = signLanguageMode.value ? 'Sign Language Mode' : 'Text Mode'
+  const submittedMode = 'answer'
   const submitted = await content.submitActivity(activityId.value, answers.value).catch((err) => {
     submitMessage.value = err instanceof Error ? err.message : 'Unable to submit activity.'
     return null
@@ -486,7 +479,6 @@ function goToPractice() {
 function hydrateSubmittedAnswers() {
   const submitted = activeActivity.value?.student_answers ?? {}
   answers.value = { ...submitted }
-  textAnswer.value = answers.value[String(activeQuestionIndex.value)] ?? ''
 }
 
 function canonicalPreview(value: string) {

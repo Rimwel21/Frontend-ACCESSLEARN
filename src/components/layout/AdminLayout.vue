@@ -123,6 +123,7 @@ const menuOpen = ref(false)
 
 const navItems = [
   { to: '/admin/dashboard', label: 'Admin Dashboard', iconClass: 'rounded-full' },
+  { to: '/admin/handsign-dataset', label: 'Handsign Dataset', iconClass: 'rounded-sm' },
   { to: '/admin/sections', label: 'Section Management', iconClass: 'rounded-sm' },
   { to: '/admin/audit-log', label: 'Audit Log', iconClass: 'rounded' },
 ]

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'signhear-v2'
+const CACHE_VERSION = 'signhear-v3'
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`
 const APP_SHELL = ['/manifest.webmanifest', '/favicon.svg', '/icons.svg']
@@ -78,12 +78,9 @@ async function networkFirst(request, cacheName, fallbackUrl) {
 }
 
 function isStaticAsset(request, url) {
-  return request.destination === 'script'
-    || request.destination === 'style'
-    || request.destination === 'font'
+  return request.destination === 'font'
     || request.destination === 'image'
     || request.destination === 'video'
-    || request.destination === 'document'
     || url.pathname.startsWith('/assets/')
     || url.pathname.startsWith('/static/')
 }
