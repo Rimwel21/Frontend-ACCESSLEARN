@@ -10,10 +10,15 @@ export interface AdminDashboardStats {
 export interface AccountListOut {
     id: number;
     full_name: string;
-    email: string;
+    name?: string;
+    username?: string;
+    email?: string;
     role: string;
     account_status: string;
     created_at: string;
+    contact_no?: string;
+    grade_level?: string;
+    section_name?: string;
     section_count?: number;
 }
 

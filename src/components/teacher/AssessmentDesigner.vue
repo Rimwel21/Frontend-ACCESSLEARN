@@ -66,21 +66,49 @@
                 @keydown="blockInvalidNumberInput"
               />
             </div>
-            <div>
-              <label class="figma-label" for="assessment-class">Target Class</label>
-              <select
-                id="assessment-class"
-                v-model="form.targetClassIds"
-                class="figma-input min-h-[46px]"
-                multiple
-                :size="isEditing ? undefined : Math.min(Math.max(form.targetCount, 1), 4)"
-                @change="selectClass"
+            <div class="relative">
+              <label class="figma-label" for="assessment-class-dropdown">Target Class</label>
+              <button
+                id="assessment-class-dropdown"
+                type="button"
+                class="figma-input flex min-h-[46px] w-full items-center justify-between gap-3 text-left"
+                @click="targetClassDropdownOpen = !targetClassDropdownOpen"
               >
-                <option v-if="isEditing" value="">Select grade and section</option>
-                <option v-for="cls in store.classes" :key="cls.id" :value="cls.id">
-                  {{ cls.className }} - {{ gradeLabel(cls.gradeLevel) }} Section {{ cls.section }}
-                </option>
-              </select>
+                <span class="min-w-0 truncate">{{ targetClassDropdownLabel }}</span>
+                <span class="text-xs text-ink-soft">▾</span>
+              </button>
+              <div
+                v-if="targetClassDropdownOpen"
+                class="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-brand-teal/50 bg-white p-2 shadow-[0_16px_35px_rgba(17,94,89,0.16)]"
+              >
+                <button
+                  v-for="cls in store.classes"
+                  :key="cls.id"
+                  type="button"
+                  :disabled="!isTargetClassSelected(cls.id) && selectedTargetClasses.length >= form.targetCount"
+                  :class="[
+                    'flex w-full items-start gap-2 rounded px-2 py-2 text-left text-sm font-semibold transition',
+                    isTargetClassSelected(cls.id) ? 'bg-brand-blue text-white' : 'text-ink hover:bg-brand-blue-soft',
+                    !isTargetClassSelected(cls.id) && selectedTargetClasses.length >= form.targetCount ? 'cursor-not-allowed opacity-50' : ''
+                  ]"
+                  @click="toggleTargetClass(cls.id)"
+                >
+                  <span
+                    :class="[
+                      'mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border text-[10px] font-black',
+                      isTargetClassSelected(cls.id) ? 'border-white bg-white text-brand-blue' : 'border-brand-teal bg-white text-white'
+                    ]"
+                  >
+                    {{ isTargetClassSelected(cls.id) ? '✓' : '' }}
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block truncate">{{ targetClassLabel(cls) }}</span>
+                  </span>
+                </button>
+                <p v-if="store.classes.length === 0" class="px-2 py-2 text-xs font-semibold text-ink-soft">
+                  No classes available.
+                </p>
+              </div>
               <p class="mt-1 text-[11px] font-semibold text-ink-soft">
                 Select {{ isEditing ? 'the class' : `${form.targetCount} class${form.targetCount === 1 ? '' : 'es'}` }} to receive this {{ props.kind }}.
               </p>
@@ -546,6 +574,7 @@ const recordingReady = ref(false)
 const isRecording = ref(false)
 const recordingError = ref('')
 const tutorialUploadSummary = ref(0)
+const targetClassDropdownOpen = ref(false)
 let recordingStream: MediaStream | null = null
 let mediaRecorder: MediaRecorder | null = null
 let recordedChunks: Blob[] = []
@@ -605,6 +634,11 @@ const selectedTargetClasses = computed(() =>
     .map(id => store.classes.find(cls => cls.id === id))
     .filter(Boolean) as typeof store.classes
 )
+const targetClassDropdownLabel = computed(() => {
+  if (selectedTargetClasses.value.length === 0) return 'Select grade and section'
+  if (selectedTargetClasses.value.length === 1) return targetClassLabel(selectedTargetClasses.value[0])
+  return `${selectedTargetClasses.value.length} classes selected`
+})
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Answer encoding / decoding
@@ -805,6 +839,27 @@ function selectClass() {
       delete form.value.moduleIdsByClass[classId]
     }
   }
+}
+
+function targetClassLabel(cls: typeof store.classes[number]) {
+  return `${cls.className} - ${gradeLabel(cls.gradeLevel)} Section ${cls.section}`
+}
+
+function isTargetClassSelected(classId: string | number) {
+  return form.value.targetClassIds.includes(String(classId))
+}
+
+function toggleTargetClass(classId: string | number) {
+  const id = String(classId)
+  if (isEditing.value) {
+    form.value.targetClassIds = [id]
+    targetClassDropdownOpen.value = false
+  } else if (isTargetClassSelected(id)) {
+    form.value.targetClassIds = form.value.targetClassIds.filter(item => item !== id)
+  } else if (form.value.targetClassIds.length < form.value.targetCount) {
+    form.value.targetClassIds = [...form.value.targetClassIds, id]
+  }
+  selectClass()
 }
 
 function syncTargetCount() {
