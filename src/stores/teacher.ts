@@ -95,6 +95,7 @@ interface AssessmentSettings {
   attemptsAllowed?: number
   shuffleQuestions?: boolean
   showAnswersAfterSubmission?: boolean
+  allowTextAnswers?: boolean
   dueAt?: string | null
   questions?: AssessmentQuestion[]
   submissionsCount?: number
@@ -227,6 +228,7 @@ interface TeacherAssessmentResponse {
   attempts_allowed: number
   shuffle_questions: boolean
   show_answers_after_submission: boolean
+  allow_text_answers?: boolean
   questions: AssessmentQuestion[]
   submissions_count?: number
   submissions?: Array<{
@@ -731,6 +733,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
+    allowTextAnswers?: boolean
     questions: AssessmentQuestion[]
     dueAt?: string | null
   }) {
@@ -781,6 +784,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
+    allowTextAnswers?: boolean
     questions: AssessmentQuestion[]
     dueAt?: string | null
   } | Omit<Activity, 'id'>) {
@@ -806,6 +810,7 @@ export const useTeacherStore = defineStore('teacher', () => {
         attemptsAllowed?: number
         shuffleQuestions?: boolean
         showAnswersAfterSubmission?: boolean
+        allowTextAnswers?: boolean
         questions?: AssessmentQuestion[]
         dueAt?: string | null
       }
@@ -826,6 +831,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           attempts_allowed: formPayload.attemptsAllowed ?? 1,
           shuffle_questions: formPayload.shuffleQuestions ?? true,
           show_answers_after_submission: formPayload.showAnswersAfterSubmission ?? true,
+          allow_text_answers: formPayload.allowTextAnswers ?? true,
           questions: formPayload.questions ?? [],
           due_at: formPayload.dueAt ?? null,
         }),
@@ -852,6 +858,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
+    allowTextAnswers?: boolean
     questions: AssessmentQuestion[]
     dueAt?: string | null
   }) {
@@ -876,6 +883,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           attempts_allowed: payload.attemptsAllowed,
           shuffle_questions: payload.shuffleQuestions,
           show_answers_after_submission: payload.showAnswersAfterSubmission,
+          allow_text_answers: payload.allowTextAnswers ?? true,
           questions: payload.questions,
           due_at: payload.dueAt ?? null,
         }),
@@ -902,6 +910,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
+    allowTextAnswers?: boolean
     questions: AssessmentQuestion[]
     dueAt?: string | null
   }) {
@@ -926,6 +935,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           attempts_allowed: payload.attemptsAllowed,
           shuffle_questions: payload.shuffleQuestions,
           show_answers_after_submission: payload.showAnswersAfterSubmission,
+          allow_text_answers: payload.allowTextAnswers ?? true,
           questions: payload.questions,
           due_at: payload.dueAt ?? null,
         }),
@@ -1284,6 +1294,7 @@ function mapQuizResponse(assessment: TeacherAssessmentResponse, availableModules
     attemptsAllowed: assessment.attempts_allowed,
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,
+    allowTextAnswers: assessment.allow_text_answers ?? true,
     dueAt: assessment.due_at ?? null,
     createdAt: assessment.created_at ? new Date(assessment.created_at).toLocaleDateString() : null,
     type: assessment.category ?? 'Quiz',
