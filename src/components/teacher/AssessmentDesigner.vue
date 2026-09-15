@@ -309,7 +309,7 @@ function blankForm() {
   shuffleQuestions: true,
   showAnswersAfterSubmission: true,
   questions: [
-    { prompt: '', answer: '', question_type: 'identification' as QuestionType, options: [] },
+    { prompt: '', answer: '', question_type: 'identification' as QuestionType, options: [] as string[] },
   ],
   }
 }
