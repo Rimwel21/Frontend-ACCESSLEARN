@@ -43,6 +43,7 @@ export interface StudentAssessment {
   week?: string | null
   time_limit?: string | null
   time_limit_seconds?: number | null
+  allow_text_answers?: boolean
   due_at?: string | null
   questions: Array<{
     prompt: string

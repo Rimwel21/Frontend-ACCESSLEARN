@@ -55,6 +55,15 @@
       </div>
 
       <div v-if="accountPanelLoading" class="p-8 text-center text-sm font-bold text-ink-soft">Loading accounts...</div>
+      <div v-else-if="accountPanelError" class="p-8 text-center">
+        <p class="text-sm font-bold text-brand-rose">{{ accountPanelError }}</p>
+        <button
+          class="mt-3 rounded-full border border-brand-teal/40 px-4 py-2 text-xs font-bold text-brand-blue transition-all hover:bg-brand-blue-soft"
+          @click="loadAccountPanel"
+        >
+          Try Again
+        </button>
+      </div>
       <div v-else-if="accountPanelItems.length === 0" class="p-8 text-center text-sm font-bold text-ink-soft">No accounts found.</div>
       <div v-else class="divide-y divide-gray-50">
         <div
@@ -63,13 +72,29 @@
           class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div class="min-w-0">
-            <div class="truncate text-sm font-bold text-ink">{{ account.full_name || account.email }}</div>
-            <div class="truncate text-xs font-semibold text-ink-soft">{{ account.email }}</div>
+            <div class="truncate text-sm font-bold text-ink">{{ accountDisplayName(account) }}</div>
+            <div class="truncate text-xs font-semibold text-ink-soft">{{ accountSubtext(account) }}</div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <span :class="['badge', account.account_status === 'active' ? 'badge-green' : 'badge-red']">
               {{ formatStatus(account.account_status) }}
             </span>
+            <button
+              v-if="account.account_status !== 'archived'"
+              class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 transition-all hover:border-brand-amber hover:bg-amber-100"
+              :disabled="accountPanelLoading"
+              @click="archiveDashboardAccount(account)"
+            >
+              Archive
+            </button>
+            <button
+              v-else
+              class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition-all hover:border-emerald-500 hover:bg-emerald-100"
+              :disabled="accountPanelLoading"
+              @click="restoreDashboardAccount(account)"
+            >
+              Restore
+            </button>
             <template v-if="accountPanel.kind === 'blocked'">
               <button
                 class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition-all hover:border-emerald-500 hover:bg-emerald-100"
@@ -79,6 +104,7 @@
                 Unblock
               </button>
               <button
+                v-if="account.account_status === 'archived'"
                 class="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-brand-rose transition-all hover:border-brand-rose hover:bg-rose-100"
                 :disabled="accountPanelLoading"
                 @click="removeDashboardAccount(account)"
@@ -87,6 +113,28 @@
               </button>
             </template>
           </div>
+        </div>
+      </div>
+      <div v-if="accountPanel && accountPanelTotal > accountPanelItems.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-50 px-5 py-4">
+        <p class="text-xs font-bold text-ink-soft">
+          Showing {{ accountPanelItems.length }} of {{ accountPanelTotal }} accounts
+        </p>
+        <div class="flex items-center gap-2">
+          <button
+            class="rounded-full border border-brand-teal/40 px-3 py-1.5 text-xs font-bold text-brand-blue disabled:cursor-not-allowed disabled:opacity-40"
+            :disabled="accountPanelPage <= 1 || accountPanelLoading"
+            @click="changeAccountPanelPage(accountPanelPage - 1)"
+          >
+            Previous
+          </button>
+          <span class="text-xs font-bold text-ink-soft">Page {{ accountPanelPage }} of {{ accountPanelTotalPages }}</span>
+          <button
+            class="rounded-full border border-brand-teal/40 px-3 py-1.5 text-xs font-bold text-brand-blue disabled:cursor-not-allowed disabled:opacity-40"
+            :disabled="accountPanelPage >= accountPanelTotalPages || accountPanelLoading"
+            @click="changeAccountPanelPage(accountPanelPage + 1)"
+          >
+            Next
+          </button>
         </div>
       </div>
     </section>
@@ -211,13 +259,18 @@ const selectedTeacher = ref<PendingTeacher | null>(null)
 const accountPanel = ref<{ kind: 'blocked' | 'teachers' | 'students', title: string, subtitle: string } | null>(null)
 const accountPanelItems = ref<AccountListOut[]>([])
 const accountPanelLoading = ref(false)
+const accountPanelError = ref('')
+const accountPanelPage = ref(1)
+const accountPanelTotal = ref(0)
+const accountPanelPerPage = 25
+const accountPanelTotalPages = computed(() => Math.max(Math.ceil(accountPanelTotal.value / accountPanelPerPage), 1))
 
 const statCards = computed(() => [
   { label: 'Pending Verification Requests', value: pendingAccounts.value.length, description: 'Teacher accounts waiting for review.', icon: 'VR', tone: 'bg-brand-amber/15 text-brand-amber', action: 'pending' },
   { label: 'Approved Today', value: approvedToday.value, description: 'Accounts verified today.', icon: 'AP', tone: 'bg-brand-green/15 text-brand-green', action: '' },
   { label: 'Blocked Accounts', value: blockedAccounts.value, description: 'Accounts restricted from access.', icon: 'BL', tone: 'bg-brand-rose/15 text-brand-rose', action: 'blocked' },
-  { label: 'Active Teachers', value: activeTeachers.value, description: 'Teacher accounts currently active.', icon: 'TR', tone: 'bg-brand-blue/10 text-brand-blue', action: 'teachers' },
-  { label: 'Active Students', value: activeStudents.value, description: 'Student accounts currently active.', icon: 'ST', tone: 'bg-brand-teal/15 text-brand-teal', action: 'students' },
+  { label: 'Teachers', value: activeTeachers.value, description: 'Teacher accounts recorded in the system.', icon: 'TR', tone: 'bg-brand-blue/10 text-brand-blue', action: 'teachers' },
+  { label: 'Students', value: activeStudents.value, description: 'Student accounts recorded in the system.', icon: 'ST', tone: 'bg-brand-teal/15 text-brand-teal', action: 'students' },
   { label: "Today's Logins", value: todaysLogins.value, description: 'Successful login events recorded today.', icon: 'LG', tone: 'bg-brand-violet/10 text-brand-violet', action: '' },
 ])
 
@@ -239,15 +292,19 @@ async function loadPendingAccounts() {
 
 async function loadAccountStats() {
   try {
-    const [teachers, students, inactive, suspended] = await Promise.all([
-      adminService.getAccounts({ role: 'teacher', status: 'active', page: 1, per_page: 1 }),
-      adminService.getAccounts({ role: 'student', status: 'active', page: 1, per_page: 1 }),
-      adminService.getAccounts({ status: 'inactive', page: 1, per_page: 1 }),
-      adminService.getAccounts({ status: 'suspended', page: 1, per_page: 1 }),
+    const [allTeachers, allStudents] = await Promise.all([
+      adminService.getAccounts({ role: 'teacher', page: 1, per_page: 1 }),
+      adminService.getAccounts({ role: 'student', page: 1, per_page: 1 }),
     ])
-    activeTeachers.value = teachers.total
-    activeStudents.value = students.total
-    blockedAccounts.value = inactive.total + suspended.total
+    activeTeachers.value = allTeachers.total
+    activeStudents.value = allStudents.total
+
+    const [inactive, suspended, archived] = await Promise.all([
+      adminService.getAccounts({ status: 'inactive', page: 1, per_page: 1 }).catch(() => ({ total: 0 })),
+      adminService.getAccounts({ status: 'suspended', page: 1, per_page: 1 }).catch(() => ({ total: 0 })),
+      adminService.getAccounts({ status: 'archived', page: 1, per_page: 1 }).catch(() => ({ total: 0 })),
+    ])
+    blockedAccounts.value = inactive.total + suspended.total + archived.total
   } catch {
     activeTeachers.value = 0
     activeStudents.value = 0
@@ -260,7 +317,7 @@ async function loadRecentActivities() {
     today.setHours(0, 0, 0, 0)
     const res = await adminService.getAuditLogs({ page: 1, per_page: 10 })
     recentActivities.value = res.items
-    todaysLogins.value = res.items.filter((log: any) => log.action === 'login' && new Date(log.created_at) >= today).length
+    todaysLogins.value = res.items.filter((log: any) => ['login', 'logged_in'].includes(log.action) && new Date(log.created_at) >= today).length
     approvedToday.value = res.items.filter((log: any) => ['activated', 'verified'].includes(log.action) && new Date(log.created_at) >= today).length
   } catch {
     recentActivities.value = []
@@ -305,35 +362,42 @@ function handleStatCard(action: string) {
 async function openAccountPanel(kind: 'blocked' | 'teachers' | 'students') {
   accountPanel.value = {
     kind,
-    title: kind === 'blocked' ? 'Blocked Accounts' : kind === 'teachers' ? 'Active Teachers' : 'Active Students',
+    title: kind === 'blocked' ? 'Blocked Accounts' : kind === 'teachers' ? 'Teachers' : 'Students',
     subtitle: kind === 'blocked'
       ? 'Accounts restricted from access. Unblock or remove them here.'
       : kind === 'teachers'
-        ? 'Teacher accounts currently active.'
-        : 'Student accounts currently active.',
+        ? 'Teacher accounts recorded in the system.'
+        : 'Student accounts recorded in the system.',
   }
+  accountPanelPage.value = 1
   await loadAccountPanel()
 }
 
 async function loadAccountPanel() {
   if (!accountPanel.value) return
   accountPanelLoading.value = true
+  accountPanelError.value = ''
   errorMsg.value = ''
   try {
     if (accountPanel.value.kind === 'blocked') {
-      const [suspended, inactive] = await Promise.all([
-        adminService.getAccounts({ status: 'suspended', page: 1, per_page: 25 }),
-        adminService.getAccounts({ status: 'inactive', page: 1, per_page: 25 }),
+      const [suspended, inactive, archived] = await Promise.all([
+        withAccountTimeout(adminService.getAccounts({ status: 'suspended', page: accountPanelPage.value, per_page: accountPanelPerPage })),
+        withAccountTimeout(adminService.getAccounts({ status: 'inactive', page: accountPanelPage.value, per_page: accountPanelPerPage })),
+        withAccountTimeout(adminService.getAccounts({ status: 'archived', page: accountPanelPage.value, per_page: accountPanelPerPage })),
       ])
-      accountPanelItems.value = [...suspended.items, ...inactive.items]
+      accountPanelItems.value = [...suspended.items, ...inactive.items, ...archived.items]
+      accountPanelTotal.value = suspended.total + inactive.total + archived.total
       return
     }
 
     const role = accountPanel.value.kind === 'teachers' ? 'teacher' : 'student'
-    const res = await adminService.getAccounts({ role, status: 'active', page: 1, per_page: 25 })
-    accountPanelItems.value = res.items
+    const all = await withAccountTimeout(adminService.getAccounts({ role, page: accountPanelPage.value, per_page: accountPanelPerPage }))
+    accountPanelItems.value = all.items
+    accountPanelTotal.value = all.total
   } catch (err) {
-    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to load accounts.'
+    accountPanelItems.value = []
+    accountPanelTotal.value = 0
+    accountPanelError.value = err instanceof Error ? err.message : 'Failed to load accounts.'
   } finally {
     accountPanelLoading.value = false
   }
@@ -342,6 +406,24 @@ async function loadAccountPanel() {
 function closeAccountPanel() {
   accountPanel.value = null
   accountPanelItems.value = []
+  accountPanelError.value = ''
+  accountPanelPage.value = 1
+  accountPanelTotal.value = 0
+}
+
+function withAccountTimeout<T>(promise: Promise<T>, timeoutMs = 8000): Promise<T> {
+  let timeoutId: number | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error('Account list is taking too long to load. Restart the backend server, then try again.')), timeoutMs)
+  })
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timeoutId) window.clearTimeout(timeoutId)
+  })
+}
+
+async function changeAccountPanelPage(page: number) {
+  accountPanelPage.value = Math.min(Math.max(page, 1), accountPanelTotalPages.value)
+  await loadAccountPanel()
 }
 
 async function unblockDashboardAccount(account: AccountListOut) {
@@ -356,8 +438,33 @@ async function unblockDashboardAccount(account: AccountListOut) {
   }
 }
 
+async function archiveDashboardAccount(account: AccountListOut) {
+  if (!confirm(`Archive ${accountDisplayName(account)}? The account will no longer be able to log in, but records will be kept.`)) return
+  errorMsg.value = ''
+  successMsg.value = ''
+  try {
+    await adminService.updateAccountStatus(account.id, 'archived', 'Account archived by administrator')
+    successMsg.value = 'Account archived. Records are preserved.'
+    await Promise.all([loadAccountStats(), loadAccountPanel()])
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to archive account.'
+  }
+}
+
+async function restoreDashboardAccount(account: AccountListOut) {
+  errorMsg.value = ''
+  successMsg.value = ''
+  try {
+    await adminService.updateAccountStatus(account.id, 'active', 'Account restored by administrator')
+    successMsg.value = 'Account restored.'
+    await Promise.all([loadAccountStats(), loadAccountPanel()])
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to restore account.'
+  }
+}
+
 async function removeDashboardAccount(account: AccountListOut) {
-  if (!confirm(`Remove ${account.full_name || account.email}? This permanently deletes the account.`)) return
+  if (!confirm(`Remove ${accountDisplayName(account)}? This permanently deletes the account.`)) return
   errorMsg.value = ''
   successMsg.value = ''
   try {
@@ -367,6 +474,19 @@ async function removeDashboardAccount(account: AccountListOut) {
   } catch (err) {
     errorMsg.value = err instanceof ApiError ? err.message : 'Failed to remove account.'
   }
+}
+
+function accountDisplayName(account: AccountListOut) {
+  return account.full_name || account.name || account.username || account.email || `Account #${account.id}`
+}
+
+function accountSubtext(account: AccountListOut) {
+  const details = [
+    account.email || account.username,
+    account.grade_level,
+    account.section_name ? `Section ${account.section_name}` : '',
+  ].filter(Boolean)
+  return details.join(' | ') || account.role
 }
 
 function teacherName(teacher: PendingTeacher) {
