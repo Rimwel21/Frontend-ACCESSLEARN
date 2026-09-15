@@ -10,7 +10,7 @@
       <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
         <div class="grid gap-3 sm:grid-cols-2">
           <div><label class="field-label">Week</label><select v-model="week" class="input-field mt-1.5"><option v-for="item in weeks" :key="item" :value="item">{{ item }}</option></select></div>
-          <div><label class="field-label">Word label</label><select v-model="label" class="input-field mt-1.5"><option v-for="item in labels" :key="item" :value="item">{{ item.replaceAll('_', ' ') }}</option></select></div>
+          <div><label class="field-label">Word label</label><select v-model="label" class="input-field mt-1.5"><option v-for="item in labels" :key="item" :value="item">{{ item.replace(/_/g, ' ') }}</option></select></div>
         </div>
         <div class="relative mt-5 aspect-video overflow-hidden rounded-md bg-black">
           <video ref="videoRef" class="h-full w-full -scale-x-100 object-cover" autoplay muted playsinline></video>
@@ -26,7 +26,7 @@
         <p v-else class="mt-3 text-sm font-semibold text-ink-soft">{{ statusMessage || 'Keep your upper body, wrists, and hands inside the camera view.' }}</p>
       </div>
       <aside class="space-y-4 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-        <div><div class="text-xs font-bold uppercase text-ink-soft">Current label</div><div class="mt-1 font-display text-xl">{{ label.replaceAll('_', ' ') }}</div></div>
+        <div><div class="text-xs font-bold uppercase text-ink-soft">Current label</div><div class="mt-1 font-display text-xl">{{ label.replace(/_/g, ' ') }}</div></div>
         <div class="rounded-md bg-brand-blue-soft p-4"><div class="text-xs font-bold uppercase text-ink-soft">Samples</div><div class="mt-1 font-display text-3xl">{{ sampleCount }} / {{ required }}</div></div>
         <div class="rounded-md border border-gray-200 p-4"><div class="text-xs font-bold uppercase text-ink-soft">Training</div><div class="mt-1 text-sm font-bold capitalize">{{ summary?.training.status ?? 'Loading' }}</div><p class="mt-1 text-xs text-ink-soft">{{ summary?.training.message }}</p></div>
         <button class="btn-secondary w-full" :disabled="summary?.training.status === 'training' || summary?.training.status === 'queued'" @click="startTraining">Train current dataset</button>
