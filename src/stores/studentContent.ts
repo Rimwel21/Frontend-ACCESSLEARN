@@ -474,8 +474,8 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       return question.options?.[letter.charCodeAt(0) - 65] ?? submitted
     }
     if (question.question_type === 'true_false') {
-      if (letter === 'A') return 'True'
-      if (letter === 'B') return 'False'
+      if (letter === 'A' || letter === 'T' || letter === 'TRUE') return 'True'
+      if (letter === 'B' || letter === 'F' || letter === 'FALSE') return 'False'
     }
     return submitted
   }

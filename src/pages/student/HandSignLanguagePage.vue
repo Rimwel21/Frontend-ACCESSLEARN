@@ -62,9 +62,8 @@
               @click="selectChoice(choice)"
             >
               <span
-                v-if="activeQuestionParsed.type === 'multiple_choice'"
                 :class="[
-                  'grid h-6 w-6 shrink-0 place-items-center rounded-full border-[2px] border-current text-xs font-black',
+                  'grid h-7 w-7 shrink-0 place-items-center rounded-full border-[2px] border-current text-xs font-black',
                   isSelectedChoice(choice)
                     ? 'bg-white text-brand-blue'
                     : 'bg-surface text-ink'
@@ -566,12 +565,12 @@ const activeQuestion = computed(() => activeActivity.value?.questions[activeQues
 function parseQuestionOptions(rawAnswer?: string | null) {
   if (!rawAnswer) return { type: 'identification', choices: [] as { letter: string; text: string }[] }
   const up = rawAnswer.trim().toUpperCase()
-  if (up === 'TRUE' || up === 'FALSE') {
+  if (up === 'TRUE' || up === 'FALSE' || up === 'T' || up === 'F') {
     return {
       type: 'true_false',
       choices: [
-        { letter: 'TRUE', text: 'True' },
-        { letter: 'FALSE', text: 'False' },
+        { letter: 'T', text: 'True' },
+        { letter: 'F', text: 'False' },
       ],
     }
   }
@@ -657,8 +656,8 @@ const currentAnswer = computed(() => forcedSignLanguageMode.value ? answer.value
 const visibleAnswer = computed(() => {
   const normalized = normalizeAnswerForQuestion(currentAnswer.value)
   if (activeQuestionParsed.value.type === 'true_false') {
-    if (normalized === 'TRUE') return 'True'
-    if (normalized === 'FALSE') return 'False'
+    if (normalized === 'T' || normalized === 'TRUE') return 'T (True)'
+    if (normalized === 'F' || normalized === 'FALSE') return 'F (False)'
   }
   return normalized || answer.value
 })
@@ -880,14 +879,14 @@ function normalizeAnswerForQuestion(value?: string | null) {
   if (!raw) return ''
   const upper = raw.toUpperCase()
   if (activeQuestionParsed.value.type === 'true_false') {
-    if (upper === 'T' || upper === 'TRUE' || upper === 'YES') return 'TRUE'
-    if (upper === 'F' || upper === 'FALSE' || upper === 'NO') return 'FALSE'
+    if (upper === 'T' || upper === 'TRUE' || upper === 'YES' || upper === 'A') return 'T'
+    if (upper === 'F' || upper === 'FALSE' || upper === 'NO' || upper === 'B') return 'F'
   }
   if (activeQuestionParsed.value.type === 'multiple_choice') {
     const choice = activeQuestionParsed.value.choices.find(item =>
       item.letter.toUpperCase() === upper || item.text.toUpperCase() === upper
     )
-    return choice?.letter ?? raw
+    return choice?.letter.toUpperCase() ?? upper
   }
   return raw
 }
