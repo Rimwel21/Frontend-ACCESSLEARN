@@ -85,7 +85,7 @@
                   <div class="mt-1 text-xs font-semibold text-ink-soft">{{ s.activityPercent }}%</div>
                 </td>
                 <td class="table-td font-mono text-sm font-bold text-ink">{{ s.quizActivity }}</td>
-                <td class="table-td"><span :class="statusBadge(s.status)">{{ s.status }}</span></td>
+                <td class="table-td"><span :class="statusBadge(s.status)">{{ statusLabel(s.status) }}</span></td>
               </tr>
               <tr v-if="store.students.length === 0">
                 <td colspan="5" class="table-td text-center text-ink-soft">No enrolled students yet.</td>
@@ -164,15 +164,23 @@ function isToday(day: number) {
 }
 
 function progressGradient(status: string) {
-  if (status === 'Complete') return 'bg-gradient-to-r from-brand-teal to-brand-green'
-  if (status === 'Needs Help') return 'bg-gradient-to-r from-brand-rose to-orange-400'
+  if (status === 'Excellent') return 'bg-gradient-to-r from-brand-teal to-brand-green'
+  if (status === 'Good Progress') return 'bg-gradient-to-r from-brand-blue to-brand-violet'
+  if (status === 'Keep Improving') return 'bg-gradient-to-r from-orange-300 to-orange-500'
+  if (status === 'Needs Guidance' || status === 'Needs Help') return 'bg-gradient-to-r from-brand-rose to-orange-400'
   return 'bg-gradient-to-r from-brand-blue to-brand-violet'
 }
 
 function statusBadge(status: string) {
-  if (status === 'Complete') return 'badge badge-green'
-  if (status === 'Needs Help') return 'badge badge-red'
+  if (status === 'Excellent') return 'badge badge-green'
+  if (status === 'Good Progress') return 'badge badge-blue'
+  if (status === 'Keep Improving') return 'badge badge-amber'
+  if (status === 'Needs Guidance' || status === 'Needs Help') return 'badge badge-red'
   return 'badge badge-blue'
+}
+
+function statusLabel(status: string) {
+  return status === 'Needs Help' ? 'Needs Guidance' : status
 }
 </script>
 

@@ -55,7 +55,7 @@ interface StudentRow {
   learningMaterialsCompleted: number
   learningMaterialsInProgress: number
   learningMaterialsTotal: number
-  status: 'Complete' | 'In Progress' | 'Needs Help'
+  status: string
   lastActivity: string
   quizActivity: string
 }
@@ -200,7 +200,7 @@ interface DashboardStudentProgressResponse {
   learning_materials_completed?: number
   learning_materials_in_progress?: number
   learning_materials_total?: number
-  status: 'Complete' | 'In Progress' | 'Needs Help'
+  status: string
   last_activity: string | null
   quiz_activity: string | null
 }
@@ -420,7 +420,7 @@ export const useTeacherStore = defineStore('teacher', () => {
   const hasClasses = computed(() => classes.value.length > 0)
   const publishedModules = computed(() => modules.value.filter(m => m.status === 'Published'))
   const unpublishedModules = computed(() => modules.value.filter(m => m.status === 'Unpublished'))
-  const atRiskStudents = computed(() => students.value.filter(s => s.status === 'Needs Help'))
+  const atRiskStudents = computed(() => students.value.filter(s => s.status === 'Needs Guidance'))
 
   async function fetchClasses() {
     const auth = useAuthStore()

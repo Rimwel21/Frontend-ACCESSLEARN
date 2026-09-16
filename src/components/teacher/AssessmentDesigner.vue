@@ -19,26 +19,13 @@
             <p class="text-xs font-semibold text-ink-soft">Choose the class and context students will see.</p>
           </div>
           <div class="grid gap-3 sm:grid-cols-2">
-            <div>
+            <div class="sm:col-span-2">
               <label class="figma-label" for="assessment-title">{{ title }} Title</label>
               <input id="assessment-title" v-model.trim="form.title" class="figma-input" />
             </div>
             <div class="sm:col-span-2">
               <label class="figma-label" for="assessment-description">Description</label>
               <textarea id="assessment-description" v-model.trim="form.description" class="figma-input min-h-20 resize-y" />
-            </div>
-
-            <!-- Question Type Dropdown (replaces free-text input) -->
-            <div>
-              <label class="figma-label" for="assessment-type">{{ title }} Type</label>
-              <select
-                id="assessment-type"
-                :value="form.category"
-                class="figma-input"
-                @change="onCategoryChange(($event.target as HTMLSelectElement).value)"
-              >
-                <option v-for="opt in QUESTION_TYPES" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
             </div>
 
             <div>
@@ -233,6 +220,18 @@
                 </button>
               </div>
 
+              <div>
+                <label class="figma-label" :for="`question-type-${index}`">Question Type</label>
+                <select
+                  :id="`question-type-${index}`"
+                  :value="question.type"
+                  class="figma-input bg-white"
+                  @change="onQuestionTypeChange(index, ($event.target as HTMLSelectElement).value)"
+                >
+                  <option v-for="opt in QUESTION_TYPES" :key="opt" :value="opt">{{ opt }}</option>
+                </select>
+              </div>
+
               <!-- Prompt textarea (all types) -->
               <textarea
                 v-model.trim="question.prompt"
@@ -242,7 +241,7 @@
               />
 
               <!-- ── IDENTIFICATION ── -->
-              <template v-if="form.category === 'Identification'">
+              <template v-if="question.type === 'Identification'">
                 <div>
                   <label class="figma-label">Correct Answer</label>
                   <input
@@ -254,7 +253,7 @@
               </template>
 
               <!-- ── TRUE OR FALSE ── -->
-              <template v-else-if="form.category === 'True or False'">
+              <template v-else-if="question.type === 'True or False'">
                 <div>
                   <label class="figma-label mb-2">Choices</label>
                   <div class="flex gap-2">
@@ -301,7 +300,7 @@
               </template>
 
               <!-- ── MULTIPLE CHOICE ── -->
-              <template v-else-if="form.category === 'Multiple Choice'">
+              <template v-else-if="question.type === 'Multiple Choice'">
                 <div>
                   <label class="figma-label mb-2">
                     Choices
@@ -533,6 +532,8 @@ const emit = defineEmits<{
 
 const QUESTION_TYPES = ['Identification', 'True or False', 'Multiple Choice'] as const
 const CHOICE_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+type QuestionType = typeof QUESTION_TYPES[number]
+type ApiQuestionType = 'identification' | 'multiple_choice' | 'true_false'
 
 /**
  * Extended question draft — includes decoded UI state for TF and MC.
@@ -544,6 +545,7 @@ const CHOICE_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
  *  - Multiple Choice: "A:Leaf|B:Stem|C:Roots|CORRECT:C"
  */
 interface QuestionDraft {
+  type: QuestionType
   prompt: string
   answer: string                              // plain text (Identification) or encoded (TF/MC)
   _tfAnswer: 'TRUE' | 'FALSE' | ''           // True/False selection
@@ -592,8 +594,9 @@ function defaultMcChoices(): { letter: string; text: string }[] {
   ]
 }
 
-function blankQuestion(): QuestionDraft {
+function blankQuestion(type: QuestionType = 'Identification'): QuestionDraft {
   return {
+    type,
     prompt: '',
     answer: '',
     _tfAnswer: '',
@@ -621,7 +624,7 @@ function blankForm() {
     shuffleQuestions: true,
     showAnswersAfterSubmission: true,
     allowTextAnswers: true,
-    questions: [blankQuestion()] as QuestionDraft[],
+    questions: [blankQuestion('Identification')] as QuestionDraft[],
   }
 }
 
@@ -654,6 +657,29 @@ function encodeAnswer(q: QuestionDraft, category: string): string {
   }
   // Identification
   return q.answer
+}
+
+function questionTypeToApi(type: QuestionType): ApiQuestionType {
+  if (type === 'Multiple Choice') return 'multiple_choice'
+  if (type === 'True or False') return 'true_false'
+  return 'identification'
+}
+
+function apiTypeToQuestionType(type?: string | null): QuestionType | null {
+  if (type === 'multiple_choice') return 'Multiple Choice'
+  if (type === 'true_false') return 'True or False'
+  if (type === 'identification') return 'Identification'
+  return null
+}
+
+function inferQuestionType(answer?: string | null, fallback?: string | null): QuestionType {
+  const apiType = apiTypeToQuestionType(fallback)
+  if (apiType) return apiType
+  const raw = answer ?? ''
+  const upper = raw.trim().toUpperCase()
+  if (upper === 'TRUE' || upper === 'FALSE') return 'True or False'
+  if (raw.includes('CORRECT:') && raw.includes('|')) return 'Multiple Choice'
+  return fallback && (QUESTION_TYPES as readonly string[]).includes(fallback) ? fallback as QuestionType : 'Identification'
 }
 
 /** Parse a stored `answer` string back into the question draft's UI state. */
@@ -699,7 +725,7 @@ function decodeAnswer(
  * Used for the Sign Tutorial Video filename and enabled/disabled state.
  */
 function resolvedAnswerWord(q: QuestionDraft): string {
-  const cat = form.value.category
+  const cat = q.type
   if (cat === 'True or False') {
     return q._tfAnswer === 'TRUE' ? 'True' : q._tfAnswer === 'FALSE' ? 'False' : ''
   }
@@ -714,8 +740,8 @@ function resolvedAnswerWord(q: QuestionDraft): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function hasAnyTypeSpecificData(): boolean {
-  const cat = form.value.category
   return form.value.questions.some(q => {
+    const cat = q.type
     if (cat === 'True or False') return Boolean(q._tfAnswer)
     if (cat === 'Multiple Choice') return q._mcChoices.some(c => c.text.trim()) || Boolean(q._mcCorrect)
     return Boolean(q.answer?.trim())
@@ -770,16 +796,51 @@ function applyCategory(newCat: string, oldCat: string) {
 
     // Migrate to the new type where possible
     if (newCat === 'Identification') {
+      q.type = 'Identification'
       q.answer = prevAnswer                // pre-fill with previous correct answer
     } else if (newCat === 'True or False') {
+      q.type = 'True or False'
       if (prevAnswer.toLowerCase() === 'true') q._tfAnswer = 'TRUE'
       else if (prevAnswer.toLowerCase() === 'false') q._tfAnswer = 'FALSE'
     } else if (newCat === 'Multiple Choice') {
+      q.type = 'Multiple Choice'
       if (prevAnswer) {
         q._mcChoices[0].text = prevAnswer  // seed Choice A with the previous answer
         q._mcCorrect = 'A'
       }
     }
+  }
+}
+
+function onQuestionTypeChange(index: number, newType: string) {
+  const q = form.value.questions[index]
+  if (!q || q.type === newType || !(QUESTION_TYPES as readonly string[]).includes(newType)) return
+  applyQuestionType(q, newType as QuestionType)
+}
+
+function applyQuestionType(q: QuestionDraft, newType: QuestionType) {
+  const oldType = q.type
+  const prevAnswer =
+    oldType === 'Multiple Choice'
+      ? (q._mcChoices.find(c => c.letter === q._mcCorrect)?.text?.trim() ?? '')
+      : oldType === 'True or False'
+        ? (q._tfAnswer === 'TRUE' ? 'True' : q._tfAnswer === 'FALSE' ? 'False' : '')
+        : (q.answer?.trim() ?? '')
+
+  q.type = newType
+  q._tfAnswer = ''
+  q._mcChoices = defaultMcChoices()
+  q._mcCorrect = ''
+  q.answer = ''
+
+  if (newType === 'Identification') {
+    q.answer = prevAnswer
+  } else if (newType === 'True or False') {
+    if (prevAnswer.toLowerCase() === 'true') q._tfAnswer = 'TRUE'
+    else if (prevAnswer.toLowerCase() === 'false') q._tfAnswer = 'FALSE'
+  } else if (newType === 'Multiple Choice' && prevAnswer) {
+    q._mcChoices[0].text = prevAnswer
+    q._mcCorrect = 'A'
   }
 }
 
@@ -816,7 +877,7 @@ function removeMcChoice(questionIndex: number, choiceIndex: number) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function addQuestion() {
-  form.value.questions.push(blankQuestion())
+  form.value.questions.push(blankQuestion(form.value.category as QuestionType))
 }
 
 function removeQuestion(index: number) {
@@ -887,9 +948,9 @@ function materialsForClass(classId: string | number) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function validateQuestions(): string | null {
-  const cat = form.value.category
   for (let i = 0; i < form.value.questions.length; i++) {
     const q = form.value.questions[i]
+    const cat = q.type
     const label = `Question ${i + 1}`
     if (!q.prompt.trim()) return `${label}: Prompt cannot be empty.`
 
@@ -909,6 +970,11 @@ function validateQuestions(): string | null {
   return null
 }
 
+function assessmentCategory() {
+  const types = [...new Set(form.value.questions.map(question => question.type))]
+  return types.length === 1 ? types[0] : 'Mixed Questions'
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Save
 // ─────────────────────────────────────────────────────────────────────────────
@@ -920,7 +986,7 @@ async function saveAssessment() {
 
   normalizeTargetClasses()
   const targetClassIds = form.value.targetClassIds
-  if (!form.value.title || !form.value.description || !form.value.category || !form.value.week || targetClassIds.length === 0) {
+  if (!form.value.title || !form.value.description || !form.value.week || targetClassIds.length === 0) {
     error.value = `Please complete the ${props.title.toLowerCase()} information.`
     return
   }
@@ -956,7 +1022,13 @@ async function saveAssessment() {
   // Encode answers for the backend (preserves existing schema)
   const questions = questionEntries.map(({ question }) => ({
     prompt: question.prompt,
-    answer: encodeAnswer(question, form.value.category),
+    answer: encodeAnswer(question, question.type),
+    question_type: questionTypeToApi(question.type),
+    options: question.type === 'Multiple Choice'
+      ? question._mcChoices.map(choice => choice.text.trim()).filter(Boolean)
+      : question.type === 'True or False'
+        ? ['True', 'False']
+        : [],
   }))
 
   if (props.kind === 'quiz') {
@@ -971,7 +1043,7 @@ async function saveAssessment() {
       classId: Number(classId),
       moduleId: Number(form.value.moduleIdsByClass[classId]),
       description: form.value.description,
-      quizType: form.value.category,
+      quizType: assessmentCategory(),
       week: form.value.week,
       timeLimitSeconds,
       attemptsAllowed: form.value.attemptsAllowed,
@@ -993,7 +1065,7 @@ async function saveAssessment() {
       moduleId: null,
       topicId: null,
       description: form.value.description,
-      activityType: form.value.category,
+      activityType: assessmentCategory(),
       week: form.value.week,
       attemptsAllowed: form.value.attemptsAllowed,
       shuffleQuestions: form.value.shuffleQuestions,
@@ -1247,11 +1319,15 @@ async function hydrateForm() {
     showAnswersAfterSubmission: assessment.showAnswersAfterSubmission ?? true,
     allowTextAnswers: assessment.allowTextAnswers ?? true,
     questions: assessment.questions?.length
-      ? assessment.questions.map(q => ({
-          prompt: q.prompt,
-          ...decodeAnswer(q.answer, resolvedCategory),
-        })) as QuestionDraft[]
-      : [blankQuestion()],
+      ? assessment.questions.map(q => {
+          const questionType = inferQuestionType(q.answer, q.question_type ?? resolvedCategory)
+          return {
+            type: questionType,
+            prompt: q.prompt,
+            ...decodeAnswer(q.answer, questionType),
+          }
+        }) as QuestionDraft[]
+      : [blankQuestion(resolvedCategory as QuestionType)],
   }
 }
 

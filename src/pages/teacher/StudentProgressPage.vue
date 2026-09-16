@@ -23,11 +23,11 @@
       </div>
       <div class="card p-5 flex items-center gap-3">
         <div class="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center text-xl">🏆</div>
-        <div><div class="font-display text-2xl font-bold">{{ store.students.filter(s => s.status === 'Complete').length }}</div><div class="text-xs text-ink-soft font-medium">Passed</div></div>
+        <div><div class="font-display text-2xl font-bold">{{ passingStudents }}</div><div class="text-xs text-ink-soft font-medium">On Track</div></div>
       </div>
       <div class="card p-5 flex items-center gap-3">
         <div class="w-11 h-11 rounded-xl bg-rose-100 flex items-center justify-center text-xl">⚠️</div>
-        <div><div class="font-display text-2xl font-bold">{{ store.atRiskStudents.length }}</div><div class="text-xs text-ink-soft font-medium">Needs Help</div></div>
+        <div><div class="font-display text-2xl font-bold">{{ store.atRiskStudents.length }}</div><div class="text-xs text-ink-soft font-medium">Needs Guidance</div></div>
       </div>
     </div>
 
@@ -68,7 +68,7 @@
             </td>
             <td class="table-td font-mono text-xs">{{ s.quizActivity }}</td>
             <td class="table-td">
-              <span :class="statusBadge(s.status)">{{ s.status }}</span>
+              <span :class="statusBadge(s.status)">{{ statusLabel(s.status) }}</span>
             </td>
           </tr>
         </tbody>
@@ -78,25 +78,34 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTeacherStore } from '@/stores/teacher'
 
 const router = useRouter()
 const store  = useTeacherStore()
+const passingStudents = computed(() => store.students.filter(s => ['Good Progress', 'Excellent'].includes(s.status)).length)
 
 onMounted(() => {
   store.fetchDashboardSummary()
 })
 
 function progressGradient(status: string) {
-  if (status === 'Complete')    return 'bg-gradient-to-r from-brand-teal to-brand-green'
-  if (status === 'Needs Help')  return 'bg-gradient-to-r from-brand-rose to-orange-400'
+  if (status === 'Excellent') return 'bg-gradient-to-r from-brand-teal to-brand-green'
+  if (status === 'Good Progress') return 'bg-gradient-to-r from-brand-blue to-brand-violet'
+  if (status === 'Keep Improving') return 'bg-gradient-to-r from-orange-300 to-orange-500'
+  if (status === 'Needs Guidance' || status === 'Needs Help') return 'bg-gradient-to-r from-brand-rose to-orange-400'
   return 'bg-gradient-to-r from-brand-blue to-brand-violet'
 }
 function statusBadge(status: string) {
-  if (status === 'Complete')   return 'badge badge-green'
-  if (status === 'Needs Help') return 'badge badge-red'
+  if (status === 'Excellent') return 'badge badge-green'
+  if (status === 'Good Progress') return 'badge badge-blue'
+  if (status === 'Keep Improving') return 'badge badge-amber'
+  if (status === 'Needs Guidance' || status === 'Needs Help') return 'badge badge-red'
   return 'badge badge-blue'
+}
+
+function statusLabel(status: string) {
+  return status === 'Needs Help' ? 'Needs Guidance' : status
 }
 </script>

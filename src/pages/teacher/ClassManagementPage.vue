@@ -167,9 +167,10 @@
                   <label class="figma-label" for="class-records-status">Status</label>
                   <select id="class-records-status" v-model="recordFilters.status" class="input-field h-10" @change="loadClassRecords">
                     <option value="">All</option>
-                    <option value="completed">Completed</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="Needs Help">Needs Help</option>
+                    <option value="Needs Guidance">Needs Guidance</option>
+                    <option value="Keep Improving">Keep Improving</option>
+                    <option value="Good Progress">Good Progress</option>
+                    <option value="Excellent">Excellent</option>
                   </select>
                 </div>
                 <div>
@@ -228,7 +229,7 @@
                       <div>{{ record.handsignPractice.length }} practice{{ record.handsignPractice.length === 1 ? '' : 's' }}</div>
                       <div class="mt-1 text-[11px] text-ink-soft">Best {{ bestPracticeScore(record) }}</div>
                     </td>
-                    <td class="table-td"><span :class="statusBadge(record.status)">{{ record.status }}</span></td>
+                    <td class="table-td"><span :class="statusBadge(record.status)">{{ statusLabel(record.status) }}</span></td>
                     <td class="table-td">
                       <button class="btn-secondary px-3 py-1.5 text-xs" type="button" @click="toggleSelectedRecord(record)">
                         {{ selectedRecord?.studentId === record.studentId ? 'Hide Details' : 'View Details' }}
@@ -249,7 +250,7 @@
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 class="font-display text-xl font-bold text-ink">{{ selectedRecord.studentName }}</h3>
-                  <p class="mt-1 text-sm text-ink-soft">{{ classLabel(selectedRecord) }} - {{ selectedRecord.status }}</p>
+                  <p class="mt-1 text-sm text-ink-soft">{{ classLabel(selectedRecord) }} - {{ statusLabel(selectedRecord.status) }}</p>
                 </div>
                 <button class="btn-secondary px-3 py-1.5 text-xs" type="button" @click="selectedRecord = null">Close</button>
               </div>
@@ -267,7 +268,7 @@
                         <span class="badge badge-blue">{{ scoreText(item.score, item.total) }}</span>
                       </div>
                       <div class="mt-3 grid gap-2 text-xs text-ink-soft sm:grid-cols-2">
-                        <div><span class="font-semibold text-ink">Expected:</span> {{ item.expectedAnswers.join(', ') || 'No answer key' }}</div>
+                        <div><span class="font-semibold text-ink">Expected:</span> {{ formatExpectedAnswers(item.expectedAnswers) }}</div>
                         <div><span class="font-semibold text-ink">Submitted:</span> {{ formatAnswers(item.answers) }}</div>
                         <div><span class="font-semibold text-ink">Completed:</span> {{ formatDate(item.completedAt) }}</div>
                         <div><span class="font-semibold text-ink">Submission:</span> {{ item.submissionType || 'Manual' }}</div>
@@ -524,9 +525,16 @@ function bestPracticeScore(record: StudentRecord) {
 
 function statusBadge(status: string) {
   const normalized = status.toLowerCase()
+  if (normalized === 'excellent') return 'badge badge-green'
+  if (normalized === 'good progress') return 'badge badge-blue'
+  if (normalized === 'keep improving') return 'badge badge-amber'
+  if (normalized === 'needs guidance' || normalized === 'needs help') return 'badge badge-red'
   if (normalized === 'complete' || normalized === 'completed') return 'badge badge-green'
-  if (normalized === 'needs help') return 'badge badge-red'
   return 'badge badge-blue'
+}
+
+function statusLabel(status: string) {
+  return status.toLowerCase() === 'needs help' ? 'Needs Guidance' : status
 }
 
 function toggleSelectedRecord(record: StudentRecord) {
@@ -563,6 +571,29 @@ function scoreText(score?: number | null, total?: number | null) {
 function formatAnswers(answers: Record<string, string>) {
   const values = Object.values(answers || {}).filter(Boolean)
   return values.length ? values.join(', ') : 'No answer'
+}
+
+function formatExpectedAnswers(expectedAnswers: string[]) {
+  const values = expectedAnswers.map(formatExpectedAnswer).filter(Boolean)
+  return values.length ? values.join(', ') : 'No answer key'
+}
+
+function formatExpectedAnswer(answer: string) {
+  const raw = answer?.trim()
+  if (!raw) return ''
+
+  if (raw.includes('CORRECT:')) {
+    const parts = raw.split('|').map(part => part.trim()).filter(Boolean)
+    const correctPart = parts.find(part => part.startsWith('CORRECT:'))
+    const correctLetter = correctPart?.replace('CORRECT:', '').trim()
+    const optionPart = correctLetter
+      ? parts.find(part => part.startsWith(`${correctLetter}:`))
+      : null
+    const optionText = optionPart?.slice(2).trim()
+    return correctLetter && optionText ? `${correctLetter}. ${optionText}` : raw
+  }
+
+  return raw
 }
 
 function formatDate(value?: string | null) {
