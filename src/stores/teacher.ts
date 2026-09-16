@@ -1320,6 +1320,7 @@ function mapActivityResponse(assessment: TeacherAssessmentResponse): Activity {
     attemptsAllowed: assessment.attempts_allowed,
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,
+    allowTextAnswers: assessment.allow_text_answers ?? true,
     dueAt: assessment.due_at ?? null,
     createdAt: assessment.created_at ? new Date(assessment.created_at).toLocaleDateString() : null,
     dueDate: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString() : '',

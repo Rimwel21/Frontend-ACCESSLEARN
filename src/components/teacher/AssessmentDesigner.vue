@@ -1070,6 +1070,7 @@ async function saveAssessment() {
       attemptsAllowed: form.value.attemptsAllowed,
       shuffleQuestions: form.value.shuffleQuestions,
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
+      allowTextAnswers: form.value.allowTextAnswers,
       questions,
       dueAt: toApiDateTime(form.value.dueDate),
     })
