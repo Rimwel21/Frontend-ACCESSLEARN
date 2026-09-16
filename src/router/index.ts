@@ -51,6 +51,9 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: '', redirect: '/admin/dashboard' },
       { path: 'dashboard', name: 'AdminDashboard', component: () => import('@/pages/admin/DashboardPage.vue') },
+      { path: 'accounts', name: 'AdminAccounts', component: () => import('@/pages/admin/AccountManagementPage.vue') },
+      { path: 'teachers', name: 'AdminTeachers', component: () => import('@/pages/admin/TeacherManagementPage.vue') },
+      { path: 'students', name: 'AdminStudents', component: () => import('@/pages/admin/StudentManagementPage.vue') },
       { path: 'handsign-dataset', name: 'AdminHandsignDataset', component: () => import('@/pages/admin/HandsignDatasetPage.vue') },
       { path: 'sections', name: 'AdminSections', component: () => import('@/pages/admin/SectionManagementPage.vue') },
       { path: 'audit-log', name: 'AdminAuditLog', component: () => import('@/pages/admin/AuditLogPage.vue') },
