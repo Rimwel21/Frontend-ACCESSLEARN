@@ -39,7 +39,7 @@ export const adminService = {
   },
 
   async bulkAction(accountIds: number[], action: string, reason?: string): Promise<any> {
-    return apiFetch<any>('/admin/bulk-action', {
+    return apiFetch<any>('/admin/accounts/bulk-action', {
       method: 'POST',
       body: JSON.stringify({ account_ids: accountIds, action, reason })
     })
