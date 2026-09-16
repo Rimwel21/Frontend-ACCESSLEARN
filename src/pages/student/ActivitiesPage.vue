@@ -1,12 +1,12 @@
 <template>
-  <div class="min-h-screen bg-surface">
+  <div class="flex min-h-screen flex-col bg-surface lg:h-full lg:min-h-0 lg:overflow-hidden">
     <div class="border-b-[3px] border-brand-teal bg-gradient-to-r from-brand-blue to-brand-teal px-4 py-5 shadow-card sm:px-8 sm:py-6">
       <h1 class="font-display text-2xl font-black text-white sm:text-[28px]">Activities</h1>
     </div>
 
-    <div class="px-4 py-5 sm:px-7 sm:py-6">
-      <div class="grid items-start gap-5 xl:grid-cols-[1fr_240px]">
-        <div>
+    <div class="min-h-0 flex-1 px-4 py-5 sm:px-7 sm:py-6">
+      <div class="grid h-full min-h-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_240px]">
+        <div class="flex min-h-0 flex-col">
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 class="font-display text-sm font-black uppercase tracking-widest">Assigned Activities</h2>
             <button
@@ -28,7 +28,7 @@
             <p class="mt-2 text-sm text-ink-soft">Activities created by your teacher will appear here when they belong to your enrolled class.</p>
           </div>
 
-          <div v-else class="space-y-3">
+          <div v-else class="scrollbar-thin space-y-3 xl:max-h-[calc(100vh-11rem)] xl:overflow-y-auto xl:pr-2">
             <div
               v-for="act in activities"
               :key="act.id"
@@ -61,12 +61,12 @@
           </div>
         </div>
 
-        <div class="space-y-4">
+        <aside class="space-y-4 xl:sticky xl:top-0 xl:self-start">
           <div class="border-[3px] border-brand-teal bg-white shadow-card">
             <div class="border-b-[3px] border-brand-teal/30 bg-brand-blue px-3.5 py-2.5">
               <span class="font-display text-[12px] font-black uppercase tracking-wide text-white">In Progress</span>
             </div>
-            <div class="space-y-2 p-3">
+            <div class="scrollbar-thin max-h-52 space-y-2 overflow-y-auto p-3">
               <div v-if="inProgress.length === 0" class="text-xs font-bold text-ink-soft">No activities in progress.</div>
               <button
                 v-for="act in inProgress"
@@ -83,11 +83,14 @@
             <div class="border-b-[3px] border-brand-teal/30 bg-brand-blue px-3.5 py-2.5">
               <span class="font-display text-[12px] font-black uppercase tracking-wide text-white">Assigned</span>
             </div>
-            <div class="p-3 text-xs font-bold text-ink-soft">
-              {{ activities.length }} activity{{ activities.length === 1 ? '' : 'ies' }}
+            <div class="scrollbar-thin max-h-52 overflow-y-auto p-3">
+              <div class="text-xs font-bold text-ink-soft">{{ activities.length }} activity{{ activities.length === 1 ? '' : 'ies' }}</div>
+              <button v-for="act in activities.filter(activity => activity.status === 'Not Started')" :key="`assigned-${act.id}`" class="mt-2 block w-full truncate border-[2px] border-brand-teal bg-white px-2 py-1.5 text-left text-[11px] font-black text-brand-blue hover:bg-brand-blue-soft" @click="openActivity(act)">
+                {{ act.title }}
+              </button>
             </div>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   </div>

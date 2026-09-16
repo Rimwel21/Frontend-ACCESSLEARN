@@ -49,9 +49,9 @@
             </RouterLink>
           </div>
         </div>
-        <div class="overflow-x-auto">
+        <div class="scrollbar-thin max-h-[calc(100vh-19rem)] min-h-[240px] overflow-auto">
           <table class="w-full min-w-[720px] border-collapse">
-            <thead>
+            <thead class="sticky top-0 z-10 bg-surface shadow-sm">
               <tr>
                 <th class="table-th">Student</th>
                 <th class="table-th">Learning Material Progress</th>
