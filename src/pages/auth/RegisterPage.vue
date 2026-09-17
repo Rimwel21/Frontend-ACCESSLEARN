@@ -721,15 +721,22 @@ async function handleRequestOtp() {
     setTimeout(() => focusOtpDigit(0), 50)
 
     if (otpResponse.delivery === 'failed') {
-      fallbackOtp.value = ''
-      isOtpInputsEnabled.value = false
-      isRequestButtonEnabled.value = true
-      step.value = 1
-      requestStatus.value = {
-        message: 'OTP email could not be delivered. Check the mail configuration and try again.',
-        type: 'error',
+      fallbackOtp.value = otpResponse.debug_otp ?? ''
+      if (fallbackOtp.value) {
+        otpDigits.value = fallbackOtp.value.split('').slice(0, 6)
       }
-      verifyStatus.value = { message: '', type: '' }
+      isOtpInputsEnabled.value = true
+      isRequestButtonEnabled.value = false
+      step.value = 2
+      requestStatus.value = {
+        message: fallbackOtp.value
+          ? `Email delivery failed, but local testing OTP is ${fallbackOtp.value}.`
+          : 'OTP email could not be delivered. Check the mail configuration and try again.',
+        type: fallbackOtp.value ? 'warning' : 'error',
+      }
+      verifyStatus.value = fallbackOtp.value
+        ? { message: 'Local testing mode: verify the prefilled code to continue.', type: 'info' }
+        : { message: '', type: '' }
       return
     } else {
       requestStatus.value = {

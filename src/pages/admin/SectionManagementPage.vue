@@ -182,29 +182,92 @@
               <div
                 v-for="student in rosterModal.students"
                 :key="student.id"
-                class="rounded-2xl border border-brand-teal/15 bg-surface/60 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                class="rounded-2xl border border-brand-teal/15 bg-surface/60 px-4 py-3"
               >
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-blue to-brand-violet flex items-center justify-center text-white text-xs font-bold shrink-0">
-                      {{ student.name.slice(0, 2).toUpperCase() }}
-                    </div>
-                    <div class="min-w-0">
-                      <p class="font-semibold text-ink text-sm truncate">{{ student.name }}</p>
-                      <p class="text-xs text-ink-soft">
-                        <span :class="studentTypeBadge(student.student_type)" class="text-[10px] font-bold px-2 py-0.5 rounded-full">
-                          {{ formatStudentType(student.student_type) }}
-                        </span>
-                      </p>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-blue to-brand-violet flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        {{ student.name.slice(0, 2).toUpperCase() }}
+                      </div>
+                      <div class="min-w-0">
+                        <p class="font-semibold text-ink text-sm truncate">{{ student.name }}</p>
+                        <p class="text-xs text-ink-soft">
+                          <span :class="studentTypeBadge(student.student_type)" class="text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            {{ formatStudentType(student.student_type) }}
+                          </span>
+                        </p>
+                      </div>
                     </div>
                   </div>
+                  <div class="flex flex-col gap-2 sm:items-end">
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-ink-soft sm:text-right sm:grid-cols-1 shrink-0">
+                      <span>{{ student.grade_level_name }}</span>
+                      <span>{{ student.section_name }}</span>
+                      <span :class="statusColor(student.account_status)">{{ formatStatus(student.account_status) }}</span>
+                    </div>
+                    <button
+                      class="rounded-xl border border-brand-blue/30 bg-white px-3 py-1.5 text-xs font-bold text-brand-blue transition-all hover:border-brand-blue hover:bg-brand-blue/5"
+                      @click="startStudentTransfer(student)"
+                    >
+                      Transfer
+                    </button>
+                  </div>
                 </div>
-                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-ink-soft sm:text-right sm:grid-cols-1 shrink-0">
-                  <span>{{ student.grade_level_name }}</span>
-                  <span>{{ student.section_name }}</span>
-                  <span :class="statusColor(student.account_status)">{{ formatStatus(student.account_status) }}</span>
+
+                <form
+                  v-if="transferForm.studentId === student.id"
+                  class="mt-3 rounded-2xl border border-brand-teal/20 bg-white p-3"
+                  @submit.prevent="submitStudentTransfer"
+                >
+                  <div class="mb-3">
+                    <p class="text-[11px] font-black uppercase tracking-widest text-brand-teal">Transfer Student</p>
+                    <p class="mt-1 text-xs text-ink-soft">Move this learner to another grade level and section.</p>
+                  </div>
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label class="field-label" :for="`transfer-grade-${student.id}`">Target Grade</label>
+                      <select
+                        :id="`transfer-grade-${student.id}`"
+                        v-model.number="transferForm.gradeLevelId"
+                        class="input-field mt-1"
+                        required
+                        @change="handleTransferGradeChange"
+                      >
+                        <option :value="null" disabled>Select grade level</option>
+                        <option v-for="grade in gradeLevels" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="field-label" :for="`transfer-section-${student.id}`">Target Section</label>
+                      <select
+                        :id="`transfer-section-${student.id}`"
+                        v-model.number="transferForm.sectionId"
+                        class="input-field mt-1"
+                        :disabled="!transferForm.gradeLevelId || transferForm.loadingSections"
+                        required
+                      >
+                        <option :value="null" disabled>
+                          {{ transferForm.loadingSections ? 'Loading sections...' : 'Select section' }}
+                        </option>
+                        <option
+                          v-for="section in transferForm.sections"
+                          :key="section.id"
+                          :value="section.id"
+                        >
+                          {{ section.name }}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <button class="btn-secondary" type="button" @click="cancelStudentTransfer">Cancel</button>
+                    <button class="btn-primary" type="submit" :disabled="transferForm.saving">
+                      {{ transferForm.saving ? 'Transferring...' : 'Confirm Transfer' }}
+                    </button>
+                  </div>
+                </form>
                 </div>
-              </div>
             </div>
           </div>
 
@@ -230,7 +293,9 @@ import {
   updateAdminSection,
   fetchSectionsWithTeacherInfo,
   fetchSectionStudents,
+  transferStudent,
   type GradeLevelOption,
+  type SectionOption,
   type SectionWithTeacher,
   type SectionStudent,
 } from '@/lib/gradeSections'
@@ -256,6 +321,15 @@ const rosterModal = reactive({
   loading: false,
   section: null as SectionWithTeacher | null,
   students: [] as SectionStudent[],
+})
+
+const transferForm = reactive({
+  studentId: null as number | null,
+  gradeLevelId: null as number | null,
+  sectionId: null as number | null,
+  sections: [] as SectionOption[],
+  loadingSections: false,
+  saving: false,
 })
 
 
@@ -394,6 +468,7 @@ async function confirmDelete() {
 async function openViewStudents(sec: SectionWithTeacher) {
   rosterModal.section = sec
   rosterModal.students = []
+  cancelStudentTransfer()
   rosterModal.open = true
   rosterModal.loading = true
   try {
@@ -403,6 +478,72 @@ async function openViewStudents(sec: SectionWithTeacher) {
     rosterModal.open = false
   } finally {
     rosterModal.loading = false
+  }
+}
+
+function startStudentTransfer(student: SectionStudent) {
+  transferForm.studentId = student.id
+  transferForm.gradeLevelId = student.grade_level_id
+  transferForm.sectionId = student.section_id
+  transferForm.sections = []
+  loadTransferSections(student.grade_level_id)
+}
+
+function cancelStudentTransfer() {
+  transferForm.studentId = null
+  transferForm.gradeLevelId = null
+  transferForm.sectionId = null
+  transferForm.sections = []
+  transferForm.loadingSections = false
+  transferForm.saving = false
+}
+
+async function handleTransferGradeChange() {
+  transferForm.sectionId = null
+  if (transferForm.gradeLevelId) {
+    await loadTransferSections(transferForm.gradeLevelId)
+  } else {
+    transferForm.sections = []
+  }
+}
+
+async function loadTransferSections(gradeLevelId: number) {
+  transferForm.loadingSections = true
+  transferForm.sections = []
+  try {
+    transferForm.sections = await fetchSectionOptions(gradeLevelId, auth.token)
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to load target sections.'
+  } finally {
+    transferForm.loadingSections = false
+  }
+}
+
+async function submitStudentTransfer() {
+  if (!transferForm.studentId || !transferForm.gradeLevelId || !transferForm.sectionId || !rosterModal.section) {
+    errorMsg.value = 'Select the target grade level and section before transferring.'
+    return
+  }
+
+  successMsg.value = ''
+  errorMsg.value = ''
+  transferForm.saving = true
+  try {
+    await transferStudent(
+      transferForm.studentId,
+      transferForm.gradeLevelId,
+      transferForm.sectionId,
+      auth.token,
+    )
+    successMsg.value = 'Student transferred successfully.'
+    const currentSection = rosterModal.section
+    cancelStudentTransfer()
+    rosterModal.students = await fetchSectionStudents(currentSection.id, auth.token)
+    await loadAllSections()
+  } catch (err) {
+    errorMsg.value = err instanceof ApiError ? err.message : 'Failed to transfer student.'
+  } finally {
+    transferForm.saving = false
   }
 }
 
