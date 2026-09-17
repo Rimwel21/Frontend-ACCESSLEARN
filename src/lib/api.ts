@@ -51,9 +51,14 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}) {
       cache: options.cache ?? 'no-store',
     })
   } catch (err) {
+    const fallbackResponse = await retryLocalApiBase(path, options, headers)
+    if (fallbackResponse) {
+      response = fallbackResponse
+    } else {
     const cached = await getOfflineCachedResponse<T>(path, options)
     if (cached) return cached
     throw new ApiError(err instanceof Error ? err.message : 'Network request failed', 0)
+    }
   }
 
   if (!response.ok) {
@@ -78,6 +83,33 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}) {
   }
 
   return data
+}
+
+async function retryLocalApiBase(path: string, options: ApiOptions, headers: Headers) {
+  const fallbackBaseUrl = localApiFallbackBaseUrl()
+  if (!fallbackBaseUrl) return null
+
+  try {
+    return await fetch(`${fallbackBaseUrl}${path}`, {
+      ...options,
+      headers: new Headers(headers),
+      cache: options.cache ?? 'no-store',
+    })
+  } catch {
+    return null
+  }
+}
+
+function localApiFallbackBaseUrl() {
+  if (API_BASE_URL.includes('127.0.0.1')) {
+    return API_BASE_URL.replace('127.0.0.1', 'localhost')
+  }
+
+  if (API_BASE_URL.includes('localhost')) {
+    return API_BASE_URL.replace('localhost', '127.0.0.1')
+  }
+
+  return null
 }
 
 function shouldCacheApiResponse(path: string, options: ApiOptions) {
