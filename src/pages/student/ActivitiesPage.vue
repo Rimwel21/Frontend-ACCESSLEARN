@@ -109,6 +109,7 @@ interface ActivityRow {
   description: string
   category?: string | null
   timeLimit?: string | null
+  startedAt?: string | null
   status: ActivityStatus
 }
 
@@ -123,7 +124,10 @@ const activities = computed<ActivityRow[]>(() => content.activities.map(assessme
   description: assessment.description,
   category: assessment.category,
   timeLimit: assessment.time_limit,
-  status: assessment.student_status === 'completed' ? 'Finished' : 'Not Started',
+  startedAt: assessment.student_started_at,
+  status: assessment.student_status === 'completed'
+    ? 'Finished'
+    : (assessment.student_status === 'in_progress' || assessment.student_started_at ? 'In Progress' : 'Not Started'),
 })))
 
 const inProgress = computed(() => activities.value.filter(activity => activity.status === 'In Progress'))
