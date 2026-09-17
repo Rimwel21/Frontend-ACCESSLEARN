@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'Home', component: () => import('@/pages/LandingPage.vue') },
+  { path: '/about', name: 'About', component: () => import('@/pages/AboutPage.vue') },
   { path: '/portal', name: 'Portal', component: () => import('@/pages/auth/PortalPage.vue') },
   { path: '/login',    name: 'Login',    component: () => import('@/pages/auth/LoginPage.vue') },
   { path: '/register', name: 'Register', component: () => import('@/pages/auth/RegisterPage.vue') },
@@ -21,7 +22,6 @@ const routes: RouteRecordRaw[] = [
       { path: 'dashboard',   name: 'TeacherDashboard', component: () => import('@/pages/teacher/DashboardPage.vue') },
       { path: 'class',       name: 'ClassManagement',  component: () => import('@/pages/teacher/ClassManagementPage.vue') },
       { path: 'records',     name: 'TeacherStudentRecords', component: () => import('@/pages/teacher/StudentRecordsPage.vue') },
-      { path: 'activity-logs', name: 'TeacherActivityLogs', component: () => import('@/pages/teacher/ActivityLogsPage.vue') },
       { path: 'modules',     name: 'Modules',          component: () => import('@/pages/teacher/ModulesPage.vue') },
       { path: 'modules/:moduleId/preview', name: 'ModulePreview', component: () => import('@/pages/teacher/ModulePreviewPage.vue') },
       { path: 'activities',  name: 'TeacherActivities', component: () => import('@/pages/teacher/ActivitiesPage.vue') },
@@ -51,6 +51,9 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: '', redirect: '/admin/dashboard' },
       { path: 'dashboard', name: 'AdminDashboard', component: () => import('@/pages/admin/DashboardPage.vue') },
+      { path: 'accounts', name: 'AdminAccounts', component: () => import('@/pages/admin/AccountManagementPage.vue') },
+      { path: 'teachers', name: 'AdminTeachers', component: () => import('@/pages/admin/TeacherManagementPage.vue') },
+      { path: 'students', name: 'AdminStudents', component: () => import('@/pages/admin/StudentManagementPage.vue') },
       { path: 'handsign-dataset', name: 'AdminHandsignDataset', component: () => import('@/pages/admin/HandsignDatasetPage.vue') },
       { path: 'sections', name: 'AdminSections', component: () => import('@/pages/admin/SectionManagementPage.vue') },
       { path: 'audit-log', name: 'AdminAuditLog', component: () => import('@/pages/admin/AuditLogPage.vue') },
@@ -103,7 +106,7 @@ router.beforeEach(async (to) => {
 
   if (to.meta.role && auth.role && to.meta.role !== auth.role) {
     return auth.role === 'teacher'
-      ? { path: '/teacher/class' }
+      ? { path: '/teacher/dashboard' }
       : auth.role === 'admin'
         ? { path: '/admin/dashboard' }
         : { path: '/student/dashboard' }
@@ -117,7 +120,7 @@ router.beforeEach(async (to) => {
     }
 
     return auth.role === 'teacher'
-      ? { path: '/teacher/class' }
+      ? { path: '/teacher/dashboard' }
       : auth.role === 'admin'
         ? { path: '/admin/dashboard' }
         : { path: '/student/dashboard' }

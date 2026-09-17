@@ -1,10 +1,19 @@
 <template>
-  <main class="min-h-screen bg-[#f0f2f8] flex items-center justify-center px-4 py-10">
-    <div class="w-full max-w-md bg-white rounded-[24px] shadow-[0_8px_40px_rgba(15,23,42,0.10)] p-8">
+  <main class="flex min-h-screen items-center justify-center bg-[#f0f2f8] px-4 py-6 sm:py-10">
+    <div class="w-full max-w-md rounded-[20px] bg-white p-5 shadow-[0_8px_40px_rgba(15,23,42,0.10)] sm:rounded-[24px] sm:p-8">
 
       <!-- Back link -->
-      <RouterLink to="/portal" class="inline-flex items-center gap-1.5 text-sm font-bold text-brand-blue hover:text-blue-700 transition-colors mb-6">
+      <RouterLink
+        to="/portal"
+        class="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-teal/40 bg-white px-3.5 py-2 text-[0px] font-black text-brand-blue shadow-sm transition-all hover:-translate-x-0.5 hover:border-brand-amber hover:bg-brand-blue-soft focus:outline-none focus:ring-2 focus:ring-brand-teal/30"
+        aria-label="Return to portal"
+      >
         ← Back
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6" />
+          <path d="M9 12h11" />
+        </svg>
+        <span class="text-xs sm:text-sm">Back to portal</span>
       </RouterLink>
 
       <!-- Role badge -->
@@ -13,7 +22,7 @@
       </p>
 
       <!-- Title -->
-      <h1 class="font-display text-[2rem] font-bold text-ink leading-tight mb-6">
+      <h1 class="mb-6 font-display text-3xl font-bold leading-tight text-ink sm:text-[2rem]">
         {{ roleLabel }} Login
       </h1>
 
@@ -21,7 +30,7 @@
 
         <div>
           <label class="field-label" :for="role === 'teacher' ? 'email' : 'account'">
-            {{ role === 'teacher' ? 'Email' : 'Username or email' }}
+            {{ role === 'teacher' ? 'Email' : 'Username' }}
           </label>
           <input
             :id="role === 'teacher' ? 'email' : 'account'"
@@ -29,14 +38,14 @@
             class="input-field mt-2"
             :type="role === 'teacher' ? 'email' : 'text'"
             :autocomplete="role === 'teacher' ? 'email' : 'username'"
-            :placeholder="role === 'teacher' ? 'teacher@school.edu' : 'Enter username or email'"
+            :placeholder="role === 'teacher' ? 'Please enter your teacher email' : 'Enter username'"
             minlength="3" maxlength="60" required
           />
         </div>
 
         <div>
           <label class="field-label" for="password">Password</label>
-          <div class="mt-2 grid grid-cols-[1fr_auto] gap-2">
+          <div class="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
             <input id="password" v-model="password" class="input-field"
               :type="showPassword ? 'text' : 'password'"
               autocomplete="current-password" minlength="8" maxlength="30" required />
@@ -52,6 +61,65 @@
           </button>
         </div>
 
+        <div v-if="showPasswordReset" class="rounded-xl border border-brand-teal/30 bg-brand-teal/5 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="font-display text-base font-bold text-ink">Reset Teacher Password</h2>
+              <p class="mt-1 text-xs font-semibold text-ink-soft">Use the OTP sent to your teacher email.</p>
+            </div>
+            <button type="button" class="text-xs font-bold text-ink-soft hover:text-brand-rose" @click="closePasswordReset">Close</button>
+          </div>
+
+          <div class="mt-4 grid gap-3">
+            <div>
+              <label class="field-label" for="reset-email">Teacher Email</label>
+              <input id="reset-email" v-model.trim="resetEmail" class="input-field mt-1" type="email" autocomplete="email" required />
+            </div>
+
+            <button
+              type="button"
+              class="btn-secondary justify-center rounded-lg"
+              :disabled="auth.loading || resetStep !== 1"
+              @click="requestPasswordResetOtp"
+            >
+              {{ auth.loading && resetStep === 1 ? 'Sending OTP...' : 'Send OTP' }}
+            </button>
+
+            <div v-if="resetStep >= 2" class="grid gap-3">
+              <div>
+                <label class="field-label" for="reset-otp">OTP Code</label>
+                <input id="reset-otp" v-model.trim="resetOtp" class="input-field mt-1" inputmode="numeric" minlength="6" maxlength="6" placeholder="6-digit code" />
+              </div>
+              <button
+                v-if="resetStep === 2"
+                type="button"
+                class="btn-secondary justify-center rounded-lg"
+                :disabled="auth.loading"
+                @click="verifyPasswordResetOtp"
+              >
+                {{ auth.loading ? 'Verifying...' : 'Verify OTP' }}
+              </button>
+            </div>
+
+            <div v-if="resetStep >= 3" class="grid gap-3">
+              <div>
+                <label class="field-label" for="new-password">New Password</label>
+                <input id="new-password" v-model="newPassword" class="input-field mt-1" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+              </div>
+              <div>
+                <label class="field-label" for="confirm-password">Confirm New Password</label>
+                <input id="confirm-password" v-model="confirmPassword" class="input-field mt-1" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+              </div>
+              <button type="button" class="btn-primary justify-center rounded-lg" :disabled="auth.loading" @click="confirmPasswordReset">
+                {{ auth.loading ? 'Saving...' : 'Create New Password' }}
+              </button>
+            </div>
+
+            <p v-if="resetMessage" class="status-success" role="status">{{ resetMessage }}</p>
+            <p v-if="resetError" class="status-error" role="alert">{{ resetError }}</p>
+          </div>
+        </div>
+
         <div v-if="isPendingApproval" class="status-warning" role="status">
           <p class="font-bold">⏳ Account Pending Approval</p>
           <p class="mt-1 text-xs font-normal opacity-80">Your account is waiting for admin verification.</p>
@@ -63,7 +131,6 @@
         </div>
 
         <p v-else-if="auth.error" class="status-error" role="alert">{{ auth.error }}</p>
-        <p v-else-if="recoveryMessage" class="status-warning" role="status">{{ recoveryMessage }}</p>
 
         <button type="submit" class="btn-primary w-full justify-center rounded-xl py-3 mt-1 text-sm font-bold" :disabled="auth.loading">
           {{ auth.loading ? 'Signing in...' : 'Login' }}
@@ -96,27 +163,110 @@ const password = ref('')
 const showPassword = ref(false)
 const isPendingApproval = ref(false)
 const isBlocked = ref(false)
-const recoveryMessage = ref('')
+const showPasswordReset = ref(false)
+const resetStep = ref(1)
+const resetEmail = ref('')
+const resetOtp = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+const resetMessage = ref('')
+const resetError = ref('')
 
 const roleLabel = computed(() => role.value === 'teacher' ? 'Teacher' : 'Student')
 
 function handleForgotPassword() {
-  recoveryMessage.value = 'Please contact your school administrator or support team to reset your password.'
+  showPasswordReset.value = true
+  resetEmail.value = accountIdentityInput.value.includes('@') ? accountIdentityInput.value : resetEmail.value
+  resetMessage.value = ''
+  resetError.value = ''
   auth.error = ''
+}
+
+function closePasswordReset() {
+  showPasswordReset.value = false
+  resetStep.value = 1
+  resetOtp.value = ''
+  newPassword.value = ''
+  confirmPassword.value = ''
+  resetMessage.value = ''
+  resetError.value = ''
+}
+
+async function requestPasswordResetOtp() {
+  resetMessage.value = ''
+  resetError.value = ''
+  const email = resetEmail.value.trim()
+  if (!email) {
+    resetError.value = 'Enter your teacher email.'
+    return
+  }
+
+  try {
+    const data = await auth.requestTeacherPasswordResetOtp(email)
+    resetStep.value = 2
+    resetMessage.value = data.delivery === 'failed'
+      ? 'OTP email could not be delivered. Please check the mail configuration and try again.'
+      : data.message || 'OTP sent. Check your email.'
+  } catch (err) {
+    resetError.value = err instanceof Error ? err.message : 'Failed to send OTP.'
+  }
+}
+
+async function verifyPasswordResetOtp() {
+  resetMessage.value = ''
+  resetError.value = ''
+  if (!/^\d{6}$/.test(resetOtp.value)) {
+    resetError.value = 'OTP must be exactly 6 digits.'
+    return
+  }
+
+  try {
+    const data = await auth.verifyTeacherPasswordResetOtp(resetEmail.value.trim(), resetOtp.value)
+    resetStep.value = 3
+    resetMessage.value = data.message || 'OTP verified. Enter your new password.'
+  } catch (err) {
+    resetError.value = err instanceof Error ? err.message : 'OTP verification failed.'
+  }
+}
+
+async function confirmPasswordReset() {
+  resetMessage.value = ''
+  resetError.value = ''
+  if (newPassword.value.length < 8) {
+    resetError.value = 'Password must be at least 8 characters.'
+    return
+  }
+  if (newPassword.value !== confirmPassword.value) {
+    resetError.value = 'Passwords do not match.'
+    return
+  }
+
+  try {
+    const data = await auth.confirmTeacherPasswordReset(resetEmail.value.trim(), resetOtp.value, newPassword.value)
+    password.value = newPassword.value
+    accountIdentityInput.value = resetEmail.value.trim()
+    resetMessage.value = data.message || 'Password reset successfully.'
+    resetStep.value = 1
+    resetOtp.value = ''
+    newPassword.value = ''
+    confirmPassword.value = ''
+  } catch (err) {
+    resetError.value = err instanceof Error ? err.message : 'Password reset failed.'
+  }
 }
 
 async function submitLogin() {
   isPendingApproval.value = false
   isBlocked.value = false
   auth.error = ''
-  recoveryMessage.value = ''
+  resetMessage.value = ''
+  resetError.value = ''
   const accountIdentity = accountIdentityInput.value.trim()
-  const isEmailLogin = accountIdentity.includes('@')
 
   try {
     const data = await auth.login({
-      email: role.value === 'teacher' || isEmailLogin ? accountIdentity : null,
-      username: role.value === 'student' && !isEmailLogin ? accountIdentity : null,
+      email: role.value === 'teacher' ? accountIdentity : null,
+      username: role.value === 'student' ? accountIdentity : null,
       password: password.value,
     }, role.value)
 
@@ -125,7 +275,7 @@ async function submitLogin() {
       return
     }
 
-    router.push(role.value === 'teacher' ? '/teacher/class' : '/student/dashboard')
+    router.push(role.value === 'teacher' ? '/teacher/dashboard' : '/student/dashboard')
   } catch (err) {
     if (err instanceof ApiError && err.status === 403) {
       if (err.message.toLowerCase().includes('admin approval') || err.message.toLowerCase().includes('wait for admin')) {

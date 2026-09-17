@@ -46,6 +46,54 @@
           </button>
         </div>
 
+        <div v-if="showPasswordReset" class="rounded-2xl border border-brand-blue/20 bg-brand-blue/5 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="font-display text-base font-bold text-ink">Reset Admin Password</h2>
+              <p class="mt-1 text-xs font-semibold text-ink-soft">A reset OTP will be sent to the admin email.</p>
+            </div>
+            <button type="button" class="text-xs font-bold text-ink-soft hover:text-brand-rose" @click="closePasswordReset">Close</button>
+          </div>
+
+          <div class="mt-4 grid gap-3">
+            <div>
+              <label class="field-label" for="reset-email">Admin Email</label>
+              <input id="reset-email" v-model.trim="resetEmail" class="input-field mt-1" type="email" autocomplete="email" />
+            </div>
+
+            <button type="button" class="btn-secondary justify-center rounded-lg" :disabled="loading || resetStep !== 1" @click="requestPasswordResetOtp">
+              {{ loading && resetStep === 1 ? 'Sending OTP...' : 'Send OTP' }}
+            </button>
+
+            <div v-if="resetStep >= 2" class="grid gap-3">
+              <div>
+                <label class="field-label" for="reset-otp">OTP Code</label>
+                <input id="reset-otp" v-model.trim="resetOtp" class="input-field mt-1" inputmode="numeric" minlength="6" maxlength="6" placeholder="6-digit code" />
+              </div>
+              <button v-if="resetStep === 2" type="button" class="btn-secondary justify-center rounded-lg" :disabled="loading" @click="verifyPasswordResetOtp">
+                {{ loading ? 'Verifying...' : 'Verify OTP' }}
+              </button>
+            </div>
+
+            <div v-if="resetStep >= 3" class="grid gap-3">
+              <div>
+                <label class="field-label" for="new-password">New Password</label>
+                <input id="new-password" v-model="newPassword" class="input-field mt-1" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+              </div>
+              <div>
+                <label class="field-label" for="confirm-password">Confirm New Password</label>
+                <input id="confirm-password" v-model="confirmPassword" class="input-field mt-1" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+              </div>
+              <button type="button" class="btn-primary justify-center rounded-lg" :disabled="loading" @click="confirmPasswordReset">
+                {{ loading ? 'Saving...' : 'Create New Password' }}
+              </button>
+            </div>
+
+            <p v-if="resetMessage" class="status-success" role="status">{{ resetMessage }}</p>
+            <p v-if="resetError" class="status-error" role="alert">{{ resetError }}</p>
+          </div>
+        </div>
+
         <p v-if="errorMsg" class="status-error flex items-center gap-2 animate-wiggle" role="alert">
           <span>⚠️</span> {{ errorMsg }}
         </p>
@@ -77,6 +125,14 @@ const password = ref('')
 const showPassword = ref(false)
 const loading = ref(false)
 const errorMsg = ref('')
+const showPasswordReset = ref(false)
+const resetStep = ref(1)
+const resetEmail = ref('')
+const resetOtp = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+const resetMessage = ref('')
+const resetError = ref('')
 
 async function handleLogin() {
   loading.value = true
@@ -99,7 +155,91 @@ async function handleLogin() {
 }
 
 function handleForgotPassword() {
-    alert('Administrative password reset requires System Administrator approval. Please contact the IT department.')
+  showPasswordReset.value = true
+  resetEmail.value = email.value || resetEmail.value
+  resetMessage.value = ''
+  resetError.value = ''
+  errorMsg.value = ''
+}
+
+function closePasswordReset() {
+  showPasswordReset.value = false
+  resetStep.value = 1
+  resetOtp.value = ''
+  newPassword.value = ''
+  confirmPassword.value = ''
+  resetMessage.value = ''
+  resetError.value = ''
+}
+
+async function requestPasswordResetOtp() {
+  resetMessage.value = ''
+  resetError.value = ''
+  const adminEmail = resetEmail.value.trim()
+  if (!adminEmail) {
+    resetError.value = 'Enter the admin email.'
+    return
+  }
+
+  loading.value = true
+  try {
+    const data = await auth.requestAdminPasswordResetOtp(adminEmail)
+    resetStep.value = 2
+    resetMessage.value = data.message || 'OTP sent to the admin email.'
+  } catch (err) {
+    resetError.value = err instanceof Error ? err.message : 'Failed to send OTP.'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function verifyPasswordResetOtp() {
+  resetMessage.value = ''
+  resetError.value = ''
+  if (!/^\d{6}$/.test(resetOtp.value)) {
+    resetError.value = 'OTP must be exactly 6 digits.'
+    return
+  }
+
+  loading.value = true
+  try {
+    const data = await auth.verifyAdminPasswordResetOtp(resetEmail.value.trim(), resetOtp.value)
+    resetStep.value = 3
+    resetMessage.value = data.message || 'OTP verified. Enter your new password.'
+  } catch (err) {
+    resetError.value = err instanceof Error ? err.message : 'OTP verification failed.'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function confirmPasswordReset() {
+  resetMessage.value = ''
+  resetError.value = ''
+  if (newPassword.value.length < 8) {
+    resetError.value = 'Password must be at least 8 characters.'
+    return
+  }
+  if (newPassword.value !== confirmPassword.value) {
+    resetError.value = 'Passwords do not match.'
+    return
+  }
+
+  loading.value = true
+  try {
+    const data = await auth.confirmAdminPasswordReset(resetEmail.value.trim(), resetOtp.value, newPassword.value)
+    email.value = resetEmail.value.trim()
+    password.value = newPassword.value
+    resetMessage.value = data.message || 'Password reset successfully.'
+    resetStep.value = 1
+    resetOtp.value = ''
+    newPassword.value = ''
+    confirmPassword.value = ''
+  } catch (err) {
+    resetError.value = err instanceof Error ? err.message : 'Password reset failed.'
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

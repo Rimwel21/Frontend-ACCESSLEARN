@@ -1,8 +1,15 @@
 <template>
   <main class="auth-page">
     <section class="auth-card max-w-3xl">
-      <p class="eyebrow">{{ auth.role }}</p>
-      <h1 class="auth-title">{{ roleLabel }} Profile Setup</h1>
+      <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p class="eyebrow">{{ auth.role }}</p>
+          <h1 class="auth-title">{{ roleLabel }} Profile Setup</h1>
+        </div>
+        <button type="button" class="btn-secondary rounded-lg" @click="goBackFromProfile">
+          Back
+        </button>
+      </div>
 
       <div v-if="profile.loading" class="empty-state">Loading your existing profile...</div>
 
@@ -32,6 +39,7 @@
                 v-model="studentForm.grade_level_id"
                 class="input-field"
                 required
+                :disabled="isExistingStudentProfile"
                 @change="handleStudentGradeChange"
               >
                 <option :value="null">Select grade</option>
@@ -40,14 +48,14 @@
             </div>
             <div>
               <label class="field-label" for="section">Section</label>
-              <select id="section" v-model="studentForm.section_id" class="input-field" required :disabled="studentSections.length === 0">
+              <select id="section" v-model="studentForm.section_id" class="input-field" required :disabled="isExistingStudentProfile || studentSections.length === 0">
                 <option :value="null">Select section</option>
                 <option v-for="section in studentSections" :key="section.id" :value="section.id">{{ section.name }}</option>
               </select>
             </div>
             <div>
               <label class="field-label" for="student-type">Student Type</label>
-              <select id="student-type" v-model="studentForm.student_type" class="input-field" required>
+              <select id="student-type" v-model="studentForm.student_type" class="input-field" required :disabled="isExistingStudentProfile">
                 <option value="">Select type</option>
                 <option value="regular">Regular</option>
                 <option value="hearing impaired">Hearing Impaired</option>
@@ -178,6 +186,7 @@ const teacherForm = ref({
 })
 
 const roleLabel = computed(() => auth.role === 'student' ? 'Student' : 'Teacher')
+const isExistingStudentProfile = computed(() => auth.role === 'student' && Boolean(profile.profile))
 
 onMounted(async () => {
   await loadGradeLevels()
@@ -246,11 +255,15 @@ async function submitProfile() {
     : teacherForm.value
 
   await profile.saveProfile(payload, imageFile.value)
-  message.value = 'Profile saved. Opening dashboard...'
+  message.value = profile.imageUploadWarning || 'Profile saved. Opening dashboard...'
 
   setTimeout(() => {
-    router.push(auth.role === 'student' ? '/student/dashboard' : '/teacher/class')
+    router.push(auth.role === 'student' ? '/student/dashboard' : '/teacher/dashboard')
   }, 500)
+}
+
+function goBackFromProfile() {
+  router.push(auth.role === 'student' ? '/student/dashboard' : '/teacher/dashboard')
 }
 
 function normalizeStudentPayload() {

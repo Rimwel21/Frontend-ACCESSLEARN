@@ -181,12 +181,79 @@
             Score: {{ quizResult.score }} / {{ quizResult.total }}
           </div>
 
+          <section v-if="activeQuiz.student_retake_eligible || activeQuiz.student_retake_status" class="border-[3px] border-brand-teal bg-white p-4 shadow-card">
+            <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Retake</div>
+            <p class="mt-1 text-sm font-bold text-ink">
+              {{ retakeStatusText(activeQuiz.student_retake_status, activeQuiz.student_retake_reason) }}
+            </p>
+          </section>
+
           <div v-for="(question, index) in activeQuiz.questions" :key="index" class="border-[3px] border-brand-teal bg-white p-5">
-            <label class="block text-sm font-black">Question {{ index + 1 }}</label>
-            <p class="mt-1 text-sm text-gray-700">{{ question.prompt }}</p>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <label class="block text-sm font-black">Question {{ index + 1 }}</label>
+              <span class="border-[2px] border-brand-teal bg-brand-blue-soft px-2 py-1 font-mono text-[9px] font-black uppercase text-brand-blue">
+                {{ quizQuestionTypeLabel(question.answer) }}
+              </span>
+            </div>
+            <div class="mt-3 border-[2px] border-brand-teal bg-surface p-3">
+              <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Visual Prompt</div>
+              <p class="mt-1 text-sm font-bold text-gray-700">{{ question.prompt }}</p>
+            </div>
+
+            <!-- Multiple Choice -->
+            <div v-if="parseQuestionOptions(question.answer).type === 'multiple_choice'" class="mt-3 space-y-2">
+              <label
+                v-for="choice in parseQuestionOptions(question.answer).choices"
+                :key="choice.letter"
+                :class="[
+                  'flex cursor-pointer items-center gap-3 border-[2px] border-brand-teal p-3 text-sm font-bold transition-all',
+                  quizAnswers[String(index)] === choice.letter
+                    ? 'bg-brand-blue text-white shadow-[2px_2px_0_#000]'
+                    : 'bg-white text-ink hover:bg-brand-blue-soft',
+                  quizLocked ? 'cursor-not-allowed opacity-60' : ''
+                ]"
+              >
+                <input
+                  type="radio"
+                  :name="`q-${index}`"
+                  :value="choice.letter"
+                  :checked="quizAnswers[String(index)] === choice.letter"
+                  :disabled="quizLocked"
+                  class="hidden"
+                  @change="quizAnswers[String(index)] = choice.letter; saveActiveQuizAnswers()"
+                />
+                <span :class="['grid h-6 w-6 shrink-0 place-items-center rounded-full border-[2px] border-current text-xs font-black', quizAnswers[String(index)] === choice.letter ? 'bg-white text-brand-blue' : 'bg-surface text-ink']">
+                  {{ choice.letter }}
+                </span>
+                <span>{{ choice.text }}</span>
+              </label>
+            </div>
+
+            <!-- True or False -->
+            <div v-else-if="parseQuestionOptions(question.answer).type === 'true_false'" class="mt-3 flex gap-3">
+              <button
+                v-for="tf in parseQuestionOptions(question.answer).choices"
+                :key="tf.letter"
+                type="button"
+                :disabled="quizLocked"
+                :class="[
+                  'flex-1 border-[2px] border-brand-teal py-3 text-center text-sm font-black transition-all',
+                  quizAnswers[String(index)] === tf.letter
+                    ? 'bg-brand-blue text-white shadow-[2px_2px_0_#000]'
+                    : 'bg-white text-ink hover:bg-brand-blue-soft',
+                  quizLocked ? 'cursor-not-allowed opacity-60' : ''
+                ]"
+                @click="quizAnswers[String(index)] = tf.letter; saveActiveQuizAnswers()"
+              >
+                {{ tf.text }}
+              </button>
+            </div>
+
+            <!-- Identification (text input) -->
             <input
+              v-else
               v-model="quizAnswers[String(index)]"
-              class="mt-3 w-full border-[2px] border-brand-teal px-3 py-2 text-sm outline-none focus:bg-brand-blue-soft disabled:opacity-60 disabled:cursor-not-allowed"
+              class="mt-3 w-full border-[2px] border-brand-teal px-3 py-2 text-sm outline-none focus:bg-brand-blue-soft disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="quizLocked"
               placeholder="Your answer"
               @input="saveActiveQuizAnswers"
@@ -205,36 +272,115 @@
         </article>
 
         <article v-else-if="activeTopic" class="space-y-6">
-          <div v-if="activeTopic.page_image_urls?.length" class="mx-auto grid max-w-4xl gap-6">
-            <img
-              v-for="(pageUrl, index) in activeTopic.page_image_urls"
-              :key="`${activeTopic.id}-${index}`"
-              :src="assetUrl(pageUrl)"
-              alt=""
-              class="w-full rounded border border-gray-200 bg-white shadow-sm"
-            />
-          </div>
-          <div v-else class="prose max-w-none whitespace-pre-line text-[14px] leading-relaxed text-gray-700">{{ activeTopic.content }}</div>
+          <!-- ===== PPTX Presentation-Card Layout ===== -->
+          <template v-if="parsedPptxContent">
+            <div class="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm md:p-8">
+              <!-- Slide Title Pill Badge (Rendered ONCE cleanly) -->
+              <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div class="inline-block rounded-lg bg-teal-700 px-4 py-1.5 text-lg font-bold text-white shadow-sm">
+                  {{ parsedPptxContent.badge || activeTopic.title }}
+                </div>
+                <div class="font-mono text-xs font-semibold text-slate-500">
+                  Slide {{ activeIndex + 1 }} of {{ topics.length }}
+                </div>
+              </div>
 
-          <div v-if="activeTopic.image_url" class="flex flex-col gap-5 lg:flex-row">
-            <img :src="assetUrl(activeTopic.image_url)" alt="" class="h-[280px] w-full border-[3px] border-[#FF9F40] object-cover lg:w-[280px]" />
-            <div class="flex-1 rounded-lg border-[2px] border-gray-200 bg-white p-5 text-[14px] leading-relaxed text-gray-700">
-              {{ activeTopic.description }}
+              <!-- Content grid: 12-col layout on desktop -->
+              <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+                <!-- Media Column (5 cols) -->
+                <div
+                  v-if="parsedPptxContent.image_urls?.length"
+                  :class="[
+                    'flex flex-col gap-3',
+                    parsedPptxContent.paragraphs?.length ? 'lg:col-span-5' : 'lg:col-span-12'
+                  ]"
+                >
+                  <div
+                    :class="[
+                      parsedPptxContent.image_urls.length > 1
+                        ? 'grid grid-cols-2 gap-3'
+                        : 'flex flex-col gap-3'
+                    ]"
+                  >
+                    <div
+                      v-for="(imgUrl, i) in parsedPptxContent.image_urls"
+                      :key="i"
+                      class="flex items-center justify-center overflow-hidden rounded-xl border border-teal-100 bg-white p-2 shadow-sm"
+                    >
+                      <img
+                        :src="assetUrl(imgUrl)"
+                        alt="Slide graphic"
+                        class="max-h-[350px] w-full rounded-lg object-contain md:max-h-[420px]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Text Paragraphs Column (7 cols) -->
+                <div
+                  :class="[
+                    'flex flex-col gap-4',
+                    parsedPptxContent.image_urls?.length ? 'lg:col-span-7' : 'lg:col-span-12'
+                  ]"
+                >
+                  <div
+                    v-for="(para, i) in parsedPptxContent.paragraphs"
+                    :key="i"
+                    class="rounded-xl border border-teal-100 border-l-4 border-l-teal-600 bg-white p-4 text-sm leading-relaxed text-slate-800 shadow-sm md:p-5 md:text-base"
+                  >
+                    {{ para }}
+                  </div>
+                  <div
+                    v-if="!parsedPptxContent.paragraphs?.length"
+                    class="rounded-xl border border-teal-100 bg-white p-6 text-center text-sm italic text-slate-500 shadow-sm"
+                  >
+                    No text content on this slide.
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </template>
 
-          <div class="flex items-center justify-between pt-4">
+          <!-- ===== Default Layout (PDF page images / plain text) ===== -->
+          <template v-else>
+            <div class="mx-auto max-w-6xl space-y-6">
+              <div v-if="activeTopic.page_image_urls?.length" class="mx-auto grid max-w-4xl gap-6">
+                <img
+                  v-for="(pageUrl, index) in activeTopic.page_image_urls"
+                  :key="`${activeTopic.id}-${index}`"
+                  :src="assetUrl(pageUrl)"
+                  alt=""
+                  class="w-full rounded-lg border border-slate-200 bg-white shadow-sm"
+                />
+              </div>
+              <div v-else class="prose max-w-none whitespace-pre-line text-sm leading-relaxed text-slate-800 md:text-base">
+                {{ activeTopic.content }}
+              </div>
+
+              <div v-if="activeTopic.image_url" class="flex flex-col gap-5 lg:flex-row">
+                <img
+                  :src="assetUrl(activeTopic.image_url)"
+                  alt=""
+                  class="max-h-[350px] w-full rounded-lg border border-teal-100 object-contain shadow-sm md:max-h-[420px] lg:w-[280px]"
+                />
+                <div class="flex-1 rounded-xl border border-teal-100 border-l-4 border-l-teal-600 bg-white p-5 text-sm leading-relaxed text-slate-800 shadow-sm md:text-base">
+                  {{ activeTopic.description }}
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- ===== Navigation controls ===== -->
+          <div class="mx-auto flex max-w-6xl items-center justify-between pt-4">
             <button
-              class="border-[3px] border-brand-teal bg-white px-5 py-2.5 text-sm font-black transition-all hover:-translate-x-[1px] hover:-translate-y-[1px]"
-             
+              class="border-[3px] border-brand-teal bg-white px-4 py-2.5 text-xs font-black text-ink shadow-[2px_2px_0_#000] transition-all hover:-translate-x-[1px] hover:-translate-y-[1px] sm:px-5 sm:text-sm"
               @click="goPrevious"
             >
               Previous
             </button>
-            <span class="font-mono text-xs text-gray-400">Topic {{ activeIndex + 1 }} of {{ topics.length }}</span>
+            <span class="font-mono text-xs font-bold text-slate-500">Topic {{ activeIndex + 1 }} of {{ topics.length }}</span>
             <button
-              class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px]"
-             
+              class="border-[3px] border-brand-teal bg-brand-blue px-4 py-2.5 text-xs font-black text-white shadow-[2px_2px_0_#000] transition-all hover:-translate-x-[2px] hover:-translate-y-[2px] sm:px-5 sm:text-sm"
               @click="goNext"
             >
               {{ activeIndex === topics.length - 1 ? 'Finish Module' : 'Next Topic' }}
@@ -281,11 +427,12 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL } from '@/lib/api'
 import { useStudentContentStore } from '@/stores/studentContent'
 
 const route = useRoute()
+const router = useRouter()
 const content = useStudentContentStore()
 const sidebarOpen = ref(false)
 const activeTopicId = ref<number | null>(null)
@@ -300,7 +447,30 @@ let quizTimer: number | null = null
 
 const moduleId = computed(() => String(route.params.moduleId))
 const moduleData = computed(() => content.currentModule)
-const topics = computed(() => content.sortedTopics)
+const _allTopics = computed(() => content.sortedTopics)
+
+// Deduplicate and filter out raw "--- Slide X ---" sidebar entries
+const SLIDE_MARKER = /^-{2,}\s*Slide\s*\d+\s*-{2,}$/i
+const topics = computed(() => {
+  const seen = new Set<string>()
+  return _allTopics.value.filter(t => {
+    if (SLIDE_MARKER.test(t.title ?? '')) return false
+    const key = (t.title ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+})
+
+// Parse structured PPTX JSON content for the active topic
+const parsedPptxContent = computed(() => {
+  if (!activeTopic.value) return null
+  try {
+    const parsed = JSON.parse(activeTopic.value.content ?? '')
+    if (parsed?.type === 'pptx_slide') return parsed as { badge: string; paragraphs: string[]; image_urls: string[] }
+  } catch {}
+  return null
+})
 const progress = computed(() => content.progress)
 const completedIds = computed(() => new Set(progress.value.completed_topic_ids))
 const completedQuizIds = computed(() => new Set(progress.value.completed_quiz_ids))
@@ -309,10 +479,15 @@ const quizzes = computed(() => (moduleData.value?.assessments ?? []).filter(item
 const activeQuiz = computed(() => quizzes.value.find(quiz => quiz.id === activeQuizId.value) ?? null)
 const activeIndex = computed(() => activeTopic.value ? topics.value.findIndex(topic => topic.id === activeTopic.value?.id) : 0)
 const quizUnlocked = computed(() => topics.value.length > 0 && progress.value.completed_topics >= topics.value.length)
-const hasAutoIntro = computed(() => !isPagedMaterial(moduleData.value?.content_type))
+const hasTopicIntro = computed(() => topics.value.some(topic => isIntroductionTitle(topic.title)))
+const hasAutoIntro = computed(() => !isPagedMaterial(moduleData.value?.content_type) && !hasTopicIntro.value)
 const isIntroActive = computed(() => hasAutoIntro.value && !activeTopicId.value && !activeQuizId.value)
-const headerTitle = computed(() => activeQuiz.value?.title || activeTopic.value?.title || moduleData.value?.title || 'Learning Content')
-const headerDescription = computed(() => activeQuiz.value?.description || activeTopic.value?.description || moduleData.value?.description || 'Module description')
+const headerTitle = computed(() => activeQuiz.value?.title || moduleData.value?.title || 'Learning Content')
+const headerDescription = computed(() => {
+  if (activeQuiz.value) return activeQuiz.value.description || 'Quiz'
+  if (activeTopic.value) return `Topic ${activeIndex.value + 1} of ${topics.value.length}`
+  return moduleData.value?.description || 'Module description'
+})
 const quizLocked = computed(() => Boolean(quizResult.value) || quizTimeExpired.value || activeQuiz.value?.student_status === 'completed')
 const quizTimerLabel = computed(() => {
   if (quizRemainingSeconds.value === null) return ''
@@ -321,6 +496,11 @@ const quizTimerLabel = computed(() => {
 
 onMounted(async () => {
   await content.fetchModule(moduleId.value)
+  const requestedQuizId = route.query.quizId ? Number(route.query.quizId) : null
+  if (requestedQuizId && quizzes.value.some(quiz => quiz.id === requestedQuizId) && quizUnlocked.value) {
+    await selectQuiz(requestedQuizId)
+    return
+  }
   activeTopicId.value = hasAutoIntro.value ? null : topics.value[0]?.id ?? null
 })
 
@@ -436,6 +616,9 @@ async function submitActiveQuiz(autoSubmit = false) {
     const result = await content.submitQuiz(moduleId.value, activeQuiz.value.id, quizAnswers.value)
     if (result) quizResult.value = { score: result.score, total: result.total }
     clearQuizTimer()
+    if (result) {
+      await router.push('/student/quiz')
+    }
   } finally {
     quizSubmitting.value = false
   }
@@ -453,7 +636,12 @@ function assetUrl(url?: string | null) {
 }
 
 function isPagedMaterial(contentType?: string | null) {
-  return contentType === 'PDF' || contentType === 'PPT'
+  // PDF uses page-image rendering; PPTX/PPT now uses structured JSON viewer
+  return contentType === 'PDF'
+}
+
+function isIntroductionTitle(title?: string | null) {
+  return String(title ?? '').trim().toLowerCase() === 'introduction'
 }
 
 function startQuizTimer(initialRemainingSeconds: number) {
@@ -498,5 +686,52 @@ function formatQuizTime(seconds: number) {
 
 function hasQuizTimer(quiz: { time_limit_seconds?: number | null; time_limit?: string | null }) {
   return Boolean(quiz.time_limit_seconds && quiz.time_limit_seconds > 0) || Boolean(quiz.time_limit)
+}
+
+function parseQuestionOptions(rawAnswer?: string | null) {
+  if (!rawAnswer) return { type: 'identification', choices: [] as { letter: string; text: string }[] }
+  const up = rawAnswer.trim().toUpperCase()
+  if (up === 'TRUE' || up === 'FALSE') {
+    return {
+      type: 'true_false',
+      choices: [
+        { letter: 'TRUE', text: 'True' },
+        { letter: 'FALSE', text: 'False' },
+      ],
+    }
+  }
+  if (rawAnswer.includes('CORRECT:') && rawAnswer.includes('|')) {
+    const parts = rawAnswer.split('|')
+    const choices: { letter: string; text: string }[] = []
+    for (const part of parts) {
+      if (part.includes(':')) {
+        const colonIdx = part.indexOf(':')
+        const k = part.slice(0, colonIdx).trim()
+        const v = part.slice(colonIdx + 1).trim()
+        if (k !== 'CORRECT' && k) {
+          choices.push({ letter: k, text: v })
+        }
+      }
+    }
+    if (choices.length >= 2) {
+      return { type: 'multiple_choice', choices }
+    }
+  }
+  return { type: 'identification', choices: [] as { letter: string; text: string }[] }
+}
+
+function quizQuestionTypeLabel(rawAnswer?: string | null) {
+  const type = parseQuestionOptions(rawAnswer).type
+  if (type === 'multiple_choice') return 'Multiple Choice'
+  if (type === 'true_false') return 'True or False'
+  return 'Identification'
+}
+
+function retakeStatusText(status?: string | null, reason?: string | null) {
+  if (status === 'approved') return 'Your teacher allowed a retake. You can answer again.'
+  if (status === 'rejected') return 'Retake access is currently disabled by your teacher.'
+  if (reason === 'missed_deadline') return 'You missed the deadline. Ask your teacher if another attempt is needed.'
+  if (reason === 'failed_low_score') return 'Your score is below half. Your teacher may allow another attempt if needed.'
+  return 'Your teacher controls retake access for this quiz.'
 }
 </script>

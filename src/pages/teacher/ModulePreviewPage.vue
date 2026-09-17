@@ -48,21 +48,102 @@
           <h2 class="font-display text-xl font-black">No generated topics yet.</h2>
           <p class="mt-2 text-sm text-gray-500">Upload or replace the learning material file to generate student content.</p>
         </div>
-        <article v-else class="space-y-5">
-          <div>
-            <h2 class="font-display text-2xl font-black">{{ activeTopic.title }}</h2>
-            <p class="mt-1 text-sm text-gray-500">{{ activeTopic.description }}</p>
+        <article v-else class="space-y-6">
+          <!-- ===== PPTX Presentation-Card Layout ===== -->
+          <template v-if="parsedPptxContent">
+            <div class="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm md:p-8">
+              <!-- Slide Badge -->
+              <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <div class="inline-block rounded-lg bg-teal-700 px-4 py-1.5 text-lg font-bold text-white shadow-sm">
+                  {{ parsedPptxContent.badge || activeTopic.title }}
+                </div>
+                <div class="font-mono text-xs font-semibold text-slate-500">
+                  Slide {{ activeIndex + 1 }} of {{ topics.length }}
+                </div>
+              </div>
+              <!-- Content Grid -->
+              <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+                <!-- Images (5 cols) -->
+                <div
+                  v-if="parsedPptxContent.image_urls?.length"
+                  :class="['flex flex-col gap-3', parsedPptxContent.paragraphs?.length ? 'lg:col-span-5' : 'lg:col-span-12']"
+                >
+                  <div :class="parsedPptxContent.image_urls.length > 1 ? 'grid grid-cols-2 gap-3' : 'flex flex-col gap-3'">
+                    <div
+                      v-for="(imgUrl, i) in parsedPptxContent.image_urls"
+                      :key="i"
+                      class="flex items-center justify-center overflow-hidden rounded-xl border border-teal-100 bg-white p-2 shadow-sm"
+                    >
+                      <img
+                        :src="assetUrl(imgUrl)"
+                        alt="Slide graphic"
+                        class="max-h-[350px] w-full rounded-lg object-contain md:max-h-[420px]"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <!-- Text (7 cols) -->
+                <div
+                  :class="['flex flex-col gap-4', parsedPptxContent.image_urls?.length ? 'lg:col-span-7' : 'lg:col-span-12']"
+                >
+                  <div
+                    v-for="(para, i) in parsedPptxContent.paragraphs"
+                    :key="i"
+                    class="rounded-xl border border-teal-100 border-l-4 border-l-teal-600 bg-white p-4 text-sm leading-relaxed text-slate-800 shadow-sm md:p-5 md:text-base"
+                  >
+                    {{ para }}
+                  </div>
+                  <div
+                    v-if="!parsedPptxContent.paragraphs?.length"
+                    class="rounded-xl border border-teal-100 bg-white p-6 text-center text-sm italic text-slate-500 shadow-sm"
+                  >
+                    No text content on this slide.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- ===== Default Layout (PDF page images / plain text) ===== -->
+          <template v-else>
+            <div class="mx-auto max-w-6xl space-y-4">
+              <div>
+                <h2 class="font-display text-2xl font-black">{{ activeTopic.title }}</h2>
+                <p class="mt-1 text-sm text-gray-500">{{ activeTopic.description }}</p>
+              </div>
+              <div v-if="activeTopic.page_image_urls?.length" class="mx-auto grid max-w-4xl gap-6">
+                <img
+                  v-for="(pageUrl, index) in activeTopic.page_image_urls"
+                  :key="`${activeTopic.id}-${index}`"
+                  :src="assetUrl(pageUrl)"
+                  alt=""
+                  class="w-full rounded-lg border border-slate-200 bg-white shadow-sm"
+                />
+              </div>
+              <div v-else class="whitespace-pre-line rounded-lg border-[2px] border-gray-200 bg-white p-5 text-sm leading-7 text-gray-700">
+                {{ activeTopic.content }}
+              </div>
+            </div>
+          </template>
+
+          <!-- Navigation controls -->
+          <div class="mx-auto flex max-w-6xl items-center justify-between pt-2">
+            <button
+              class="border-[3px] border-brand-teal bg-white px-4 py-2.5 text-xs font-black text-ink shadow-[2px_2px_0_#000] transition-all hover:-translate-x-[1px] hover:-translate-y-[1px] sm:px-5 sm:text-sm"
+              @click="goPrevious"
+            >
+              Previous
+            </button>
+            <span class="font-mono text-xs font-bold text-slate-500">
+              Topic {{ activeIndex + 1 }} of {{ topics.length }}
+            </span>
+            <button
+              class="border-[3px] border-brand-teal bg-brand-blue px-4 py-2.5 text-xs font-black text-white shadow-[2px_2px_0_#000] transition-all hover:-translate-x-[2px] hover:-translate-y-[2px] sm:px-5 sm:text-sm"
+              @click="goNext"
+            >
+              {{ activeIndex === topics.length - 1 ? 'Last Topic' : 'Next Topic' }}
+            </button>
           </div>
-          <div v-if="activeTopic.page_image_urls?.length" class="mx-auto grid max-w-4xl gap-6">
-            <img
-              v-for="(pageUrl, index) in activeTopic.page_image_urls"
-              :key="`${activeTopic.id}-${index}`"
-              :src="assetUrl(pageUrl)"
-              alt=""
-              class="w-full rounded border border-gray-200 bg-white shadow-sm"
-            />
-          </div>
-          <div v-else class="whitespace-pre-line rounded-lg border-[2px] border-gray-200 bg-white p-5 text-sm leading-7 text-gray-700">{{ activeTopic.content }}</div>
         </article>
       </main>
     </div>
@@ -99,13 +180,37 @@ const activeTopicId = ref<number | null>(null)
 const loading = ref(false)
 const error = ref('')
 
-const topics = computed(() => [...(moduleData.value?.topics ?? [])].filter(topic => topic.title.toLowerCase() !== 'introduction').sort((a, b) => a.sort_order - b.sort_order))
+const SLIDE_MARKER = /^-{2,}\s*Slide\s*\d+\s*-{2,}$/i
+const topics = computed(() => {
+  const seen = new Set<string>()
+  return [...(moduleData.value?.topics ?? [])]
+    .filter(t => {
+      if (SLIDE_MARKER.test(t.title ?? '')) return false
+      if (t.title.toLowerCase() === 'introduction') return false
+      const key = (t.title ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .sort((a, b) => a.sort_order - b.sort_order)
+})
 const hasAutoIntro = computed(() => !isPagedMaterial(moduleData.value?.content_type))
 const quizzes = computed(() => (moduleData.value?.assessments ?? []).filter(item => item.assessment_type === 'quiz'))
 const activeTopic = computed(() => activeTopicId.value ? topics.value.find(topic => topic.id === activeTopicId.value) ?? null : null)
+const activeIndex = computed(() => activeTopic.value ? topics.value.findIndex(t => t.id === activeTopic.value?.id) : 0)
 const isIntroActive = computed(() => hasAutoIntro.value && !activeTopicId.value)
 const headerTitle = computed(() => activeTopic.value?.title || moduleData.value?.title || 'Module Preview')
 const headerDescription = computed(() => activeTopic.value?.description || moduleData.value?.description || '')
+
+// Parse PPTX JSON slide content — same logic as TopicViewerPage
+const parsedPptxContent = computed(() => {
+  if (!activeTopic.value) return null
+  try {
+    const parsed = JSON.parse(activeTopic.value.content ?? '')
+    if (parsed?.type === 'pptx_slide') return parsed as { badge: string; paragraphs: string[]; image_urls: string[] }
+  } catch {}
+  return null
+})
 
 onMounted(async () => {
   loading.value = true
@@ -126,6 +231,26 @@ function assetUrl(url?: string | null) {
 }
 
 function isPagedMaterial(contentType?: string | null) {
-  return contentType === 'PDF' || contentType === 'PPT'
+  // Only PDF uses page-image rendering (no auto-intro tab).
+  // PPTX/PPT uses the structured slide card layout.
+  return contentType === 'PDF'
+}
+
+function goPrevious() {
+  if (activeIndex.value <= 0) {
+    if (hasAutoIntro.value) activeTopicId.value = null
+    return
+  }
+  activeTopicId.value = topics.value[activeIndex.value - 1]?.id ?? null
+}
+
+function goNext() {
+  if (isIntroActive.value) {
+    activeTopicId.value = topics.value[0]?.id ?? null
+    return
+  }
+  if (activeIndex.value < topics.value.length - 1) {
+    activeTopicId.value = topics.value[activeIndex.value + 1]?.id ?? null
+  }
 }
 </script>

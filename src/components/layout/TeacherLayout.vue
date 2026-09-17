@@ -23,10 +23,10 @@
             type="button"
             @click="navigate"
             :class="[
-              'mb-1 flex w-full items-center gap-3 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
+              'mb-1 flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
               isActive
-                ? 'border-brand-amber bg-brand-blue/[0.12] text-brand-blue'
-                : 'border-transparent text-brand-blue/80 hover:translate-x-1 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
+                ? 'bg-brand-blue/[0.12] text-brand-blue'
+                : 'text-brand-blue/80 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
             ]"
           >
             <svg
@@ -78,10 +78,10 @@
               type="button"
               @click="() => { navigate(); menuOpen = false }"
               :class="[
-              'mb-1 flex w-full items-center gap-3 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
+                'mb-1 flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-[14px] font-medium leading-snug transition-all',
                 isActive
-                  ? 'border-brand-amber bg-brand-blue/[0.12] text-brand-blue'
-                  : 'border-transparent text-brand-blue/80 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
+                  ? 'bg-brand-blue/[0.12] text-brand-blue'
+                  : 'text-brand-blue/80 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
               ]"
             >
               <svg
@@ -122,10 +122,7 @@
           <span class="block h-0.5 w-5 rounded-full bg-current" aria-hidden="true"></span>
         </button>
         <span class="min-w-0 flex-1 font-display text-[18px] font-semibold text-ink">{{ currentTitle }}</span>
-        <div class="flex w-full items-center gap-2.5 sm:w-auto">
-          <div class="flex min-w-0 flex-1 items-center rounded-full border border-brand-teal bg-white px-4 py-2 transition-all focus-within:border-brand-blue focus-within:ring-2 focus-within:ring-brand-blue/25 sm:w-60 sm:flex-none md:w-72">
-            <input class="min-w-0 flex-1 border-0 bg-transparent font-body text-sm text-ink outline-none placeholder:text-ink-soft" placeholder="Search..." aria-label="Search" />
-          </div>
+        <div class="flex w-auto items-center gap-2.5">
           <button class="flex-shrink-0 rounded-full border border-brand-teal bg-white px-3 py-2 text-xs font-bold text-brand-blue transition-all hover:border-brand-amber hover:bg-brand-rose hover:text-white" @click="router.push('/profile/setup')">
             Profile
           </button>
@@ -158,7 +155,7 @@ const menuOpen = ref(false)
 const navItems = [
   {
     to: '/teacher/dashboard',
-    label: 'Home',
+    label: 'Teacher Dashboard',
     iconPaths: ['m3 10.5 9-7 9 7', 'M5 9.5V20h14V9.5', 'M9.5 20v-6h5v6'],
   },
   {
@@ -167,17 +164,26 @@ const navItems = [
     iconPaths: ['M4 5.5h16', 'M6 5.5V18a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5.5', 'M9 10h6', 'M9 14h4'],
   },
   {
-    to: '/teacher/activity-logs',
-    label: 'Activity Logs',
-    iconPaths: ['M12 8v5l3 2', 'M21 12a9 9 0 1 1-3-6.7'],
+    to: '/teacher/modules',
+    label: 'Learning Materials',
+    iconPaths: ['M5 4h9l5 5v11H5z', 'M14 4v5h5', 'M8 13h8', 'M8 17h5'],
+  },
+  {
+    to: '/teacher/quizzes',
+    label: 'Quizzes',
+    iconPaths: ['M9 11a3 3 0 1 1 3 3v1', 'M12 19h.01', 'M4 4h16v16H4z'],
+  },
+  {
+    to: '/teacher/activities',
+    label: 'Activities',
+    iconPaths: ['M8 6h13', 'M8 12h13', 'M8 18h13', 'M3.5 6h.01', 'M3.5 12h.01', 'M3.5 18h.01'],
   },
 ]
 
 const titleMap: Record<string, string> = {
-  TeacherDashboard:  'Home',
+  TeacherDashboard:  'Teacher Dashboard',
   ClassManagement:   'Class Management',
   TeacherStudentRecords: 'Student Records',
-  TeacherActivityLogs: 'Activity Logs',
   Modules:           'Learning Materials',
   TeacherActivities: 'Activities',
   Quizzes:           'Quizzes',

@@ -261,9 +261,15 @@ const rosterModal = reactive({
 
 // ── Computed ──────────────────────────────────────────────────────────────────
 
+function isSeedSection(sec: SectionWithTeacher) {
+  return sec.id <= 6 && /^Section [A-Z]$/i.test(sec.name)
+}
+
+const managedSections = computed(() => sections.value.filter(sec => !isSeedSection(sec)))
+
 const filteredSections = computed(() => {
   const search = filters.value.search.toLowerCase()
-  return sections.value.filter(sec => {
+  return managedSections.value.filter(sec => {
     const matchesGrade = !filters.value.grade_level_id || sec.grade_level_id === filters.value.grade_level_id
     const matchesSearch =
       !search ||

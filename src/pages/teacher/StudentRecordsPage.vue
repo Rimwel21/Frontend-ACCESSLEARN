@@ -50,9 +50,10 @@
           <label class="figma-label" for="records-status">Status</label>
           <select id="records-status" v-model="filters.status" class="input-field h-10" @change="loadRecords">
             <option value="">All</option>
-            <option value="completed">Completed</option>
-            <option value="in_progress">In Progress</option>
-            <option value="Needs Help">Needs Help</option>
+            <option value="Needs Guidance">Needs Guidance</option>
+            <option value="Keep Improving">Keep Improving</option>
+            <option value="Good Progress">Good Progress</option>
+            <option value="Excellent">Excellent</option>
           </select>
         </div>
         <div>
@@ -112,7 +113,7 @@
                 <div>{{ record.handsignPractice.length }} practice{{ record.handsignPractice.length === 1 ? '' : 's' }}</div>
                 <div class="mt-1 text-[11px] text-ink-soft">Best {{ bestPracticeScore(record) }}</div>
               </td>
-              <td class="table-td"><span :class="statusBadge(record.status)">{{ record.status }}</span></td>
+              <td class="table-td"><span :class="statusBadge(record.status)">{{ statusLabel(record.status) }}</span></td>
               <td class="table-td">
                 <button class="btn-secondary px-3 py-1.5 text-xs" type="button" @click="selectedRecord = record">View Details</button>
               </td>
@@ -134,7 +135,7 @@
           <div class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 pb-4">
             <div>
               <h2 class="font-display text-2xl font-bold text-ink">{{ selectedRecord.studentName }}</h2>
-              <p class="mt-1 text-sm text-ink-soft">{{ classLabel(selectedRecord) }} - {{ selectedRecord.status }}</p>
+              <p class="mt-1 text-sm text-ink-soft">{{ classLabel(selectedRecord) }} - {{ statusLabel(selectedRecord.status) }}</p>
             </div>
             <button class="btn-secondary" type="button" @click="selectedRecord = null">Close</button>
           </div>
@@ -152,10 +153,29 @@
                     <span class="badge badge-blue">{{ scoreText(item.score, item.total) }}</span>
                   </div>
                   <div class="mt-3 grid gap-2 text-xs text-ink-soft sm:grid-cols-2">
-                    <div><span class="font-semibold text-ink">Expected:</span> {{ item.expectedAnswers.join(', ') || 'No answer key' }}</div>
+                    <div><span class="font-semibold text-ink">Expected:</span> {{ formatExpectedAnswers(item.expectedAnswers) }}</div>
                     <div><span class="font-semibold text-ink">Submitted:</span> {{ formatAnswers(item.answers) }}</div>
                     <div><span class="font-semibold text-ink">Completed:</span> {{ formatDate(item.completedAt) }}</div>
                     <div><span class="font-semibold text-ink">Submission:</span> {{ item.submissionType || 'Manual' }}</div>
+                  </div>
+                  <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+                    <span class="text-xs font-semibold text-ink-soft">Retake access: {{ retakeAccessLabel(item.retakeStatus) }}</span>
+                    <button
+                      class="figma-button px-3 py-1.5 text-xs"
+                      type="button"
+                      :disabled="retakeSavingKey === retakeKey(selectedRecord.studentId, item.assessmentId)"
+                      @click="setRetakeAccess(selectedRecord.studentId, item, 'approved')"
+                    >
+                      Allow Retake
+                    </button>
+                    <button
+                      class="figma-button px-3 py-1.5 text-xs"
+                      type="button"
+                      :disabled="retakeSavingKey === retakeKey(selectedRecord.studentId, item.assessmentId)"
+                      @click="setRetakeAccess(selectedRecord.studentId, item, 'rejected')"
+                    >
+                      Disable Retake
+                    </button>
                   </div>
                 </div>
                 <div v-if="selectedRecord.assessments.length === 0" class="rounded-xl border border-gray-100 bg-surface p-4 text-sm text-ink-soft">No submitted activities or quizzes yet.</div>
@@ -190,10 +210,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useTeacherStore, type StudentRecord } from '@/stores/teacher'
+import { useTeacherStore, type StudentAssessmentRecord, type StudentRecord } from '@/stores/teacher'
 
 const store = useTeacherStore()
 const selectedRecord = ref<StudentRecord | null>(null)
+const retakeSavingKey = ref<string | null>(null)
 const filters = reactive({
   classId: '',
   assessmentType: '',
@@ -246,6 +267,29 @@ function formatAnswers(answers: Record<string, string>) {
   return values.length ? values.join(', ') : 'No answer'
 }
 
+function formatExpectedAnswers(expectedAnswers: string[]) {
+  const values = expectedAnswers.map(formatExpectedAnswer).filter(Boolean)
+  return values.length ? values.join(', ') : 'No answer key'
+}
+
+function formatExpectedAnswer(answer: string) {
+  const raw = answer?.trim()
+  if (!raw) return ''
+
+  if (raw.includes('CORRECT:')) {
+    const parts = raw.split('|').map(part => part.trim()).filter(Boolean)
+    const correctPart = parts.find(part => part.startsWith('CORRECT:'))
+    const correctLetter = correctPart?.replace('CORRECT:', '').trim()
+    const optionPart = correctLetter
+      ? parts.find(part => part.startsWith(`${correctLetter}:`))
+      : null
+    const optionText = optionPart?.slice(2).trim()
+    return correctLetter && optionText ? `${correctLetter}. ${optionText}` : raw
+  }
+
+  return raw
+}
+
 function formatDate(value?: string | null) {
   if (!value) return 'Not completed'
   const date = new Date(value)
@@ -253,10 +297,42 @@ function formatDate(value?: string | null) {
   return date.toLocaleDateString()
 }
 
+function retakeKey(studentId: string, assessmentId: number) {
+  return `${studentId}:${assessmentId}`
+}
+
+function retakeAccessLabel(status?: string | null) {
+  if (status === 'approved') return 'Allowed'
+  if (status === 'rejected') return 'Disabled'
+  if (status === 'consumed') return 'Used'
+  return 'Not set'
+}
+
+async function setRetakeAccess(studentId: string, item: StudentAssessmentRecord, action: 'approved' | 'rejected') {
+  const key = retakeKey(studentId, item.assessmentId)
+  retakeSavingKey.value = key
+  try {
+    await store.setRetakeAccess(item.assessmentId, studentId, action)
+    await loadRecords()
+    if (selectedRecord.value) {
+      selectedRecord.value = store.studentRecords.find(record => record.studentId === selectedRecord.value?.studentId) ?? null
+    }
+  } finally {
+    retakeSavingKey.value = null
+  }
+}
+
 function statusBadge(status: string) {
   const normalized = status.toLowerCase()
+  if (normalized === 'excellent') return 'badge badge-green'
+  if (normalized === 'good progress') return 'badge badge-blue'
+  if (normalized === 'keep improving') return 'badge badge-amber'
+  if (normalized === 'needs guidance' || normalized === 'needs help') return 'badge badge-red'
   if (normalized === 'complete' || normalized === 'completed') return 'badge badge-green'
-  if (normalized === 'needs help') return 'badge badge-red'
   return 'badge badge-blue'
+}
+
+function statusLabel(status: string) {
+  return status.toLowerCase() === 'needs help' ? 'Needs Guidance' : status
 }
 </script>

@@ -1,35 +1,148 @@
 <template>
-  <div class="mx-auto max-w-6xl space-y-5 p-5">
-    <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-      <p class="font-mono text-[11px] font-black uppercase tracking-widest text-brand-blue">Handsign Dataset</p>
-      <h1 class="mt-1 font-display text-2xl font-bold text-ink">Record and Train Word Signs</h1>
-      <p class="mt-2 text-sm text-ink-soft">Record 40 complete sign samples for one label. When it reaches 40 samples, training starts automatically.</p>
+  <div class="space-y-6">
+    <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-blue to-brand-teal p-6 shadow-card sm:p-7">
+      <div class="absolute inset-0 opacity-10" style="background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:26px 26px;" />
+      <div class="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="font-mono text-[11px] font-black uppercase tracking-[0.24em] text-white/75">Handsign Dataset</p>
+          <h1 class="mt-2 font-display text-3xl font-bold leading-tight text-white sm:text-4xl">Record and Train Word Signs</h1>
+          <p class="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-white/80">
+            Capture complete sign samples for each label. Training starts automatically when a label reaches the required sample count.
+          </p>
+        </div>
+        <button
+          class="btn-secondary !rounded-xl !border-white/40 !bg-white/90 !text-brand-blue hover:!bg-white"
+          :disabled="busy"
+          @click="refresh"
+        >
+          Refresh Dataset
+        </button>
+      </div>
     </section>
 
-    <section class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div><label class="field-label">Week</label><select v-model="week" class="input-field mt-1.5"><option v-for="item in weeks" :key="item" :value="item">{{ item }}</option></select></div>
-          <div><label class="field-label">Word label</label><select v-model="label" class="input-field mt-1.5"><option v-for="item in labels" :key="item" :value="item">{{ item.replace(/_/g, ' ') }}</option></select></div>
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <article class="card p-5">
+        <p class="text-[11px] font-black uppercase tracking-widest text-ink-soft">Current Label</p>
+        <div class="mt-2 truncate font-display text-2xl font-bold text-ink">{{ formatLabel(label) || 'No label' }}</div>
+      </article>
+      <article class="card p-5">
+        <p class="text-[11px] font-black uppercase tracking-widest text-ink-soft">Samples</p>
+        <div class="mt-2 font-display text-3xl font-bold text-ink">{{ sampleCount }} / {{ required }}</div>
+      </article>
+      <article class="card p-5">
+        <p class="text-[11px] font-black uppercase tracking-widest text-ink-soft">Progress</p>
+        <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
+          <div class="h-full rounded-full bg-brand-blue transition-all" :style="{ width: `${sampleProgress}%` }"></div>
         </div>
-        <div class="relative mt-5 aspect-video overflow-hidden rounded-md bg-black">
+        <div class="mt-2 text-xs font-bold text-ink-soft">{{ sampleProgress }}% ready</div>
+      </article>
+      <article class="card p-5">
+        <p class="text-[11px] font-black uppercase tracking-widest text-ink-soft">Training</p>
+        <div class="mt-2 text-lg font-bold capitalize text-ink">{{ summary?.training.status ?? 'Loading' }}</div>
+        <p class="mt-1 line-clamp-2 text-xs font-medium text-ink-soft">{{ summary?.training.message || 'Waiting for dataset status.' }}</p>
+      </article>
+    </section>
+
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div class="card overflow-hidden">
+        <div class="grid gap-4 border-b border-gray-50 bg-white p-5 md:grid-cols-2">
+          <div>
+            <label class="field-label">Week</label>
+            <select v-model="week" class="input-field mt-1.5">
+              <option v-for="item in weeks" :key="item" :value="item">{{ item }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">Word Label</label>
+            <select v-model="label" class="input-field mt-1.5">
+              <option v-for="item in labels" :key="item" :value="item">{{ formatLabel(item) }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="p-4 sm:p-5">
+          <div class="relative aspect-[4/3] overflow-hidden rounded-xl bg-black shadow-inner sm:aspect-video">
           <video ref="videoRef" class="h-full w-full -scale-x-100 object-cover" autoplay muted playsinline></video>
           <canvas ref="canvasRef" hidden></canvas>
-          <div v-if="countdown" class="absolute inset-0 grid place-items-center bg-black/60 text-center text-white"><div><div class="text-xs font-bold uppercase">Get ready</div><div class="font-display text-7xl">{{ countdown }}</div></div></div>
+            <div v-if="!cameraOn && !countdown" class="absolute inset-0 grid place-items-center bg-ink/70 p-6 text-center text-white">
+              <div>
+                <div class="font-display text-2xl font-bold">Camera Preview</div>
+                <p class="mt-2 max-w-sm text-sm text-white/75">Start the camera and keep your hands, wrists, and upper body visible.</p>
+              </div>
+            </div>
+            <div v-if="countdown" class="absolute inset-0 grid place-items-center bg-black/60 text-center text-white">
+              <div>
+                <div class="text-xs font-bold uppercase tracking-widest">Get ready</div>
+                <div class="font-display text-7xl">{{ countdown }}</div>
+              </div>
+            </div>
+            <div class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-black text-brand-blue">
+              {{ cameraOn ? 'Camera Active' : 'Camera Off' }}
+            </div>
+          </div>
+
+          <div class="mt-4 grid gap-2 sm:grid-cols-3">
+            <button class="btn-secondary w-full" :disabled="cameraOn || busy" @click="startCamera">Start Camera</button>
+            <button class="btn-primary w-full" :disabled="!cameraOn || busy || !label" @click="recordAndUpload">
+              {{ busy ? statusMessage : `Record ${Math.min(sampleCount + 1, required)}/${required}` }}
+            </button>
+            <button class="btn-secondary w-full" :disabled="!cameraOn || busy" @click="stopCamera">Stop Camera</button>
+          </div>
+
+          <div
+            :class="[
+              'mt-4 rounded-xl border px-4 py-3 text-sm font-semibold',
+              error ? 'border-rose-200 bg-rose-50 text-brand-rose' : 'border-brand-teal/30 bg-brand-blue-soft/40 text-ink-soft'
+            ]"
+          >
+            {{ error || statusMessage || 'Keep your upper body, wrists, and hands inside the camera view.' }}
+          </div>
         </div>
-        <div class="mt-4 flex flex-wrap gap-2">
-          <button class="btn-secondary" :disabled="cameraOn || busy" @click="startCamera">Start Camera</button>
-          <button class="btn-primary" :disabled="!cameraOn || busy" @click="recordAndUpload">{{ busy ? statusMessage : `Record sample ${Math.min(sampleCount + 1, required)}/${required}` }}</button>
-          <button class="btn-secondary" :disabled="!cameraOn || busy" @click="stopCamera">Stop Camera</button>
-        </div>
-        <p v-if="error" class="mt-3 text-sm font-bold text-red-600">{{ error }}</p>
-        <p v-else class="mt-3 text-sm font-semibold text-ink-soft">{{ statusMessage || 'Keep your upper body, wrists, and hands inside the camera view.' }}</p>
       </div>
-      <aside class="space-y-4 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-        <div><div class="text-xs font-bold uppercase text-ink-soft">Current label</div><div class="mt-1 font-display text-xl">{{ label.replace(/_/g, ' ') }}</div></div>
-        <div class="rounded-md bg-brand-blue-soft p-4"><div class="text-xs font-bold uppercase text-ink-soft">Samples</div><div class="mt-1 font-display text-3xl">{{ sampleCount }} / {{ required }}</div></div>
-        <div class="rounded-md border border-gray-200 p-4"><div class="text-xs font-bold uppercase text-ink-soft">Training</div><div class="mt-1 text-sm font-bold capitalize">{{ summary?.training.status ?? 'Loading' }}</div><p class="mt-1 text-xs text-ink-soft">{{ summary?.training.message }}</p></div>
-        <button class="btn-secondary w-full" :disabled="summary?.training.status === 'training' || summary?.training.status === 'queued'" @click="startTraining">Train current dataset</button>
+
+      <aside class="space-y-5">
+        <div class="card p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[11px] font-black uppercase tracking-widest text-ink-soft">Training Control</p>
+              <h2 class="mt-1 font-display text-xl font-bold text-ink">Current Dataset</h2>
+            </div>
+            <span class="rounded-full bg-brand-blue-soft px-3 py-1 text-xs font-black capitalize text-brand-blue">
+              {{ summary?.training.status ?? 'loading' }}
+            </span>
+          </div>
+          <p class="mt-3 text-sm leading-relaxed text-ink-soft">
+            Train only when the selected labels have enough clear samples. Automatic training will still run once the required sample count is reached.
+          </p>
+          <button
+            class="btn-secondary mt-4 w-full"
+            :disabled="summary?.training.status === 'training' || summary?.training.status === 'queued'"
+            @click="startTraining"
+          >
+            Train Current Dataset
+          </button>
+        </div>
+
+        <div class="card overflow-hidden">
+          <div class="border-b border-gray-50 bg-white px-5 py-4">
+            <h2 class="font-display text-lg font-bold text-ink">Label Progress</h2>
+            <p class="text-xs text-ink-soft">Samples recorded for this week.</p>
+          </div>
+          <div class="max-h-[360px] divide-y divide-gray-50 overflow-y-auto">
+            <div v-for="item in labels" :key="item" class="px-5 py-3">
+              <div class="flex items-center justify-between gap-3">
+                <span class="truncate text-sm font-bold text-ink">{{ formatLabel(item) }}</span>
+                <span class="text-xs font-black text-ink-soft">{{ labelSampleCount(item) }}/{{ required }}</span>
+              </div>
+              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                <div class="h-full rounded-full bg-brand-teal" :style="{ width: `${labelProgress(item)}%` }"></div>
+              </div>
+            </div>
+            <div v-if="labels.length === 0" class="px-5 py-8 text-center text-sm font-bold text-ink-soft">
+              No labels available.
+            </div>
+          </div>
+        </div>
       </aside>
     </section>
   </div>
@@ -56,6 +169,20 @@ const weeks = computed(() => Object.keys(summary.value?.weekly_labels ?? {}))
 const labels = computed(() => summary.value?.weekly_labels[week.value] ?? [])
 const required = computed(() => summary.value?.samples_required ?? 40)
 const sampleCount = computed(() => summary.value?.classes.find(item => item.label === label.value)?.sample_count ?? 0)
+const sampleProgress = computed(() => labelProgress(label.value))
+
+function formatLabel(value: string) {
+  return value.replace(/_/g, ' ')
+}
+
+function labelSampleCount(value: string) {
+  return summary.value?.classes.find(item => item.label === value)?.sample_count ?? 0
+}
+
+function labelProgress(value: string) {
+  if (!value || required.value <= 0) return 0
+  return Math.min(100, Math.round((labelSampleCount(value) / required.value) * 100))
+}
 
 watch(weeks, (items) => { if (!items.includes(week.value)) week.value = items[0] ?? '' }, { immediate: true })
 watch(labels, (items) => { if (!items.includes(label.value)) label.value = items[0] ?? '' }, { immediate: true })

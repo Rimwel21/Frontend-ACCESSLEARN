@@ -19,25 +19,27 @@
     </header>
 
     <div v-if="isMobileMenuOpen" class="fixed inset-0 z-40 flex flex-col space-y-3 bg-[#e8f5f0] px-6 pt-20 lg:hidden">
-      <RouterLink to="/" class="flex items-center gap-3 rounded-xl border-l-[3px] border-[#f59e5b] bg-[#d7eef7] px-4 py-3 font-bold text-[#2d6e61]" @click="isMobileMenuOpen = false">Home</RouterLink>
-      <RouterLink to="/portal" class="flex items-center gap-3 rounded-xl border-l-[3px] border-transparent px-4 py-3 font-bold text-[#5a8d82] hover:bg-[#c4e4da] hover:text-[#2d6e61]" @click="isMobileMenuOpen = false">Register</RouterLink>
-      <RouterLink to="/portal" class="flex items-center gap-3 rounded-xl border-l-[3px] border-transparent px-4 py-3 font-bold text-[#5a8d82] hover:bg-[#c4e4da] hover:text-[#2d6e61]" @click="isMobileMenuOpen = false">Log in</RouterLink>
+      <RouterLink to="/" class="public-mobile-link border-[#f59e5b] bg-[#d7eef7] text-[#2d6e61]" @click="isMobileMenuOpen = false">Home</RouterLink>
+      <RouterLink to="/about" class="public-mobile-link border-transparent text-[#5a8d82]" @click="isMobileMenuOpen = false">About Us</RouterLink>
+      <RouterLink to="/portal" class="public-mobile-link border-transparent text-[#5a8d82]" @click="isMobileMenuOpen = false">Register / Log in</RouterLink>
     </div>
 
     <aside class="sticky top-0 z-20 hidden h-screen w-[240px] shrink-0 flex-col justify-between border-r border-[#a5d8cc]/80 bg-[#e2f3ee] shadow-[4px_0_24px_rgba(45,110,97,0.06)] lg:flex">
       <div>
         <div class="flex flex-col items-center px-6 pb-6 pt-8 text-center">
-          <img
-            src="@/assets/signhear_logo.png"
-            alt="SIGNHEAR - Sign Language Integrated Guidance for Hearing Education and Accessible Resources"
-            class="h-auto w-full max-w-[140px] object-contain xl:max-w-[160px]"
-          />
+          <RouterLink to="/">
+            <img
+              src="@/assets/signhear_logo.png"
+              alt="SIGNHEAR - Sign Language Integrated Guidance for Hearing Education and Accessible Resources"
+              class="h-auto w-full max-w-[140px] object-contain xl:max-w-[160px]"
+            />
+          </RouterLink>
         </div>
 
         <nav class="space-y-3 px-4">
           <div class="relative flex items-center">
             <span class="absolute left-0 w-1.5 h-8 bg-[#f59e5b] rounded-full z-10"></span>
-            <RouterLink to="/" class="flex w-full items-center gap-3 rounded-xl bg-[#cdeae0] pl-6 pr-4 py-3 font-semibold text-[#2b7668] transition-all">
+            <RouterLink to="/" class="public-nav-link active flex w-full items-center gap-3 rounded-xl bg-[#cdeae0] pl-6 pr-4 py-3 font-semibold text-[#2b7668] transition-all">
               <svg class="h-6 w-6 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
@@ -45,18 +47,18 @@
             </RouterLink>
           </div>
 
-          <RouterLink to="/portal" class="flex items-center gap-3 pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
+          <RouterLink to="/about" class="public-nav-link flex items-center gap-3 rounded-xl pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
             <svg class="h-6 w-6 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Register
+            About Us
           </RouterLink>
 
-          <RouterLink to="/portal" class="flex items-center gap-3 pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
+          <RouterLink to="/portal" class="public-nav-link flex items-center gap-3 rounded-xl pl-6 pr-4 py-3 font-semibold text-[#5a8d82] hover:text-[#2b7668] transition-all">
             <svg class="h-6 w-6 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
             </svg>
-            Log in
+            Register / Log in
           </RouterLink>
         </nav>
       </div>
@@ -67,8 +69,8 @@
             <span>WCAG</span>
             <span class="mt-0.5 text-xs">2.2</span>
           </div>
-          <p class="text-xs font-bold uppercase tracking-wider text-[#0a7b79]">Compliant</p>
-          <p class="mt-1.5 text-[11px] font-semibold leading-snug text-[#5a8d82]">Readable, keyboard-friendly, accessible learning.</p>
+          <p class="text-xs font-bold uppercase tracking-wider text-[#0a7b79]">ACCESSIBLE LEARNING</p>
+          <p class="mt-1.5 text-[11px] font-semibold leading-snug text-[#5a8d82]">Guided by WCAG 2.2 for inclusive education.</p>
         </div>
       </div>
     </aside>
@@ -92,10 +94,10 @@
               <!-- Right: Content -->
               <div class="flex flex-col justify-center text-white">
                 <h1 class="mb-3 font-display text-2xl font-bold leading-tight lg:text-[28px] xl:text-[34px] text-white">
-                  Learning that adapts to every child, every ability, every classroom.
+                  Accessible Science learning for every learner, every ability, and every classroom.
                 </h1>
                 <p class="mb-4 max-w-[620px] text-xs leading-relaxed text-white/90 lg:text-[14px]">
-                  SIGNHEAR combines audio lessons, sign-language videos, subtitles, and adaptive quizzes to create equitable learning in Philippine schools.
+                  SIGNHEAR provides accessible Science lessons, visual learning materials, interactive quizzes, and Sign Language Alphabet Recognition to support inclusive learning in Philippine schools.
                 </p>
                 <div class="flex justify-center sm:justify-start">
                   <RouterLink to="/portal" class="min-w-[144px] rounded-full bg-[#f59e5b] px-6 py-2.5 text-center text-sm font-bold text-white shadow-[0_4px_12px_rgba(245,158,91,0.25)] transition-all hover:scale-[1.03] hover:bg-[#e08a47]">
@@ -130,7 +132,7 @@
             <span class="hidden sm:inline text-[#2b7668]/45">|</span>
             <span class="inline-flex items-center gap-2">
               <span class="rounded bg-[#0a7b79] px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">WCAG 2.2</span>
-              <span class="text-[#2b7668]">Compliant: Accessible learning.</span>
+              <span class="text-[#2b7668]">Accessible learning.</span>
             </span>
           </div>
         </footer>
@@ -148,21 +150,21 @@ const isMobileMenuOpen = ref(false)
 const features = [
   {
     icons: ['🧏', '💬'],
-    title: 'Sign & Captions',
+    title: 'Sign Language Support',
     summary: 'For hearing support learners.',
-    detail: 'Each module includes sign-language videos, subtitles, and transcript toggles.',
+    detail: 'Each module includes sign language guides, visual diagrams, and interactive learning resources.',
   },
   {
     icons: ['🎯', '📚'],
-    title: 'Adaptive Activities',
-    summary: 'Personalized interactive tasks.',
-    detail: "Adjust to each learner's progress, ensuring engagement and mastery of skills.",
+    title: 'Interactive Activities',
+    summary: 'Engaging learning tasks.',
+    detail: 'Help students participate, practice, and strengthen their understanding of Science lessons.',
   },
   {
     icons: ['✅', '⚙️'],
-    title: 'Adaptive Quizzes',
-    summary: 'Smart assessments.',
-    detail: 'Adapt difficulty based on performance, guiding learners toward review or advancement.',
+    title: 'Interactive Quizzes',
+    summary: 'Interactive assessments.',
+    detail: 'Help students check their understanding and receive feedback on their Science lessons.',
   },
   {
     icons: ['👩', '🏫', '📊'],
@@ -193,6 +195,39 @@ const features = [
 
 .text-shadow-sm {
   text-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.public-nav-link,
+.public-mobile-link {
+  position: relative;
+  transition: transform 0.22s ease, background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.public-mobile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-left-width: 3px;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+}
+
+.public-nav-link:hover,
+.public-nav-link:focus-visible,
+.public-nav-link.active,
+.public-mobile-link:hover,
+.public-mobile-link:focus-visible {
+  transform: translateX(0.35rem);
+  background: #cdeae0;
+  color: #2d6e61;
+  box-shadow: 0 10px 24px rgba(45, 110, 97, 0.1);
+  outline: none;
+}
+
+.public-mobile-link:hover,
+.public-mobile-link:focus-visible {
+  border-left-color: #f59e5b;
 }
 
 .system-footer {

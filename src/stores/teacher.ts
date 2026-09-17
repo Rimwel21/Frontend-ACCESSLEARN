@@ -55,7 +55,7 @@ interface StudentRow {
   learningMaterialsCompleted: number
   learningMaterialsInProgress: number
   learningMaterialsTotal: number
-  status: 'Complete' | 'In Progress' | 'Needs Help'
+  status: string
   lastActivity: string
   quizActivity: string
 }
@@ -95,6 +95,7 @@ interface AssessmentSettings {
   attemptsAllowed?: number
   shuffleQuestions?: boolean
   showAnswersAfterSubmission?: boolean
+  allowTextAnswers?: boolean
   dueAt?: string | null
   questions?: AssessmentQuestion[]
   submissionsCount?: number
@@ -199,7 +200,7 @@ interface DashboardStudentProgressResponse {
   learning_materials_completed?: number
   learning_materials_in_progress?: number
   learning_materials_total?: number
-  status: 'Complete' | 'In Progress' | 'Needs Help'
+  status: string
   last_activity: string | null
   quiz_activity: string | null
 }
@@ -227,6 +228,7 @@ interface TeacherAssessmentResponse {
   attempts_allowed: number
   shuffle_questions: boolean
   show_answers_after_submission: boolean
+  allow_text_answers?: boolean
   questions: AssessmentQuestion[]
   submissions_count?: number
   submissions?: Array<{
@@ -261,6 +263,7 @@ interface TeacherStudentRecordAssessmentResponse {
   answers?: Record<string, string>
   completed_at?: string | null
   submission_type?: string | null
+  retake_status?: string | null
 }
 
 interface TeacherStudentRecordHandsignResponse {
@@ -292,6 +295,34 @@ interface TeacherStudentRecordResponse {
   handsign_practice: TeacherStudentRecordHandsignResponse[]
 }
 
+export interface RetakeRequest {
+  id: number
+  assessmentId: number
+  assessmentTitle: string
+  assessmentType: 'quiz' | 'activity'
+  studentId: number
+  studentName: string
+  status: string
+  reason?: string | null
+  requestType: 'failed_low_score' | 'missed_deadline' | string
+  createdAt: string
+  reviewedAt?: string | null
+}
+
+interface RetakeRequestResponse {
+  id: number
+  assessment_id: number
+  assessment_title: string
+  assessment_type: 'quiz' | 'activity'
+  student_id: number
+  student_name: string
+  status: string
+  reason?: string | null
+  request_type: string
+  created_at: string
+  reviewed_at?: string | null
+}
+
 export interface StudentAssessmentRecord {
   assessmentId: number
   title: string
@@ -303,6 +334,7 @@ export interface StudentAssessmentRecord {
   answers: Record<string, string>
   completedAt?: string | null
   submissionType?: string | null
+  retakeStatus?: string | null
 }
 
 export interface StudentHandsignRecord {
@@ -362,6 +394,9 @@ export const useTeacherStore = defineStore('teacher', () => {
   const studentRecords = ref<StudentRecord[]>([])
   const studentRecordsLoading = ref(false)
   const studentRecordsError = ref('')
+  const retakeRequests = ref<RetakeRequest[]>([])
+  const retakeRequestsLoading = ref(false)
+  const retakeRequestsError = ref('')
 
   const performers = ref<Performer[]>([
     { name: 'Penagrin, Aguiluz Emmanuelle O.', initials: 'FE', gradient: 'from-brand-blue to-brand-violet', assignments: 80, quiz: 183, activities: 80, total: 343, avg: '95%' },
@@ -385,7 +420,7 @@ export const useTeacherStore = defineStore('teacher', () => {
   const hasClasses = computed(() => classes.value.length > 0)
   const publishedModules = computed(() => modules.value.filter(m => m.status === 'Published'))
   const unpublishedModules = computed(() => modules.value.filter(m => m.status === 'Unpublished'))
-  const atRiskStudents = computed(() => students.value.filter(s => s.status === 'Needs Help'))
+  const atRiskStudents = computed(() => students.value.filter(s => s.status === 'Needs Guidance'))
 
   async function fetchClasses() {
     const auth = useAuthStore()
@@ -690,7 +725,6 @@ export const useTeacherStore = defineStore('teacher', () => {
   async function addQuiz(payload: {
     classId?: number | null
     moduleId?: number | null
-    topicId?: number | null
     title: string
     description: string
     quizType: string
@@ -699,6 +733,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
+    allowTextAnswers?: boolean
     questions: AssessmentQuestion[]
     dueAt?: string | null
   }) {
@@ -715,7 +750,6 @@ export const useTeacherStore = defineStore('teacher', () => {
           assessment_type: 'quiz',
           class_id: payload.classId ?? null,
           module_id: payload.moduleId ?? null,
-          topic_id: payload.topicId ?? null,
           title: payload.title,
           description: payload.description,
           category: payload.quizType,
@@ -750,6 +784,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
+    allowTextAnswers?: boolean
     questions: AssessmentQuestion[]
     dueAt?: string | null
   } | Omit<Activity, 'id'>) {
@@ -775,6 +810,7 @@ export const useTeacherStore = defineStore('teacher', () => {
         attemptsAllowed?: number
         shuffleQuestions?: boolean
         showAnswersAfterSubmission?: boolean
+        allowTextAnswers?: boolean
         questions?: AssessmentQuestion[]
         dueAt?: string | null
       }
@@ -795,6 +831,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           attempts_allowed: formPayload.attemptsAllowed ?? 1,
           shuffle_questions: formPayload.shuffleQuestions ?? true,
           show_answers_after_submission: formPayload.showAnswersAfterSubmission ?? true,
+          allow_text_answers: formPayload.allowTextAnswers ?? true,
           questions: formPayload.questions ?? [],
           due_at: formPayload.dueAt ?? null,
         }),
@@ -813,7 +850,6 @@ export const useTeacherStore = defineStore('teacher', () => {
   async function updateQuiz(id: string, payload: {
     classId?: number | null
     moduleId?: number | null
-    topicId?: number | null
     title: string
     description: string
     quizType: string
@@ -822,6 +858,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
+    allowTextAnswers?: boolean
     questions: AssessmentQuestion[]
     dueAt?: string | null
   }) {
@@ -837,7 +874,6 @@ export const useTeacherStore = defineStore('teacher', () => {
         body: JSON.stringify({
           class_id: payload.classId ?? null,
           module_id: payload.moduleId ?? null,
-          topic_id: payload.topicId ?? null,
           title: payload.title,
           description: payload.description,
           category: payload.quizType,
@@ -847,6 +883,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           attempts_allowed: payload.attemptsAllowed,
           shuffle_questions: payload.shuffleQuestions,
           show_answers_after_submission: payload.showAnswersAfterSubmission,
+          allow_text_answers: payload.allowTextAnswers ?? true,
           questions: payload.questions,
           due_at: payload.dueAt ?? null,
         }),
@@ -873,6 +910,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     attemptsAllowed: number
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
+    allowTextAnswers?: boolean
     questions: AssessmentQuestion[]
     dueAt?: string | null
   }) {
@@ -897,6 +935,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           attempts_allowed: payload.attemptsAllowed,
           shuffle_questions: payload.shuffleQuestions,
           show_answers_after_submission: payload.showAnswersAfterSubmission,
+          allow_text_answers: payload.allowTextAnswers ?? true,
           questions: payload.questions,
           due_at: payload.dueAt ?? null,
         }),
@@ -952,6 +991,51 @@ export const useTeacherStore = defineStore('teacher', () => {
       activityError.value = err instanceof Error ? err.message : 'Unable to delete activity'
       throw err
     }
+  }
+
+  async function fetchRetakeRequests(filters: { status?: string; assessmentType?: 'quiz' | 'activity' | null } = {}) {
+    const auth = useAuthStore()
+    if (!auth.token) return
+    retakeRequestsLoading.value = true
+    retakeRequestsError.value = ''
+    try {
+      const params = new URLSearchParams()
+      params.set('status', filters.status ?? 'pending')
+      if (filters.assessmentType) params.set('assessment_type', filters.assessmentType)
+      const data = await apiFetch<RetakeRequestResponse[]>(`/teacher/assessments/retake-requests?${params.toString()}`, { token: auth.token })
+      retakeRequests.value = data.map(mapRetakeRequestResponse)
+    } catch (err) {
+      retakeRequestsError.value = err instanceof Error ? err.message : 'Unable to load retake access records'
+      throw err
+    } finally {
+      retakeRequestsLoading.value = false
+    }
+  }
+
+  async function reviewRetakeRequest(id: number, action: 'approved' | 'rejected') {
+    const auth = useAuthStore()
+    if (!auth.token) throw new Error('Please login first')
+    await apiFetch<{ detail: string; reset_count: number }>(`/teacher/assessments/retake-requests/${id}`, {
+      method: 'PATCH',
+      token: auth.token,
+      body: JSON.stringify({ action }),
+    })
+    await fetchRetakeRequests({ status: 'pending' })
+    await fetchAssessments('quiz')
+    await fetchAssessments('activity')
+    await fetchDashboardSummary()
+  }
+
+  async function setRetakeAccess(assessmentId: number, studentId: string | number, action: 'approved' | 'rejected') {
+    const auth = useAuthStore()
+    if (!auth.token) throw new Error('Please login first')
+    await apiFetch<{ detail: string; status: string; reset_count: number }>(`/teacher/assessments/${assessmentId}/students/${studentId}/retake-access`, {
+      method: 'PATCH',
+      token: auth.token,
+      body: JSON.stringify({ action }),
+    })
+    await fetchStudentRecords()
+    await fetchDashboardSummary()
   }
 
   async function fetchAvailableClasses() {
@@ -1012,10 +1096,11 @@ export const useTeacherStore = defineStore('teacher', () => {
     classes, availableClasses, selectedClassId, selectedClass, hasClasses,
     modulesLoading, moduleSaving, moduleError, quizSaving, quizError, activitySaving, activityError,
     classesLoading, classSaving, classError, classStudents, classStudentsLoading, studentRecords, studentRecordsLoading, studentRecordsError, activityLogsLoading, activityLogsError,
+    retakeRequests, retakeRequestsLoading, retakeRequestsError,
     publishedModules, unpublishedModules, atRiskStudents,
     fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchActivityLogs, fetchStudentRecords, fetchAssessments, addQuiz, updateQuiz, deleteQuiz, addActivity, updateActivity, deleteActivity,
     fetchClasses, addClass, selectClass, deleteClass, fetchClassStudents,
-    fetchAvailableClasses, selectClassAction, unselectClassAction,
+    fetchAvailableClasses, selectClassAction, unselectClassAction, fetchRetakeRequests, reviewRetakeRequest, setRetakeAccess,
   }
 })
 
@@ -1144,6 +1229,7 @@ function mapStudentRecordResponse(record: TeacherStudentRecordResponse): Student
       answers: item.answers ?? {},
       completedAt: item.completed_at ?? null,
       submissionType: item.submission_type ?? null,
+      retakeStatus: item.retake_status ?? null,
     })),
     handsignPractice: (record.handsign_practice ?? []).map(item => ({
       id: item.id,
@@ -1208,6 +1294,7 @@ function mapQuizResponse(assessment: TeacherAssessmentResponse, availableModules
     attemptsAllowed: assessment.attempts_allowed,
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,
+    allowTextAnswers: assessment.allow_text_answers ?? true,
     dueAt: assessment.due_at ?? null,
     createdAt: assessment.created_at ? new Date(assessment.created_at).toLocaleDateString() : null,
     type: assessment.category ?? 'Quiz',
@@ -1233,6 +1320,7 @@ function mapActivityResponse(assessment: TeacherAssessmentResponse): Activity {
     attemptsAllowed: assessment.attempts_allowed,
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,
+    allowTextAnswers: assessment.allow_text_answers ?? true,
     dueAt: assessment.due_at ?? null,
     createdAt: assessment.created_at ? new Date(assessment.created_at).toLocaleDateString() : null,
     dueDate: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString() : '',
@@ -1261,5 +1349,21 @@ function mapActivitySubmissionResponse(submission: {
     total: submission.total,
     answers: submission.answers ?? {},
     completedAt: submission.completed_at ?? null,
+  }
+}
+
+function mapRetakeRequestResponse(item: RetakeRequestResponse): RetakeRequest {
+  return {
+    id: item.id,
+    assessmentId: item.assessment_id,
+    assessmentTitle: item.assessment_title,
+    assessmentType: item.assessment_type,
+    studentId: item.student_id,
+    studentName: item.student_name,
+    status: item.status,
+    reason: item.reason,
+    requestType: item.request_type,
+    createdAt: item.created_at,
+    reviewedAt: item.reviewed_at ?? null,
   }
 }

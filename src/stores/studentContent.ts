@@ -43,6 +43,7 @@ export interface StudentAssessment {
   week?: string | null
   time_limit?: string | null
   time_limit_seconds?: number | null
+  allow_text_answers?: boolean
   due_at?: string | null
   questions: Array<{
     prompt: string
@@ -59,6 +60,9 @@ export interface StudentAssessment {
   student_remaining_seconds?: number | null
   student_submission_type?: string | null
   student_answers?: Record<string, string>
+  student_retake_eligible?: boolean
+  student_retake_reason?: string | null
+  student_retake_status?: string | null
 }
 
 export interface StudentDeadline {
@@ -226,10 +230,25 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   async function startQuiz(moduleId: string | number, quizId: number) {
     const auth = useAuthStore()
     if (!auth.token) return null
-    const result = await apiFetch<QuizStartResponse>(`/student/modules/${moduleId}/quizzes/${quizId}/start`, {
-      method: 'POST',
-      token: auth.token,
-    })
+    const path = `/student/modules/${moduleId}/quizzes/${quizId}/start`
+    let result: QuizStartResponse
+    try {
+      result = await apiFetch<QuizStartResponse>(path, {
+        method: 'POST',
+        token: auth.token,
+      })
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 0) throw err
+      await queueStudentMutation(path, 'POST', {}, auth.token)
+      const quiz = currentModule.value?.assessments.find(item => item.id === quizId)
+      result = {
+        started_at: new Date().toISOString(),
+        time_limit_seconds: quiz?.time_limit_seconds ?? null,
+        remaining_seconds: quiz?.time_limit_seconds ?? null,
+        expired: false,
+        completed: false,
+      }
+    }
     if (result.progress) {
       progress.value = result.progress
       progressByModule.value[Number(moduleId)] = progress.value
@@ -244,11 +263,30 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   async function saveQuizAnswers(moduleId: string | number, quizId: number, answers: Record<string, string>) {
     const auth = useAuthStore()
     if (!auth.token) return null
-    return apiFetch<{ detail: string }>(`/student/modules/${moduleId}/quizzes/${quizId}/answers`, {
+    const path = `/student/modules/${moduleId}/quizzes/${quizId}/answers`
+    try {
+      return await apiFetch<{ detail: string }>(path, {
+        method: 'POST',
+        token: auth.token,
+        body: JSON.stringify({ answers }),
+      })
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 0) throw err
+      await queueStudentMutation(path, 'POST', { answers }, auth.token)
+      return { detail: 'Saved offline. It will sync when internet returns.' }
+    }
+  }
+
+  async function requestQuizRetake(moduleId: string | number, quizId: number, reason = '') {
+    const auth = useAuthStore()
+    if (!auth.token) throw new Error('Please login first')
+    const result = await apiFetch<{ detail: string; status: string }>(`/student/modules/${moduleId}/quizzes/${quizId}/retake-request`, {
       method: 'POST',
       token: auth.token,
-      body: JSON.stringify({ answers }),
+      body: JSON.stringify({ reason: reason || null }),
     })
+    await fetchModule(moduleId)
+    return result
   }
 
   async function fetchActivities() {
@@ -284,13 +322,28 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   async function submitAssessment(moduleId: string | number, assessmentId: number, answers: Record<string, string>) {
     const auth = useAuthStore()
     if (!auth.token) return null
-      const result = await apiFetch<{ score: number; total: number; submission_type?: string | null; progress: ProgressResponse }>(`/student/modules/${moduleId}/assessments/${assessmentId}/submit`, {
-      method: 'POST',
-      token: auth.token,
-      body: JSON.stringify({ answers }),
-    })
+    const path = `/student/modules/${moduleId}/assessments/${assessmentId}/submit`
+    let result: { score: number; total: number; submission_type?: string | null; progress: ProgressResponse }
+    try {
+      result = await apiFetch<{ score: number; total: number; submission_type?: string | null; progress: ProgressResponse }>(path, {
+        method: 'POST',
+        token: auth.token,
+        body: JSON.stringify({ answers }),
+      })
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 0) throw err
+      await queueStudentMutation(path, 'POST', { answers }, auth.token)
+      const assessment = currentModule.value?.assessments.find(item => item.id === assessmentId)
+      const graded = gradeAssessment(assessment, answers)
+      result = {
+        ...graded,
+        submission_type: 'offline',
+        progress: applyLocalQuizProgress(Number(moduleId), assessmentId),
+      }
+    }
     progress.value = result.progress
     progressByModule.value[Number(moduleId)] = progress.value
+    markModuleAssessmentCompleted(moduleId, assessmentId, result.score, result.total)
     await fetchDeadlines()
     return result
   }
@@ -331,6 +384,19 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       }
     }
     await fetchDeadlines()
+    return result
+  }
+
+  async function requestActivityRetake(activityId: string | number, reason = '') {
+    const auth = useAuthStore()
+    if (!auth.token) throw new Error('Please login first')
+    const result = await apiFetch<{ detail: string; status: string }>(`/student/activities/${activityId}/retake-request`, {
+      method: 'POST',
+      token: auth.token,
+      body: JSON.stringify({ reason: reason || null }),
+    })
+    await fetchActivity(activityId)
+    await fetchActivities()
     return result
   }
 
@@ -408,8 +474,8 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       return question.options?.[letter.charCodeAt(0) - 65] ?? submitted
     }
     if (question.question_type === 'true_false') {
-      if (letter === 'A') return 'True'
-      if (letter === 'B') return 'False'
+      if (letter === 'A' || letter === 'T' || letter === 'TRUE') return 'True'
+      if (letter === 'B' || letter === 'F' || letter === 'FALSE') return 'False'
     }
     return submitted
   }
@@ -474,6 +540,6 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   return {
     modules, activities, currentActivity, currentModule, deadlines, progress, progressByModule, sortedTopics, loading, error,
     fetchModules, fetchModule, fetchActivities, fetchActivity, fetchProgress, fetchAllProgress,
-    fetchDeadlines, markTopic, startQuiz, saveQuizAnswers, submitQuiz, submitAssessment, submitActivity,
+    fetchDeadlines, markTopic, startQuiz, saveQuizAnswers, requestQuizRetake, submitQuiz, submitAssessment, submitActivity, requestActivityRetake,
   }
 })

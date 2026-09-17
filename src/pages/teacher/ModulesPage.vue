@@ -14,7 +14,7 @@
           <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-blue text-xs font-black text-white">LM</span>
           <div>
             <div class="font-display text-sm font-bold text-ink">Learning Materials</div>
-            <div class="text-xs font-semibold text-ink-soft">Upload PDF, PowerPoint, or DOCX files for student lessons</div>
+            <div class="text-xs font-semibold text-ink-soft">Upload PDF, DOCX, or PPTX files for student lessons</div>
           </div>
         </div>
       </RouterLink>
@@ -38,18 +38,14 @@
       </RouterLink>
     </div>
 
-    <div class="card p-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <input v-model="search" class="input-field max-w-sm" placeholder="Search by title, class, week, status, or file..." />
-        <span class="text-xs font-semibold text-ink-soft">{{ filteredMaterials.length }} of {{ store.modules.length }} shown</span>
-        <span v-if="successMessage" class="status-success">{{ successMessage }}</span>
-      </div>
+    <div v-if="successMessage" class="card p-4">
+      <span class="status-success">{{ successMessage }}</span>
     </div>
 
     <div v-if="store.modulesLoading" class="empty-state">Loading learning materials...</div>
-    <div v-else-if="filteredMaterials.length === 0" class="card p-12 text-center">
+    <div v-else-if="store.modules.length === 0" class="card p-12 text-center">
       <h2 class="font-display text-xl font-bold">No learning materials have been added yet.</h2>
-      <p class="mx-auto mt-2 max-w-md text-sm text-ink-soft">Add PDFs, PowerPoint decks, or Word documents for the selected module.</p>
+      <p class="mx-auto mt-2 max-w-md text-sm text-ink-soft">Add PDFs, Word documents, or PowerPoint presentations for the selected module.</p>
       <button class="btn-primary mt-5" @click="openForm()">Add Learning Material</button>
     </div>
     <div v-else class="card overflow-hidden">
@@ -62,7 +58,7 @@
         <div class="text-right">Actions</div>
       </div>
       <article
-        v-for="material in filteredMaterials"
+        v-for="material in store.modules"
         :key="material.id"
         class="grid gap-3 border-b border-gray-100 px-5 py-4 last:border-b-0 lg:grid-cols-[minmax(240px,1.4fr)_minmax(170px,1fr)_110px_120px_minmax(180px,1fr)_220px] lg:items-center"
       >
@@ -155,7 +151,7 @@
               <section class="figma-panel flex min-h-72 flex-col justify-between">
                 <div>
                   <h3 class="figma-card-title mb-1">Upload File</h3>
-                  <p class="text-xs font-semibold text-ink-soft">PDF, PowerPoint, and DOCX files are parsed into readable topics after saving.</p>
+                  <p class="text-xs font-semibold text-ink-soft">PDF, DOCX, and PPTX files are parsed into readable topics after saving.</p>
                 </div>
                 <label
                   :class="[
@@ -188,8 +184,32 @@
                     </select>
                   </div>
                   <div>
-                    <label class="figma-label">Due Date</label>
-                    <input v-model="form.releaseDate" class="figma-input" type="date" />
+                    <div class="flex items-center justify-between gap-3">
+                      <div>
+                        <label class="figma-label" for="module-has-deadline">Deadline</label>
+                        <p class="text-[11px] font-semibold text-ink-soft">Turn on only when this material has a due date.</p>
+                      </div>
+                      <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-bold text-brand-blue">
+                        <span>{{ form.hasDeadline ? 'On' : 'Off' }}</span>
+                        <input id="module-has-deadline" v-model="form.hasDeadline" class="sr-only" type="checkbox" />
+                        <span
+                          :class="[
+                            'relative h-7 w-14 rounded-full border-2 transition-all after:absolute after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all',
+                            form.hasDeadline
+                              ? 'border-brand-amber bg-brand-amber after:left-7'
+                              : 'border-brand-teal/40 bg-brand-blue-soft after:left-0.5',
+                          ]"
+                          aria-hidden="true"
+                        ></span>
+                      </label>
+                    </div>
+                    <input
+                      v-model="form.releaseDate"
+                      class="figma-input mt-3"
+                      type="date"
+                      :disabled="!form.hasDeadline"
+                      :class="!form.hasDeadline ? 'cursor-not-allowed bg-slate-100 text-ink-soft opacity-70' : ''"
+                    />
                   </div>
                 </div>
               </div>
@@ -203,6 +223,7 @@
                 <dl class="grid gap-2 text-xs">
                   <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">Class</dt><dd class="text-right font-semibold">{{ selectedClassLabel }}</dd></div>
                   <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">Week</dt><dd class="text-right font-semibold">{{ form.week || 'Not set' }}</dd></div>
+                  <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">Deadline</dt><dd class="text-right font-semibold">{{ form.hasDeadline && form.releaseDate ? form.releaseDate : 'No deadline' }}</dd></div>
                   <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">File</dt><dd class="max-w-44 truncate text-right font-semibold">{{ fileName || 'No file selected' }}</dd></div>
                 </dl>
               </div>
@@ -225,8 +246,8 @@ import { useTeacherStore } from '@/stores/teacher'
 
 const contentTypeOptions = [
   { value: 'PDF', label: 'PDF' },
-  { value: 'PPT', label: 'PowerPoint' },
   { value: 'DOCX', label: 'DOCX' },
+  { value: 'PPTX', label: 'PPTX (PowerPoint)' },
 ] as const
 type MaterialContentType = typeof contentTypeOptions[number]['value']
 interface MaterialForm {
@@ -236,33 +257,36 @@ interface MaterialForm {
   contentType: MaterialContentType | ''
   week: string
   status: 'Published' | 'Unpublished'
+  hasDeadline: boolean
   releaseDate: string
   behaviorRequired: boolean
 }
 
-const contentTypeConfig: Record<MaterialContentType, { extensions: string[]; accept: string; hint: string; label: string }> = {
+const contentTypeConfig: Record<MaterialContentType, { extensions: string[]; mimeTypes: string[]; accept: string; hint: string; label: string }> = {
   PDF: {
     extensions: ['.pdf'],
+    mimeTypes: ['application/pdf'],
     accept: '.pdf,application/pdf',
     hint: 'PDF only',
     label: 'PDF',
   },
-  PPT: {
-    extensions: ['.ppt', '.pptx'],
-    accept: '.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    hint: 'PPT or PPTX only',
-    label: 'PowerPoint',
-  },
   DOCX: {
-    extensions: ['.docx'],
-    accept: '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    extensions: ['.docx', '.doc'],
+    mimeTypes: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'],
+    accept: '.docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword',
     hint: 'DOCX only',
     label: 'DOCX',
+  },
+  PPTX: {
+    extensions: ['.pptx', '.ppt'],
+    mimeTypes: ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-powerpoint'],
+    accept: '.pptx,.ppt,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint',
+    hint: 'PPT or PPTX only',
+    label: 'PPT / PPTX',
   },
 }
 const store = useTeacherStore()
 const router = useRouter()
-const search = ref('')
 const showForm = ref(false)
 const formError = ref('')
 const successMessage = ref('')
@@ -272,20 +296,6 @@ const isDraggingFile = ref(false)
 const form = ref<MaterialForm>(defaultForm())
 const editingMaterialId = ref<string | null>(null)
 
-const normalizedSearch = computed(() => search.value.trim().toLowerCase())
-const filteredMaterials = computed(() => store.modules.filter(material => {
-  if (!normalizedSearch.value) return true
-  return [
-    material.title,
-    material.description,
-    classNameFor(material.classId),
-    material.contentType,
-    material.week,
-    material.status,
-    material.fileName,
-    formatFileSize(material.fileSize),
-  ].some(value => String(value ?? '').toLowerCase().includes(normalizedSearch.value))
-}))
 const selectedClassLabel = computed(() => classNameFor(form.value.classId ? Number(form.value.classId) : null))
 const selectedContentType = computed(() => isSupportedContentType(form.value.contentType) ? form.value.contentType : 'PDF')
 const selectedContentTypeLabel = computed(() => contentTypeLabel(selectedContentType.value))
@@ -306,6 +316,7 @@ function defaultForm(): MaterialForm {
     contentType: contentTypeOptions[0]?.value ?? '',
     week: '',
     status: 'Unpublished' as 'Published' | 'Unpublished',
+    hasDeadline: false,
     releaseDate: '',
     behaviorRequired: true,
   }
@@ -331,6 +342,7 @@ function openForm(material?: {
     contentType: isSupportedContentType(material.contentType) ? material.contentType : contentTypeOptions[0]?.value ?? '',
     week: material.week ?? '',
     status: material.status,
+    hasDeadline: Boolean(material.dueAt),
     releaseDate: toDateInputValue(material.dueAt),
     behaviorRequired: material.behaviorRequired ?? true,
   } : defaultForm()
@@ -384,7 +396,7 @@ async function submitMaterial() {
   }
 
   if (!editingMaterialId.value && !selectedFile.value) {
-    formError.value = 'Please select a PDF, PowerPoint, or DOCX file.'
+    formError.value = 'Please select a file (PDF, DOCX, or PPTX).'
     return
   }
 
@@ -398,7 +410,7 @@ async function submitMaterial() {
         week: form.value.week,
         status: form.value.status,
         behaviorRequired: form.value.behaviorRequired,
-        dueAt: toApiDateTime(form.value.releaseDate),
+        dueAt: moduleDueAt(),
       })
       if (selectedFile.value) {
         await store.replaceModuleFile(editingMaterialId.value, selectedFile.value)
@@ -412,7 +424,7 @@ async function submitMaterial() {
         week: form.value.week,
         status: form.value.status,
         behaviorRequired: form.value.behaviorRequired,
-        dueAt: toApiDateTime(form.value.releaseDate),
+        dueAt: moduleDueAt(),
         file: selectedFile.value,
       })
     }
@@ -448,7 +460,12 @@ function isSupportedContentType(value?: string | null): value is MaterialContent
 
 function isFileAllowedForContentType(file: File, contentType: MaterialContentType) {
   const lowerName = file.name.toLowerCase()
-  return contentTypeConfig[contentType].extensions.some(extension => lowerName.endsWith(extension))
+  const config = contentTypeConfig[contentType]
+  const hasAllowedExtension = config.extensions.some(extension => lowerName.endsWith(extension))
+  // Browsers may report unexpected or empty MIME types for .doc/.ppt files,
+  // so we accept the file as long as the extension OR the MIME type matches.
+  const hasAllowedMime = !file.type || config.mimeTypes.includes(file.type)
+  return hasAllowedExtension || hasAllowedMime
 }
 
 async function downloadMaterial(material: { id: string; fileName?: string | null }) {
@@ -468,6 +485,10 @@ function toApiDateTime(value: string) {
   return value ? `${value}T23:59:00` : null
 }
 
+function moduleDueAt() {
+  return form.value.hasDeadline ? toApiDateTime(form.value.releaseDate) : null
+}
+
 function toDateInputValue(value?: string | null) {
   return value ? value.slice(0, 10) : ''
 }
@@ -477,6 +498,12 @@ watch(() => form.value.contentType, () => {
     selectedFile.value = null
     fileName.value = ''
     formError.value = `Please select a ${selectedContentTypeLabel.value} file for this content type.`
+  }
+})
+
+watch(() => form.value.hasDeadline, (hasDeadline) => {
+  if (!hasDeadline) {
+    form.value.releaseDate = ''
   }
 })
 </script>

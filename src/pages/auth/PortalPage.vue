@@ -24,11 +24,16 @@
           <p class="text-[9px] font-extrabold text-brand-blue uppercase tracking-widest">Inclusive E-Learning</p>
         </RouterLink>
       </div>
-      <RouterLink to="/" class="flex items-center gap-1.5 text-xs font-bold text-ink-soft hover:text-ink transition-colors group">
-        <svg class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <nav class="hidden items-center gap-2 sm:flex" aria-label="Public navigation">
+        <RouterLink to="/" class="portal-nav-link">Home</RouterLink>
+        <RouterLink to="/about" class="portal-nav-link">About Us</RouterLink>
+        <RouterLink to="/portal" class="portal-nav-link active">Register / Log in</RouterLink>
+      </nav>
+      <RouterLink to="/" class="flex items-center gap-1.5 text-xs font-bold text-ink-soft transition-colors hover:text-ink sm:hidden group">
+        <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
         </svg>
-        Back to Home
+        Home
       </RouterLink>
     </header>
 
@@ -140,3 +145,30 @@ function handleLogoClick() {
   }, 400)
 }
 </script>
+
+<style scoped>
+.portal-nav-link {
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: #5a8d82;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.55rem 0.85rem;
+  transition: transform 0.22s ease, background-color 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.portal-nav-link:hover,
+.portal-nav-link:focus-visible,
+.portal-nav-link.active {
+  background: #cdeae0;
+  border-color: #a5d8cc;
+  box-shadow: 0 10px 24px rgba(45, 110, 97, 0.1);
+  color: #2d6e61;
+  outline: none;
+  transform: translateY(-0.15rem);
+}
+
+.portal-nav-link.active {
+  border-color: #f59e5b;
+}
+</style>

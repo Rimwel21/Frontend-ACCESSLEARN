@@ -37,10 +37,14 @@
         </button>
       </nav>
 
-      <div class="border-t-[3px] border-brand-teal/30 px-4 py-3 space-y-2">
-        <button type="button" class="flex w-full items-center justify-center gap-2 border-[2px] border-brand-teal/30 bg-brand-blue-soft px-3 py-2 text-xs font-bold text-brand-blue hover:border-brand-amber hover:bg-white" title="Notification setup is required to receive school updates">
-          <svg class="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .53-.21 1.04-.59 1.41L4 17h5m6 0v1a3 3 0 0 1-6 0v-1m6 0H9" /></svg>
-          <span>Set Up Notifications</span>
+      <div class="border-t-[3px] border-brand-teal/30 px-4 py-3">
+        <button
+          class="mb-2 w-full border-[2px] border-brand-teal/40 bg-brand-blue-soft px-3 py-2 text-xs font-bold text-brand-blue transition-all hover:border-brand-amber hover:bg-brand-amber hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+          type="button"
+          :disabled="pushButtonDisabled"
+          @click="enablePushNotifications"
+        >
+          {{ pushButtonLabel }}
         </button>
         <button class="w-full border-[2px] border-brand-teal/40 bg-white px-3 py-2 text-xs font-bold text-ink-soft hover:border-brand-rose hover:bg-brand-rose hover:text-white" @click="logout">
           Logout
@@ -88,6 +92,14 @@
         </nav>
 
         <div class="border-t-[3px] border-brand-teal/30 px-4 py-3">
+          <button
+            class="mb-2 w-full border-[2px] border-brand-teal/40 bg-brand-blue-soft px-3 py-2 text-xs font-bold text-brand-blue transition-all hover:border-brand-amber hover:bg-brand-amber hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            type="button"
+            :disabled="pushButtonDisabled"
+            @click="enablePushNotifications"
+          >
+            {{ pushButtonLabel }}
+          </button>
           <button class="w-full border-[2px] border-brand-teal/40 bg-white px-3 py-2 text-xs font-bold text-ink-soft hover:border-brand-rose hover:bg-brand-rose hover:text-white" @click="logout">
             Logout
           </button>
@@ -125,16 +137,19 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
+import { enableStudentPushNotifications, getPushNotificationStatus, type PushNotificationStatus } from '@/services/pushNotifications'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const profile = useProfileStore()
 const menuOpen = ref(false)
+const pushStatus = ref<PushNotificationStatus>('idle')
+const pushLoading = ref(false)
 
 const navItems = [
   { to: '/student/dashboard', label: 'Home', iconClass: 'rounded-full' },
@@ -144,6 +159,25 @@ const navItems = [
 
 onMounted(() => {
   profile.fetchProfile().catch(() => null)
+  refreshPushNotificationStatus()
+})
+
+const pushButtonLabel = computed(() => {
+  if (pushLoading.value) return 'Checking...'
+  if (pushStatus.value === 'enabled') return 'Notifications On'
+  if (pushStatus.value === 'unsupported') return 'Notifications Unavailable'
+  if (pushStatus.value === 'not-configured') return 'Notifications Need Setup'
+  if (pushStatus.value === 'permission-denied') return 'Notifications Blocked'
+  if (pushStatus.value === 'failed') return 'Try Notifications Again'
+  return 'Enable Notifications'
+})
+
+const pushButtonDisabled = computed(() => {
+  return pushLoading.value
+    || pushStatus.value === 'enabled'
+    || pushStatus.value === 'unsupported'
+    || pushStatus.value === 'not-configured'
+    || pushStatus.value === 'permission-denied'
 })
 
 function goToProfile() {
@@ -155,6 +189,21 @@ function goToNav(to?: string) {
   if (!to) return
   menuOpen.value = false
   router.push(to)
+}
+
+async function refreshPushNotificationStatus() {
+  pushStatus.value = await getPushNotificationStatus().catch(() => 'failed')
+}
+
+async function enablePushNotifications() {
+  pushLoading.value = true
+  try {
+    pushStatus.value = await enableStudentPushNotifications()
+  } catch {
+    pushStatus.value = 'failed'
+  } finally {
+    pushLoading.value = false
+  }
 }
 
 function logout() {
