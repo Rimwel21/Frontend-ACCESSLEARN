@@ -111,15 +111,14 @@
           <!-- Features Section -->
           <section id="features" class="relative z-20 mx-auto w-full max-w-[1350px] space-y-3" aria-labelledby="features-title">
             <h2 id="features-title" class="font-display text-2xl font-bold leading-none text-[#2b7668]">Features</h2>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:gap-4">
-              <article v-for="feature in features" :key="feature.title" class="flex h-full min-h-[220px] flex-col items-center justify-start rounded-xl border border-[#a5d8cc]/60 bg-white p-4 text-center shadow-[0_4px_12px_rgba(45,110,97,0.02)] transition-all hover:-translate-y-1.5 hover:border-[#f59e5b] hover:shadow-[0_12px_24px_rgba(45,110,97,0.08)] lg:p-5">
-                <div class="mb-3 flex items-center justify-center gap-2">
-                  <span v-for="emoji in feature.icons" :key="emoji" class="text-2xl lg:text-[34px] select-none filter drop-shadow-sm">{{ emoji }}</span>
+            <div class="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
+              <article v-for="feature in features" :key="feature.title" class="flex h-full min-h-[150px] flex-col items-center justify-start rounded-xl border border-[#a5d8cc]/60 bg-white p-3 text-center shadow-[0_4px_12px_rgba(45,110,97,0.02)] transition-all hover:-translate-y-1.5 hover:border-[#f59e5b] hover:shadow-[0_12px_24px_rgba(45,110,97,0.08)] lg:min-h-[220px] lg:p-5">
+                <div class="mb-2 flex items-center justify-center gap-1.5 lg:mb-3 lg:gap-2">
+                  <span v-for="emoji in feature.icons" :key="emoji" class="select-none text-xl filter drop-shadow-sm lg:text-[34px]">{{ emoji }}</span>
                 </div>
-                <h3 class="mb-2 text-[13px] lg:text-[15px] font-bold leading-snug text-[#2b7668]">{{ feature.title }}</h3>
-                <p class="text-[10px] lg:text-[12px] font-medium leading-relaxed text-[#5a8d82]">
-                  {{ feature.summary }} {{ feature.detail }}
-                </p>
+                <h3 class="mb-1 text-[12px] font-bold leading-snug text-[#2b7668] lg:mb-2 lg:text-[15px]">{{ feature.title }}</h3>
+                <p class="hidden text-[12px] font-medium leading-relaxed text-[#5a8d82] lg:block">{{ feature.summary }} {{ feature.detail }}</p>
+                <p class="text-[10px] font-medium leading-relaxed text-[#5a8d82] lg:hidden">{{ feature.summary }}</p>
               </article>
             </div>
           </section>

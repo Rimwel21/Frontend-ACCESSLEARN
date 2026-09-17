@@ -1,45 +1,7 @@
 <template>
   <div class="min-h-screen bg-surface">
     <div class="space-y-5 px-5 py-5 xl:px-7">
-      <!-- Search Header -->
-      <div>
-        <div class="flex min-w-0 items-center gap-3 border-[3px] border-brand-teal bg-white px-4 py-3 shadow-card transition-all focus-within:border-brand-blue focus-within:shadow-card-hover focus-within:ring-2 focus-within:ring-brand-blue/25">
-          <svg class="h-5 w-5 flex-shrink-0 text-brand-blue" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" />
-          </svg>
-          <input v-model="search" type="search" placeholder="Search lesson, quiz, activities..." class="min-w-0 flex-1 border-0 bg-transparent text-sm font-bold text-ink outline-none placeholder:text-ink-soft" />
-          <button v-if="hasSearch" type="button" class="border-[2px] border-brand-teal px-3 py-1 text-[10px] font-black text-brand-blue transition-all hover:border-brand-rose hover:bg-brand-rose hover:text-white" @click="search = ''">
-            CLEAR
-          </button>
-          <span v-else class="text-xs font-black text-ink-soft">SEARCH</span>
-        </div>
-
-        <!-- Search Results Panel -->
-        <section v-if="hasSearch" class="mt-3 border-[3px] border-brand-teal bg-white shadow-card">
-          <div class="flex items-center justify-between border-b-[3px] border-brand-teal/30 bg-brand-blue-soft px-4 py-2.5">
-            <h2 class="font-display text-xs font-black uppercase tracking-widest text-brand-blue">Search Results</h2>
-            <span class="font-mono text-[10px] font-black text-ink-soft">{{ searchResults.length }} found</span>
-          </div>
-          <div v-if="searchResults.length === 0" class="p-4 text-sm font-bold text-ink-soft">
-            No lessons, quizzes, or activities match "{{ search.trim() }}".
-          </div>
-          <div v-else class="grid gap-2 p-3 sm:grid-cols-2 xl:grid-cols-4">
-            <button
-              v-for="result in searchResults"
-              :key="result.id"
-              type="button"
-              class="min-w-0 border-[2px] border-brand-teal bg-white p-3 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover"
-              @click="openSearchResult(result)"
-            >
-              <span class="inline-flex border border-brand-teal bg-surface px-2 py-0.5 font-mono text-[9px] font-black uppercase text-brand-blue">{{ result.type }}</span>
-              <div class="mt-2 truncate text-sm font-black text-ink">{{ result.title }}</div>
-              <div class="mt-1 truncate font-mono text-[10px] text-ink-soft">{{ result.meta }}</div>
-            </button>
-          </div>
-        </section>
-      </div>
-
-      <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
+      <div class="min-w-0">
         <!-- Main Content Area -->
         <div class="min-w-0 space-y-6">
           <!-- Welcome Banner with Module Stats -->
@@ -76,6 +38,25 @@
                   <span>{{ finishedModules.length }} Finished</span>
                 </button>
               </div>
+            </div>
+          </section>
+
+          <section class="border-[3px] border-brand-teal bg-white shadow-card">
+            <div class="border-b-[3px] border-brand-teal/30 bg-brand-blue px-4 py-3">
+              <h2 class="font-display text-sm font-black uppercase tracking-widest text-white">Upcoming Deadlines</h2>
+            </div>
+            <div class="scrollbar-thin flex gap-3 overflow-x-auto p-3">
+              <button
+                v-for="deadline in content.deadlines"
+                :key="deadline.id"
+                type="button"
+                class="min-w-[210px] border-[2px] border-brand-teal bg-surface p-3 text-left transition hover:border-brand-amber"
+                @click="openDeadline(deadline)"
+              >
+                <div class="text-xs font-black">{{ deadline.title }}</div>
+                <div class="mt-1 font-mono text-[10px] font-bold text-ink-soft">{{ deadline.item_type }} | {{ formatDeadline(deadline.due_at) }}</div>
+              </button>
+              <div v-if="content.deadlines.length === 0" class="text-xs font-bold text-ink-soft">No upcoming deadlines.</div>
             </div>
           </section>
 
@@ -303,54 +284,6 @@
           </section>
         </div>
 
-        <!-- Sidebar (Calendar & Deadlines) -->
-        <aside class="grid gap-5 lg:block lg:space-y-5">
-          <!-- Calendar Widget -->
-          <section class="border-[3px] border-brand-teal bg-white shadow-card">
-            <div class="flex items-center justify-between border-b-[3px] border-brand-teal/30 bg-brand-amber px-3 py-2 text-white">
-              <button class="font-black" type="button" @click="calendarOffset -= 1">&lt;</button>
-              <div class="text-center">
-                <div class="font-display text-sm font-black">{{ calendarTitle }}</div>
-                <div class="font-mono text-[9px] uppercase tracking-widest text-white/85">{{ calendarYear }}</div>
-              </div>
-              <button class="font-black" type="button" @click="calendarOffset += 1">&gt;</button>
-            </div>
-            <div class="grid grid-cols-7 gap-1 p-3 text-center font-mono text-[10px]">
-              <div v-for="day in weekDays" :key="day" class="font-black text-ink-soft">{{ day }}</div>
-              <div v-for="blank in calendarLeadingBlanks" :key="`blank-${blank}`" />
-              <div
-                v-for="day in calendarDays"
-                :key="day"
-                :class="['grid h-7 place-items-center border border-transparent font-bold transition-all', isToday(day) ? 'border-brand-blue bg-brand-blue text-white' : 'text-ink hover:bg-surface']"
-              >
-                {{ day }}
-              </div>
-            </div>
-          </section>
-
-          <!-- Upcoming Deadlines -->
-          <section class="min-h-[220px] border-[3px] border-brand-teal bg-white shadow-card">
-            <div class="border-b-[3px] border-brand-teal/30 bg-brand-blue px-4 py-3">
-              <h2 class="font-display text-sm font-black uppercase tracking-widest text-white">Upcoming Deadlines</h2>
-            </div>
-            <div class="space-y-3 p-4">
-              <button
-                v-for="deadline in filteredDeadlines"
-                :key="deadline.id"
-                type="button"
-                class="group w-full border-[2px] border-brand-teal bg-white p-3 text-left transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
-                @click="openDeadline(deadline)"
-              >
-                <div class="text-xs font-black">{{ deadline.title }}</div>
-                <div class="mt-1 flex items-center justify-between gap-2 font-mono text-[10px] font-bold text-ink-soft">
-                  <span>{{ deadline.item_type }} | {{ formatDeadline(deadline.due_at) }}</span>
-                  <span class="text-brand-blue opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100">OPEN</span>
-                </div>
-              </button>
-              <div v-if="filteredDeadlines.length === 0" class="text-xs font-bold text-ink-soft">{{ hasSearch ? 'No deadlines match your search.' : 'No deadlines yet.' }}</div>
-            </div>
-          </section>
-        </aside>
       </div>
     </div>
   </div>
