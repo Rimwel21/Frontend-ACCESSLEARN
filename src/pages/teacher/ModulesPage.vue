@@ -83,10 +83,21 @@
           <div class="mt-0.5 text-xs">{{ formatFileSize(material.fileSize) }}</div>
         </div>
         <div class="flex flex-wrap justify-start gap-2 lg:justify-end">
-          <button class="figma-button" @click="router.push(`/teacher/modules/${material.id}/preview`)">Preview</button>
-          <button class="figma-button" :disabled="!material.fileName" @click="downloadMaterial(material)">Download</button>
-          <button class="figma-button" @click="openForm(material)">Edit</button>
-          <button class="figma-button border-red-300 text-red-700" @click="deleteMaterial(material.id)">Delete</button>
+          <button class="figma-button lg:hidden" type="button" @click="toggleMaterialDetails(material.id)">
+            {{ expandedMaterialId === material.id ? 'Hide Details' : 'View More' }}
+          </button>
+          <div class="hidden flex-wrap gap-2 lg:flex">
+            <button class="figma-button" @click="router.push(`/teacher/modules/${material.id}/preview`)">Preview</button>
+            <button class="figma-button" :disabled="!material.fileName" @click="downloadMaterial(material)">Download</button>
+            <button class="figma-button" @click="openForm(material)">Edit</button>
+            <button class="figma-button border-red-300 text-red-700" @click="deleteMaterial(material.id)">Delete</button>
+          </div>
+          <div v-if="expandedMaterialId === material.id" class="flex flex-wrap gap-2 lg:hidden">
+            <button class="figma-button" @click="router.push(`/teacher/modules/${material.id}/preview`)">Preview</button>
+            <button class="figma-button" :disabled="!material.fileName" @click="downloadMaterial(material)">Download</button>
+            <button class="figma-button" @click="openForm(material)">Edit</button>
+            <button class="figma-button border-red-300 text-red-700" @click="deleteMaterial(material.id)">Delete</button>
+          </div>
         </div>
       </article>
     </div>
@@ -287,6 +298,7 @@ const contentTypeConfig: Record<MaterialContentType, { extensions: string[]; mim
 }
 const store = useTeacherStore()
 const router = useRouter()
+const expandedMaterialId = ref<string | null>(null)
 const showForm = ref(false)
 const formError = ref('')
 const successMessage = ref('')
@@ -452,6 +464,10 @@ function classNameFor(classId?: number | null) {
 function contentTypeLabel(value?: string | null) {
   const option = contentTypeOptions.find(type => type.value === value)
   return option?.label ?? value ?? ''
+}
+
+function toggleMaterialDetails(id: string) {
+  expandedMaterialId.value = expandedMaterialId.value === id ? null : id
 }
 
 function isSupportedContentType(value?: string | null): value is MaterialContentType {

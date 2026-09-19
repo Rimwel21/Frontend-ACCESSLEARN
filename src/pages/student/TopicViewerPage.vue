@@ -357,7 +357,7 @@
                 {{ activeTopic.content }}
               </div>
 
-              <div v-if="activeTopic.image_url" class="flex flex-col gap-5 lg:flex-row">
+              <div v-if="activeTopic.image_url && !activeTopic.page_image_urls?.length" class="flex flex-col gap-5 lg:flex-row">
                 <img
                   :src="assetUrl(activeTopic.image_url)"
                   alt=""

@@ -39,12 +39,13 @@
 
       <div class="border-t-[3px] border-brand-teal/30 px-4 py-3">
         <button
-          class="mb-2 w-full border-[2px] border-brand-teal/40 bg-brand-blue-soft px-3 py-2 text-xs font-bold text-brand-blue transition-all hover:border-brand-amber hover:bg-brand-amber hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+          class="mb-2 flex w-full items-center justify-center gap-2 border-[2px] border-brand-teal/40 bg-brand-blue-soft px-3 py-2 text-xs font-bold text-brand-blue transition-all hover:border-brand-amber hover:bg-brand-amber hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
           type="button"
           :disabled="pushButtonDisabled"
           @click="enablePushNotifications"
         >
-          {{ pushButtonLabel }}
+          <svg class="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .53-.21 1.04-.59 1.41L4 17h5m6 0v1a3 3 0 0 1-6 0v-1m6 0H9" /></svg>
+          <span>{{ pushButtonLabel }}</span>
         </button>
         <button class="w-full border-[2px] border-brand-teal/40 bg-white px-3 py-2 text-xs font-bold text-ink-soft hover:border-brand-rose hover:bg-brand-rose hover:text-white" @click="logout">
           Logout

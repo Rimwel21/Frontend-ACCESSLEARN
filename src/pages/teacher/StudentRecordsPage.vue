@@ -69,9 +69,9 @@
       <div class="border-b border-gray-50 px-5 py-4">
         <h2 class="font-display text-base font-semibold">Full Student Progress</h2>
       </div>
-      <div class="overflow-x-auto">
+      <div class="scrollbar-thin max-h-[calc(100vh-20rem)] min-h-[260px] overflow-auto">
         <table class="w-full min-w-[980px] border-collapse">
-          <thead>
+          <thead class="sticky top-0 z-10 bg-surface shadow-sm">
             <tr>
               <th class="table-th">Student</th>
               <th class="table-th">Class</th>
