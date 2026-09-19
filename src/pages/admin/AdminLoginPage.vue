@@ -78,11 +78,21 @@
             <div v-if="resetStep >= 3" class="grid gap-3">
               <div>
                 <label class="field-label" for="new-password">New Password</label>
-                <input id="new-password" v-model="newPassword" class="input-field mt-1" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+                <div class="mt-1 grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <input id="new-password" v-model="newPassword" class="input-field" :type="showResetPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+                  <button type="button" class="btn-secondary rounded-lg" @click="showResetPassword = !showResetPassword">
+                    {{ showResetPassword ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
               </div>
               <div>
                 <label class="field-label" for="confirm-password">Confirm New Password</label>
-                <input id="confirm-password" v-model="confirmPassword" class="input-field mt-1" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+                <div class="mt-1 grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <input id="confirm-password" v-model="confirmPassword" class="input-field" :type="showConfirmResetPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+                  <button type="button" class="btn-secondary rounded-lg" @click="showConfirmResetPassword = !showConfirmResetPassword">
+                    {{ showConfirmResetPassword ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
               </div>
               <button type="button" class="btn-primary justify-center rounded-lg" :disabled="loading" @click="confirmPasswordReset">
                 {{ loading ? 'Saving...' : 'Create New Password' }}
@@ -123,6 +133,8 @@ const auth = useAuthStore()
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
+const showResetPassword = ref(false)
+const showConfirmResetPassword = ref(false)
 const loading = ref(false)
 const errorMsg = ref('')
 const showPasswordReset = ref(false)
@@ -168,6 +180,8 @@ function closePasswordReset() {
   resetOtp.value = ''
   newPassword.value = ''
   confirmPassword.value = ''
+  showResetPassword.value = false
+  showConfirmResetPassword.value = false
   resetMessage.value = ''
   resetError.value = ''
 }

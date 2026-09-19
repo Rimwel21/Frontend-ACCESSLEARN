@@ -173,6 +173,57 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function requestStudentPasswordResetOtp(username: string) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      return await apiFetch<TeacherOtpResponse>('/otp/student/password-reset/request', {
+        method: 'POST',
+        body: JSON.stringify({ username, role: 'student' }),
+      })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to send student password reset OTP'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function verifyStudentPasswordResetOtp(username: string, otp: string) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      return await apiFetch<{ message: string }>('/otp/student/password-reset/verify', {
+        method: 'POST',
+        body: JSON.stringify({ username, otp, role: 'student' }),
+      })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Student OTP verification failed'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function confirmStudentPasswordReset(username: string, otp: string, newPassword: string) {
+    loading.value = true
+    error.value = ''
+
+    try {
+      return await apiFetch<{ message: string }>('/otp/student/password-reset/confirm', {
+        method: 'POST',
+        body: JSON.stringify({ username, otp, new_password: newPassword, role: 'student' }),
+      })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Student password reset failed'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function requestAdminPasswordResetOtp(email: string) {
     loading.value = true
     error.value = ''
@@ -402,6 +453,9 @@ export const useAuthStore = defineStore('auth', () => {
     requestTeacherPasswordResetOtp,
     verifyTeacherPasswordResetOtp,
     confirmTeacherPasswordReset,
+    requestStudentPasswordResetOtp,
+    verifyStudentPasswordResetOtp,
+    confirmStudentPasswordReset,
     requestAdminPasswordResetOtp,
     verifyAdminPasswordResetOtp,
     confirmAdminPasswordReset,

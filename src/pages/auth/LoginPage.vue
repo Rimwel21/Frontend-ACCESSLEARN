@@ -64,16 +64,23 @@
         <div v-if="showPasswordReset" class="rounded-xl border border-brand-teal/30 bg-brand-teal/5 p-4">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h2 class="font-display text-base font-bold text-ink">Reset Teacher Password</h2>
-              <p class="mt-1 text-xs font-semibold text-ink-soft">Use the OTP sent to your teacher email.</p>
+              <h2 class="font-display text-base font-bold text-ink">Reset {{ roleLabel }} Password</h2>
+              <p class="mt-1 text-xs font-semibold text-ink-soft">{{ resetHelpText }}</p>
             </div>
             <button type="button" class="text-xs font-bold text-ink-soft hover:text-brand-rose" @click="closePasswordReset">Close</button>
           </div>
 
           <div class="mt-4 grid gap-3">
             <div>
-              <label class="field-label" for="reset-email">Teacher Email</label>
-              <input id="reset-email" v-model.trim="resetEmail" class="input-field mt-1" type="email" autocomplete="email" required />
+              <label class="field-label" for="reset-identity">{{ resetIdentityLabel }}</label>
+              <input
+                id="reset-identity"
+                v-model.trim="resetIdentity"
+                class="input-field mt-1"
+                :type="role === 'teacher' ? 'email' : 'text'"
+                :autocomplete="role === 'teacher' ? 'email' : 'username'"
+                required
+              />
             </div>
 
             <button
@@ -104,11 +111,21 @@
             <div v-if="resetStep >= 3" class="grid gap-3">
               <div>
                 <label class="field-label" for="new-password">New Password</label>
-                <input id="new-password" v-model="newPassword" class="input-field mt-1" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+                <div class="mt-1 grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <input id="new-password" v-model="newPassword" class="input-field" :type="showResetPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+                  <button type="button" class="btn-secondary rounded-lg" @click="showResetPassword = !showResetPassword">
+                    {{ showResetPassword ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
               </div>
               <div>
                 <label class="field-label" for="confirm-password">Confirm New Password</label>
-                <input id="confirm-password" v-model="confirmPassword" class="input-field mt-1" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+                <div class="mt-1 grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <input id="confirm-password" v-model="confirmPassword" class="input-field" :type="showConfirmResetPassword ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="30" />
+                  <button type="button" class="btn-secondary rounded-lg" @click="showConfirmResetPassword = !showConfirmResetPassword">
+                    {{ showConfirmResetPassword ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
               </div>
               <button type="button" class="btn-primary justify-center rounded-lg" :disabled="auth.loading" @click="confirmPasswordReset">
                 {{ auth.loading ? 'Saving...' : 'Create New Password' }}
@@ -161,11 +178,13 @@ const role = ref<Role>(route.query.role === 'teacher' ? 'teacher' : 'student')
 const accountIdentityInput = ref('')
 const password = ref('')
 const showPassword = ref(false)
+const showResetPassword = ref(false)
+const showConfirmResetPassword = ref(false)
 const isPendingApproval = ref(false)
 const isBlocked = ref(false)
 const showPasswordReset = ref(false)
 const resetStep = ref(1)
-const resetEmail = ref('')
+const resetIdentity = ref('')
 const resetOtp = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
@@ -173,10 +192,14 @@ const resetMessage = ref('')
 const resetError = ref('')
 
 const roleLabel = computed(() => role.value === 'teacher' ? 'Teacher' : 'Student')
+const resetIdentityLabel = computed(() => role.value === 'teacher' ? 'Teacher Email' : 'Student Username')
+const resetHelpText = computed(() => role.value === 'teacher'
+  ? 'Use the OTP sent to your teacher email.'
+  : 'Use your student username. If your account has no email, ask your teacher or administrator for help.')
 
 function handleForgotPassword() {
   showPasswordReset.value = true
-  resetEmail.value = accountIdentityInput.value.includes('@') ? accountIdentityInput.value : resetEmail.value
+  resetIdentity.value = accountIdentityInput.value || resetIdentity.value
   resetMessage.value = ''
   resetError.value = ''
   auth.error = ''
@@ -188,6 +211,8 @@ function closePasswordReset() {
   resetOtp.value = ''
   newPassword.value = ''
   confirmPassword.value = ''
+  showResetPassword.value = false
+  showConfirmResetPassword.value = false
   resetMessage.value = ''
   resetError.value = ''
 }
@@ -195,16 +220,20 @@ function closePasswordReset() {
 async function requestPasswordResetOtp() {
   resetMessage.value = ''
   resetError.value = ''
-  const email = resetEmail.value.trim()
-  if (!email) {
-    resetError.value = 'Enter your teacher email.'
+  const identity = resetIdentity.value.trim()
+  if (!identity) {
+    resetError.value = `Enter your ${role.value === 'teacher' ? 'teacher email' : 'student username'}.`
     return
   }
 
   try {
-    const data = await auth.requestTeacherPasswordResetOtp(email)
+    const data = role.value === 'teacher'
+      ? await auth.requestTeacherPasswordResetOtp(identity)
+      : await auth.requestStudentPasswordResetOtp(identity)
     resetStep.value = 2
-    resetMessage.value = data.delivery === 'failed'
+    resetMessage.value = data.debug_otp
+      ? `${data.message} OTP: ${data.debug_otp}`
+      : data.delivery === 'failed'
       ? 'OTP email could not be delivered. Please check the mail configuration and try again.'
       : data.message || 'OTP sent. Check your email.'
   } catch (err) {
@@ -221,7 +250,10 @@ async function verifyPasswordResetOtp() {
   }
 
   try {
-    const data = await auth.verifyTeacherPasswordResetOtp(resetEmail.value.trim(), resetOtp.value)
+    const identity = resetIdentity.value.trim()
+    const data = role.value === 'teacher'
+      ? await auth.verifyTeacherPasswordResetOtp(identity, resetOtp.value)
+      : await auth.verifyStudentPasswordResetOtp(identity, resetOtp.value)
     resetStep.value = 3
     resetMessage.value = data.message || 'OTP verified. Enter your new password.'
   } catch (err) {
@@ -242,9 +274,12 @@ async function confirmPasswordReset() {
   }
 
   try {
-    const data = await auth.confirmTeacherPasswordReset(resetEmail.value.trim(), resetOtp.value, newPassword.value)
+    const identity = resetIdentity.value.trim()
+    const data = role.value === 'teacher'
+      ? await auth.confirmTeacherPasswordReset(identity, resetOtp.value, newPassword.value)
+      : await auth.confirmStudentPasswordReset(identity, resetOtp.value, newPassword.value)
     password.value = newPassword.value
-    accountIdentityInput.value = resetEmail.value.trim()
+    accountIdentityInput.value = identity
     resetMessage.value = data.message || 'Password reset successfully.'
     resetStep.value = 1
     resetOtp.value = ''

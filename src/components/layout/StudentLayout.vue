@@ -136,6 +136,26 @@
         </div>
       </header>
 
+      <nav class="grid grid-cols-3 gap-2 border-b-[3px] border-brand-teal/20 bg-surface px-3 py-2 lg:hidden" aria-label="Quick student navigation">
+        <button
+          v-for="item in navItems"
+          :key="`quick-${item.label}`"
+          type="button"
+          @click="goToNav(item.to)"
+          :class="[
+            'flex min-h-[54px] flex-col items-center justify-center gap-1 border-[2px] px-2 py-2 text-center text-[11px] font-black transition-all',
+            item.to && route.path === item.to
+              ? 'border-brand-amber bg-brand-blue text-white shadow-card'
+              : 'border-brand-teal/35 bg-white text-brand-blue hover:border-brand-amber hover:bg-brand-blue-soft'
+          ]"
+        >
+          <svg class="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path v-for="path in item.iconPaths" :key="path" :d="path" />
+          </svg>
+          <span>{{ item.label }}</span>
+        </button>
+      </nav>
+
       <main class="scrollbar-thin flex-1 overflow-y-auto">
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
