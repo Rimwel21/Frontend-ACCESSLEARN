@@ -50,6 +50,18 @@ interface CurrentUserResponse {
   account_status: string | null
 }
 
+interface OfflineLoginRecord {
+  version: 1
+  identity: string
+  role: Role
+  user: CurrentUserResponse
+  salt: string
+  passwordHash: string
+  iterations: number
+  createdAt: string
+  updatedAt: string
+}
+
 interface TeacherOtpResponse {
   message: string
   delivery?: 'sent' | 'failed'
@@ -65,6 +77,96 @@ function roleLabel(value: Role) {
   if (value === 'student') return 'Student'
   if (value === 'teacher') return 'Teacher'
   return 'Admin'
+}
+
+const OFFLINE_LOGIN_KEY = 'offline_login_records_v1'
+const OFFLINE_HASH_ITERATIONS = 120_000
+
+function normalizeIdentity(identity?: string | null) {
+  return (identity ?? '').trim().toLowerCase()
+}
+
+function offlineRecordKey(role: Role, identity: string) {
+  return `${role}:${normalizeIdentity(identity)}`
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = ''
+  bytes.forEach(byte => {
+    binary += String.fromCharCode(byte)
+  })
+  return btoa(binary)
+}
+
+function base64ToBytes(value: string) {
+  const binary = atob(value)
+  const bytes = new Uint8Array(binary.length)
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index)
+  }
+  return bytes
+}
+
+function safeEqual(left: string, right: string) {
+  if (left.length !== right.length) return false
+  let diff = 0
+  for (let index = 0; index < left.length; index += 1) {
+    diff |= left.charCodeAt(index) ^ right.charCodeAt(index)
+  }
+  return diff === 0
+}
+
+async function hashOfflinePassword(password: string, salt: string, iterations = OFFLINE_HASH_ITERATIONS) {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error('Offline login is not supported by this browser.')
+  }
+
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits'],
+  )
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: base64ToBytes(salt),
+      iterations,
+      hash: 'SHA-256',
+    },
+    key,
+    256,
+  )
+  return bytesToBase64(new Uint8Array(bits))
+}
+
+function randomSalt() {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return bytesToBase64(bytes)
+}
+
+function readOfflineLoginRecords() {
+  const raw = localStorage.getItem(OFFLINE_LOGIN_KEY)
+  if (!raw) return {} as Record<string, OfflineLoginRecord>
+  try {
+    return JSON.parse(raw) as Record<string, OfflineLoginRecord>
+  } catch {
+    localStorage.removeItem(OFFLINE_LOGIN_KEY)
+    return {} as Record<string, OfflineLoginRecord>
+  }
+}
+
+function writeOfflineLoginRecord(record: OfflineLoginRecord) {
+  const records = readOfflineLoginRecords()
+  records[offlineRecordKey(record.role, record.identity)] = record
+  localStorage.setItem(OFFLINE_LOGIN_KEY, JSON.stringify(records))
+}
+
+function findOfflineLoginRecord(role: Role, identity: string) {
+  return readOfflineLoginRecords()[offlineRecordKey(role, identity)] ?? null
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -298,6 +400,9 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(payload: LoginPayload, selectedRole: Role) {
     loading.value = true
     error.value = ''
+    const loginIdentity = selectedRole === 'teacher' || selectedRole === 'admin'
+      ? normalizeIdentity(payload.email ?? payload.username)
+      : normalizeIdentity(payload.username ?? payload.email)
 
     try {
       const data = await apiFetch<TokenResponse>('/auth/account/login', {
@@ -326,12 +431,21 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       localStorage.setItem('selectedRole', actualRole)
+      await cacheOfflineLogin(payload.password, loginIdentity, currentUser)
 
       return {
         ...data,
         profile_completed: profileCompleted.value,
       }
     } catch (err) {
+      try {
+        const offlineSession = await tryOfflineLogin(payload.password, loginIdentity, selectedRole, err)
+        if (offlineSession) return offlineSession
+      } catch (offlineErr) {
+        error.value = offlineErr instanceof Error ? offlineErr.message : 'Offline login failed'
+        throw offlineErr
+      }
+
       error.value = err instanceof Error ? err.message : 'Login failed'
       throw err
     } finally {
@@ -370,6 +484,17 @@ export const useAuthStore = defineStore('auth', () => {
   async function hydrateCurrentUser(options: { force?: boolean } = {}) {
     if (!token.value) {
       clearTrustedUserState()
+      hydrated.value = true
+      return null
+    }
+
+    if (token.value.startsWith('offline-session:')) {
+      const cachedUser = getCachedTrustedUser()
+      if (cachedUser) {
+        setTrustedUserState(cachedUser, { persist: false })
+        return cachedUser
+      }
+      logout()
       hydrated.value = true
       return null
     }
@@ -432,6 +557,63 @@ export const useAuthStore = defineStore('auth', () => {
     } catch {
       localStorage.removeItem('offline_trusted_user')
       return null
+    }
+  }
+
+  async function cacheOfflineLogin(password: string, identity: string, user: CurrentUserResponse | null) {
+    if (!user || !identity || user.role === 'admin') return
+
+    try {
+      const existing = findOfflineLoginRecord(user.role, identity)
+      const salt = existing?.salt ?? randomSalt()
+      const now = new Date().toISOString()
+      const record: OfflineLoginRecord = {
+        version: 1,
+        identity,
+        role: user.role,
+        user,
+        salt,
+        passwordHash: await hashOfflinePassword(password, salt),
+        iterations: OFFLINE_HASH_ITERATIONS,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+      }
+      writeOfflineLoginRecord(record)
+    } catch {
+      // Offline login is a convenience feature. Online login must not fail if the
+      // browser blocks local credential caching.
+    }
+  }
+
+  async function tryOfflineLogin(
+    password: string,
+    identity: string,
+    selectedRole: Role,
+    originalError: unknown,
+  ) {
+    const canUseOfflineFallback = !navigator.onLine || (originalError instanceof ApiError && originalError.status === 0)
+    if (!canUseOfflineFallback || !identity || selectedRole === 'admin') return null
+
+    const record = findOfflineLoginRecord(selectedRole, identity)
+    if (!record) return null
+
+    const passwordHash = await hashOfflinePassword(password, record.salt, record.iterations)
+    if (!safeEqual(passwordHash, record.passwordHash)) {
+      throw new Error('Invalid offline credentials')
+    }
+
+    const offlineToken = `offline-session:${record.role}:${record.user.id}:${Date.now()}`
+    token.value = offlineToken
+    tokenType.value = 'offline'
+    localStorage.setItem('access_token', offlineToken)
+    localStorage.setItem('token_type', 'offline')
+    localStorage.setItem('selectedRole', record.role)
+    setTrustedUserState(record.user, { persist: false })
+
+    return {
+      access_token: offlineToken,
+      token_type: 'offline',
+      profile_completed: record.user.role === 'admin' ? true : record.user.profile_completed,
     }
   }
 
