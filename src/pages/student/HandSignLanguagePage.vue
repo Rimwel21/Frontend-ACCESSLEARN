@@ -645,7 +645,7 @@ const isHearingImpaired = computed(() => {
   const data = profile.profile
   return Boolean(data && 'student_type' in data && data.student_type === 'hearing impaired')
 })
-const typedAnswersAllowed = computed(() => activeActivity.value?.allow_text_answers !== false)
+const typedAnswersAllowed = computed(() => activeActivity.value?.allow_text_answers === true)
 const forcedSignLanguageMode = computed(() => !typedAnswersAllowed.value || signLanguageMode.value)
 const studentTypeLabel = computed(() => isHearingImpaired.value ? 'Student with Hearing Impairment' : 'Regular Student')
 const defaultModeLabel = computed(() => {

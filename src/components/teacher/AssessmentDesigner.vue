@@ -623,7 +623,7 @@ function blankForm() {
     attemptsAllowed: 1,
     shuffleQuestions: true,
     showAnswersAfterSubmission: true,
-    allowTextAnswers: true,
+    allowTextAnswers: false,
     questions: [blankQuestion('Identification')] as QuestionDraft[],
   }
 }
@@ -1318,7 +1318,7 @@ async function hydrateForm() {
     attemptsAllowed: assessment.attemptsAllowed ?? 1,
     shuffleQuestions: assessment.shuffleQuestions ?? true,
     showAnswersAfterSubmission: assessment.showAnswersAfterSubmission ?? true,
-    allowTextAnswers: assessment.allowTextAnswers ?? true,
+    allowTextAnswers: assessment.allowTextAnswers ?? false,
     questions: assessment.questions?.length
       ? assessment.questions.map(q => {
           const questionType = inferQuestionType(q.answer, q.question_type ?? resolvedCategory)
