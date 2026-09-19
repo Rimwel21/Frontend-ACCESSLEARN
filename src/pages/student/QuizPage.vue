@@ -3,14 +3,20 @@
     <div class="border-b-[3px] border-brand-teal bg-gradient-to-r from-brand-blue to-brand-teal px-4 py-5 shadow-card sm:px-8 sm:py-6">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="font-display text-2xl font-black text-white sm:text-[28px]">Quizzes</h1>
+          <h1 class="flex items-center gap-3 font-display text-2xl font-black text-white sm:text-[28px]">
+            <svg class="h-7 w-7 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11a3 3 0 1 1 3 3v1" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 19h.01" /><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4z" /></svg>
+            Quizzes
+          </h1>
           <p class="mt-1 font-mono text-[11px] font-bold uppercase tracking-widest text-white/85">Assigned classroom quizzes</p>
         </div>
         <button
           class="border-[3px] border-brand-teal bg-white px-4 py-2 text-xs font-black text-brand-blue shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover"
           @click="content.fetchModules()"
         >
-          Refresh
+          <span class="inline-flex items-center gap-2">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 0 1-15.5 6.3L3 16" /><path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-5h5" /><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 0 1 15.5-6.3L21 8" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 3v5h-5" /></svg>
+            Refresh
+          </span>
         </button>
       </div>
     </div>
@@ -21,7 +27,10 @@
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 class="font-display text-sm font-black uppercase tracking-widest">Assigned Quizzes</h2>
             <RouterLink to="/student/dashboard" class="border-[3px] border-brand-teal bg-white px-4 py-2 text-xs font-black text-brand-blue shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover">
-              Dashboard
+              <span class="inline-flex items-center gap-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m3 10.5 9-7 9 7" /><path stroke-linecap="round" stroke-linejoin="round" d="M5 9.5V20h14V9.5" /></svg>
+                Dashboard
+              </span>
             </RouterLink>
           </div>
 
@@ -48,7 +57,7 @@
               @click="openQuiz(quiz)"
             >
               <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center border-[3px] border-brand-teal bg-brand-blue-soft text-xs font-black text-brand-blue">
-                QZ
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11a3 3 0 1 1 3 3v1" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 19h.01" /><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4z" /></svg>
               </div>
 
               <div class="min-w-0 flex-1">

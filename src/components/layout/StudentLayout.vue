@@ -32,7 +32,11 @@
                 : 'cursor-default border-transparent text-ink-soft',
           ]"
         >
-          <span :class="['h-5 w-5 flex-shrink-0 border-[2px] border-current bg-current/10', item.iconClass]" aria-hidden="true"></span>
+          <span class="grid h-7 w-7 flex-shrink-0 place-items-center border-[2px] border-current bg-current/10" aria-hidden="true">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path v-for="path in item.iconPaths" :key="path" :d="path" />
+            </svg>
+          </span>
           {{ item.label }}
         </button>
       </nav>
@@ -87,21 +91,27 @@
                   : 'cursor-default border-transparent text-ink-soft',
             ]"
           >
-            <span :class="['h-5 w-5 flex-shrink-0 border-[2px] border-current bg-current/10', item.iconClass]" aria-hidden="true"></span>
+            <span class="grid h-7 w-7 flex-shrink-0 place-items-center border-[2px] border-current bg-current/10" aria-hidden="true">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path v-for="path in item.iconPaths" :key="path" :d="path" />
+              </svg>
+            </span>
             {{ item.label }}
           </button>
         </nav>
 
         <div class="border-t-[3px] border-brand-teal/30 px-4 py-3">
           <button
-            class="mb-2 w-full border-[2px] border-brand-teal/40 bg-brand-blue-soft px-3 py-2 text-xs font-bold text-brand-blue transition-all hover:border-brand-amber hover:bg-brand-amber hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            class="mb-2 flex w-full items-center justify-center gap-2 border-[2px] border-brand-teal/40 bg-brand-blue-soft px-3 py-2 text-xs font-bold text-brand-blue transition-all hover:border-brand-amber hover:bg-brand-amber hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             type="button"
             :disabled="pushButtonDisabled"
             @click="enablePushNotifications"
           >
+            <svg class="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .53-.21 1.04-.59 1.41L4 17h5m6 0v1a3 3 0 0 1-6 0v-1m6 0H9" /></svg>
             {{ pushButtonLabel }}
           </button>
-          <button class="w-full border-[2px] border-brand-teal/40 bg-white px-3 py-2 text-xs font-bold text-ink-soft hover:border-brand-rose hover:bg-brand-rose hover:text-white" @click="logout">
+          <button class="flex w-full items-center justify-center gap-2 border-[2px] border-brand-teal/40 bg-white px-3 py-2 text-xs font-bold text-ink-soft hover:border-brand-rose hover:bg-brand-rose hover:text-white" @click="logout">
+            <svg class="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10 17l5-5-5-5" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12H3" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 4v16" /></svg>
             Logout
           </button>
         </div>
@@ -153,9 +163,21 @@ const pushStatus = ref<PushNotificationStatus>('idle')
 const pushLoading = ref(false)
 
 const navItems = [
-  { to: '/student/dashboard', label: 'Home', iconClass: 'rounded-full' },
-  { to: '/student/quiz', label: 'Quizzes', iconClass: 'rounded' },
-  { to: '/student/activities', label: 'Activities', iconClass: 'rounded-sm' },
+  {
+    to: '/student/dashboard',
+    label: 'Home',
+    iconPaths: ['m3 10.5 9-7 9 7', 'M5 9.5V20h14V9.5', 'M9.5 20v-6h5v6'],
+  },
+  {
+    to: '/student/quiz',
+    label: 'Quizzes',
+    iconPaths: ['M9 11a3 3 0 1 1 3 3v1', 'M12 19h.01', 'M4 4h16v16H4z'],
+  },
+  {
+    to: '/student/activities',
+    label: 'Activities',
+    iconPaths: ['M8 6h13', 'M8 12h13', 'M8 18h13', 'M3.5 6h.01', 'M3.5 12h.01', 'M3.5 18h.01'],
+  },
 ]
 
 onMounted(() => {

@@ -14,26 +14,102 @@
     <div class="grid gap-4 md:grid-cols-3">
       <div class="card-hover p-5 relative overflow-hidden">
         <div class="absolute w-20 h-20 rounded-full -top-5 -right-5 opacity-10 bg-brand-blue" />
-        <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-blue-soft text-sm font-extrabold text-brand-blue">TS</div>
+        <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-blue-soft text-brand-blue">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><path stroke-linecap="round" stroke-linejoin="round" d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8" /><path stroke-linecap="round" stroke-linejoin="round" d="M22 21v-2a4 4 0 0 0-3-3.87" /><path stroke-linecap="round" stroke-linejoin="round" d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+        </div>
         <div class="mb-1 font-display text-4xl font-extrabold leading-none text-ink">{{ store.dashboardSummary.totalStudents }}</div>
         <div class="text-sm font-bold text-ink">Total Students</div>
         <div class="mt-2 font-mono text-xs font-semibold text-ink-soft">Unique enrolled students</div>
       </div>
       <div class="card-hover p-5 relative overflow-hidden">
         <div class="absolute w-20 h-20 rounded-full -top-5 -right-5 opacity-10 bg-brand-violet" />
-        <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-sm font-extrabold text-brand-blue">LM</div>
+        <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-brand-blue">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 19.5V5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h6" /></svg>
+        </div>
         <div class="mb-1 font-display text-4xl font-extrabold leading-none text-ink">{{ store.dashboardSummary.activeLearningMaterials }}</div>
         <div class="text-sm font-bold text-ink">Active Learning Materials</div>
         <div class="mt-2 font-mono text-xs font-semibold text-ink-soft">Published only</div>
       </div>
       <div class="card-hover p-5 relative overflow-hidden">
         <div class="absolute w-20 h-20 rounded-full -top-5 -right-5 opacity-10 bg-brand-teal" />
-        <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 text-sm font-extrabold text-brand-blue">QS</div>
+        <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 text-brand-blue">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11a3 3 0 1 1 3 3v1" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 19h.01" /><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4z" /></svg>
+        </div>
         <div class="mb-1 font-display text-4xl font-extrabold leading-none text-ink">{{ store.dashboardSummary.averageQuizScore }}%</div>
         <div class="text-sm font-bold text-ink">Avg. Quiz Score</div>
         <div class="mt-2 font-mono text-xs font-semibold text-ink-soft">Completed quizzes</div>
       </div>
     </div>
+
+    <section class="card overflow-hidden">
+      <div class="flex flex-col gap-4 border-b border-gray-50 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-rose/10 text-brand-rose">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 17h.01" /><path stroke-linecap="round" stroke-linejoin="round" d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
+            </span>
+            <h2 class="font-display text-lg font-extrabold text-ink">Guidance Summary</h2>
+          </div>
+          <p class="mt-1 text-sm font-semibold text-ink-soft">Students needing intervention based on current progress, activity completion, and quiz status.</p>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center sm:min-w-[360px]">
+          <div class="rounded-xl bg-brand-rose/10 px-3 py-2">
+            <div class="font-display text-2xl font-extrabold text-brand-rose">{{ guidanceStudents.length }}</div>
+            <div class="font-mono text-[10px] font-bold uppercase text-ink-soft">Needs Guidance</div>
+          </div>
+          <div class="rounded-xl bg-brand-amber/15 px-3 py-2">
+            <div class="font-display text-2xl font-extrabold text-brand-blue">{{ keepImprovingStudents.length }}</div>
+            <div class="font-mono text-[10px] font-bold uppercase text-ink-soft">Keep Improving</div>
+          </div>
+          <div class="rounded-xl bg-brand-blue-soft px-3 py-2">
+            <div class="font-display text-2xl font-extrabold text-brand-blue">{{ affectedClassCount }}</div>
+            <div class="font-mono text-[10px] font-bold uppercase text-ink-soft">Class Scope</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_220px]">
+        <div class="space-y-3">
+          <article
+            v-for="student in priorityStudents"
+            :key="`guidance-${student.studentId}`"
+            class="flex flex-col gap-3 rounded-xl border border-gray-100 bg-surface p-4 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div class="flex min-w-0 items-center gap-3">
+              <div :class="`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${student.avatarGradient} text-xs font-bold text-white`">{{ student.initials }}</div>
+              <div class="min-w-0">
+                <div class="truncate text-sm font-extrabold text-ink">{{ student.studentName }}</div>
+                <div class="mt-0.5 text-xs font-semibold text-ink-soft">{{ dashboardClassContext }} | {{ student.lastActivity }}</div>
+              </div>
+            </div>
+            <div class="min-w-0 sm:w-64">
+              <div class="flex items-center justify-between gap-3">
+                <span :class="statusBadge(student.status)">{{ statusLabel(student.status) }}</span>
+                <span class="font-mono text-xs font-bold text-ink">{{ student.overallPercent }}%</span>
+              </div>
+              <p class="mt-1 truncate text-xs font-semibold text-ink-soft" :title="guidanceReason(student)">{{ guidanceReason(student) }}</p>
+            </div>
+          </article>
+          <div v-if="priorityStudents.length === 0" class="rounded-xl border border-gray-100 bg-surface p-4 text-sm font-semibold text-ink-soft">
+            No students currently flagged for guidance in this dashboard view.
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <RouterLink to="/teacher/records" class="flex items-center justify-between rounded-xl border border-brand-teal/30 bg-white px-4 py-3 text-sm font-bold text-brand-blue transition-all hover:border-brand-amber hover:bg-brand-blue-soft">
+            View Student Records
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </RouterLink>
+          <RouterLink to="/teacher/class" class="flex items-center justify-between rounded-xl border border-brand-teal/30 bg-white px-4 py-3 text-sm font-bold text-brand-blue transition-all hover:border-brand-amber hover:bg-brand-blue-soft">
+            Open Class Management
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </RouterLink>
+          <p class="rounded-xl bg-brand-blue-soft px-4 py-3 text-xs font-semibold text-ink-soft">
+            Tip: filter by class to narrow the summary to one grade and section.
+          </p>
+        </div>
+      </div>
+    </section>
 
     <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_240px]">
       <div class="card min-w-0 overflow-hidden">
@@ -144,6 +220,19 @@ const calendarLeadingBlanks = computed(() => {
   const sundayBased = new Date(today.getFullYear(), today.getMonth(), 1).getDay()
   return sundayBased === 0 ? 6 : sundayBased - 1
 })
+const selectedProgressClass = computed(() => store.classes.find(cls => cls.id === selectedProgressClassId.value) ?? null)
+const dashboardClassContext = computed(() => {
+  const cls = selectedProgressClass.value
+  if (!cls) return 'All assigned classes'
+  return `${cls.className} | ${cls.gradeLevel} - ${cls.section}`
+})
+const guidanceStudents = computed(() => store.students.filter(student => statusLabel(student.status) === 'Needs Guidance'))
+const keepImprovingStudents = computed(() => store.students.filter(student => statusLabel(student.status) === 'Keep Improving'))
+const priorityStudents = computed(() => [
+  ...guidanceStudents.value,
+  ...keepImprovingStudents.value,
+].slice(0, 5))
+const affectedClassCount = computed(() => selectedProgressClass.value ? 1 : store.classes.length)
 
 onMounted(async () => {
   await Promise.allSettled([
@@ -181,6 +270,14 @@ function statusBadge(status: string) {
 
 function statusLabel(status: string) {
   return status === 'Needs Help' ? 'Needs Guidance' : status
+}
+
+function guidanceReason(student: { overallPercent: number; activityPercent: number; quizActivity: string; learningMaterialsCompleted: number; learningMaterialsTotal: number }) {
+  if (student.overallPercent < 50) return 'Overall progress is below 50%.'
+  if (student.activityPercent < 50) return 'Activity completion needs support.'
+  if (student.quizActivity === 'No quiz yet') return 'No completed quiz record yet.'
+  if (student.learningMaterialsTotal && student.learningMaterialsCompleted < student.learningMaterialsTotal) return 'Learning materials are still incomplete.'
+  return 'Teacher review recommended.'
 }
 </script>
 

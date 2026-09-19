@@ -1,7 +1,10 @@
 <template>
   <div class="flex min-h-screen flex-col bg-surface lg:h-full lg:min-h-0 lg:overflow-hidden">
     <div class="border-b-[3px] border-brand-teal bg-gradient-to-r from-brand-blue to-brand-teal px-4 py-5 shadow-card sm:px-8 sm:py-6">
-      <h1 class="font-display text-2xl font-black text-white sm:text-[28px]">Activities</h1>
+      <h1 class="flex items-center gap-3 font-display text-2xl font-black text-white sm:text-[28px]">
+        <svg class="h-7 w-7 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" /></svg>
+        Activities
+      </h1>
     </div>
 
     <div class="min-h-0 flex-1 px-4 py-5 sm:px-7 sm:py-6">
@@ -13,7 +16,10 @@
               class="border-[3px] border-brand-teal bg-white px-4 py-2 text-xs font-black text-brand-blue shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover"
               @click="content.fetchActivities()"
             >
-              Refresh
+              <span class="inline-flex items-center gap-2">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 0 1-15.5 6.3L3 16" /><path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-5h5" /><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 0 1 15.5-6.3L21 8" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 3v5h-5" /></svg>
+                Refresh
+              </span>
             </button>
           </div>
 
@@ -39,7 +45,7 @@
               @click="openActivity(act)"
             >
               <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center border-[3px] border-brand-teal bg-brand-blue-soft text-xs font-black text-brand-blue">
-                ACT
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" /></svg>
               </div>
 
               <div class="min-w-0 flex-1">

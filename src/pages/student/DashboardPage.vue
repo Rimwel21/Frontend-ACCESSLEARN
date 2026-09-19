@@ -85,7 +85,7 @@
                   ]"
                   @click="activeTab = 'new'"
                 >
-                  🆕 New Uploads ({{ newModules.length }})
+                  <svg class="mr-1 inline h-3.5 w-3.5 align-[-2px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" /></svg> New Uploads ({{ newModules.length }})
                 </button>
 
                 <button
@@ -97,7 +97,7 @@
                   ]"
                   @click="activeTab = 'in_progress'"
                 >
-                  ⏳ In Progress ({{ inProgressModules.length }})
+                  <svg class="mr-1 inline h-3.5 w-3.5 align-[-2px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v5l3 2" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 3a9 9 0 1 0 9 9" /></svg> In Progress ({{ inProgressModules.length }})
                 </button>
 
                 <button
@@ -109,7 +109,7 @@
                   ]"
                   @click="activeTab = 'finished'"
                 >
-                  ✅ Finished & Review ({{ finishedModules.length }})
+                  <svg class="mr-1 inline h-3.5 w-3.5 align-[-2px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5" /></svg> Finished & Review ({{ finishedModules.length }})
                 </button>
               </div>
             </div>
@@ -135,7 +135,7 @@
               <div v-if="(activeTab === 'all' || activeTab === 'new') && newModules.length > 0" class="space-y-3">
                 <div class="flex items-center gap-2">
                   <span class="inline-flex items-center gap-1 border-[2px] border-brand-teal bg-brand-amber px-2.5 py-0.5 font-display text-[11px] font-black uppercase tracking-wider text-white">
-                    🆕 NEW UPLOADS
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" /></svg> NEW UPLOADS
                   </span>
                   <span class="font-mono text-xs font-bold text-ink-soft">Recently added lessons ready for you</span>
                   <div class="h-[2px] flex-1 bg-brand-teal/30" />
@@ -165,8 +165,8 @@
                       </p>
 
                       <div class="mt-3 flex items-center gap-3 font-mono text-[11px] text-ink-soft">
-                        <span>📚 {{ module.topics.length }} topics</span>
-                        <span v-if="module.assessments.length > 0">📝 {{ module.assessments.length }} quizzes</span>
+                        <span class="inline-flex items-center gap-1"><svg class="h-3.5 w-3.5 text-brand-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 19.5V5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h6" /></svg> {{ module.topics.length }} topics</span>
+                        <span v-if="module.assessments.length > 0" class="inline-flex items-center gap-1"><svg class="h-3.5 w-3.5 text-brand-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11a3 3 0 1 1 3 3v1" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 19h.01" /><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4z" /></svg> {{ module.assessments.length }} quizzes</span>
                       </div>
                     </div>
 
@@ -187,7 +187,7 @@
               <div v-if="(activeTab === 'all' || activeTab === 'in_progress') && inProgressModules.length > 0" class="space-y-3">
                 <div class="flex items-center gap-2">
                   <span class="inline-flex items-center gap-1 border-[2px] border-brand-teal bg-brand-blue px-2.5 py-0.5 font-display text-[11px] font-black uppercase tracking-wider text-white">
-                    ⏳ IN PROGRESS
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v5l3 2" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 3a9 9 0 1 0 9 9" /></svg> IN PROGRESS
                   </span>
                   <span class="font-mono text-xs font-bold text-ink-soft">Keep going where you left off</span>
                   <div class="h-[2px] flex-1 bg-brand-teal/30" />
@@ -234,7 +234,7 @@
               <div v-if="(activeTab === 'all' || activeTab === 'finished') && finishedModules.length > 0" class="space-y-3">
                 <div class="flex items-center gap-2">
                   <span class="inline-flex items-center gap-1 border-[2px] border-brand-teal bg-emerald-600 px-2.5 py-0.5 font-display text-[11px] font-black uppercase tracking-wider text-white">
-                    ✅ FINISHED & REVIEW
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5" /></svg> FINISHED & REVIEW
                   </span>
                   <span class="font-mono text-xs font-bold text-emerald-800">Completed modules stay available for view and review</span>
                   <div class="h-[2px] flex-1 bg-emerald-600/30" />
@@ -249,7 +249,7 @@
                     <div>
                       <div class="flex items-center justify-between">
                         <span class="inline-flex items-center gap-1 border border-emerald-600 bg-emerald-100 px-2 py-0.5 font-mono text-[9px] font-black uppercase text-emerald-800">
-                          ✓ COMPLETED
+                          <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5" /></svg> COMPLETED
                         </span>
                         <span class="font-mono text-[10px] font-bold text-emerald-700">100% DONE</span>
                       </div>
@@ -262,8 +262,8 @@
                       </p>
 
                       <div class="mt-3 flex items-center gap-2 border-t border-emerald-600/20 pt-2 font-mono text-[10px] font-semibold text-emerald-800">
-                        <span>📖 Review slides & notes</span>
-                        <span>•</span>
+                        <span class="inline-flex items-center gap-1"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 19.5V5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2" /></svg> Review slides & notes</span>
+                        <span>|</span>
                         <span>Quiz completed</span>
                       </div>
                     </div>

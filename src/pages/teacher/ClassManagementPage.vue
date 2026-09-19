@@ -83,11 +83,12 @@
               <div v-if="store.classStudentsLoading" class="text-sm text-ink-soft">Loading students...</div>
               <div v-else-if="store.classStudents.length === 0" class="text-sm text-ink-soft">No matching students found yet.</div>
               <div v-else class="overflow-x-auto">
-                <table class="w-full min-w-[820px] text-left text-xs">
+                <table class="w-full min-w-[960px] text-left text-xs">
                   <thead class="border-b border-gray-100 text-ink-soft">
                     <tr>
                       <th class="px-2 py-2 font-semibold first:pl-0">Name</th>
                       <th class="px-2 py-2 font-semibold">Student ID</th>
+                      <th class="px-2 py-2 font-semibold">Support</th>
                       <th class="px-2 py-2 font-semibold">Guardian</th>
                       <th class="px-2 py-2 font-semibold">Contact</th>
                       <th class="px-2 py-2 font-semibold">Grade</th>
@@ -101,6 +102,13 @@
                         <span class="block truncate" :title="student.name">{{ student.name }}</span>
                       </td>
                       <td class="px-2 py-2 text-ink-soft">{{ student.username || student.accountId }}</td>
+                      <td class="px-2 py-2">
+                        <span :class="supportBadge(student)">
+                          <svg v-if="studentNeedsGuidance(student)" class="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 17h.01" /><path stroke-linecap="round" stroke-linejoin="round" d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
+                          <svg v-else class="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5" /></svg>
+                          {{ studentSupportLabel(student) }}
+                        </span>
+                      </td>
                       <td class="max-w-[170px] px-2 py-2 text-ink-soft">
                         <span class="block truncate" :title="student.guardiansName || 'Not set'">{{ student.guardiansName || 'Not set' }}</span>
                       </td>
@@ -229,7 +237,13 @@
                       <div>{{ record.handsignPractice.length }} practice{{ record.handsignPractice.length === 1 ? '' : 's' }}</div>
                       <div class="mt-1 text-[11px] text-ink-soft">Best {{ bestPracticeScore(record) }}</div>
                     </td>
-                    <td class="table-td"><span :class="statusBadge(record.status)">{{ statusLabel(record.status) }}</span></td>
+                    <td class="table-td">
+                      <span :class="[statusBadge(record.status), 'inline-flex items-center gap-1.5']">
+                        <svg v-if="recordNeedsGuidance(record)" class="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 17h.01" /><path stroke-linecap="round" stroke-linejoin="round" d="M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
+                        <svg v-else class="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5" /></svg>
+                        {{ statusLabel(record.status) }}
+                      </span>
+                    </td>
                     <td class="table-td">
                       <button class="btn-secondary px-3 py-1.5 text-xs" type="button" @click="toggleSelectedRecord(record)">
                         {{ selectedRecord?.studentId === record.studentId ? 'Hide Details' : 'View Details' }}
@@ -425,6 +439,14 @@ const averageHandsignScore = computed(() => {
   if (!scores.length) return 0
   return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
 })
+const recordsByStudentKey = computed(() => {
+  const map = new Map<string, StudentRecord>()
+  for (const record of store.studentRecords) {
+    map.set(record.studentId, record)
+    map.set(record.studentName.trim().toLowerCase(), record)
+  }
+  return map
+})
 
 onMounted(async () => {
   await Promise.allSettled([
@@ -535,6 +557,33 @@ function statusBadge(status: string) {
 
 function statusLabel(status: string) {
   return status.toLowerCase() === 'needs help' ? 'Needs Guidance' : status
+}
+
+function recordNeedsGuidance(record: StudentRecord) {
+  const label = statusLabel(record.status)
+  return label === 'Needs Guidance' || label === 'Keep Improving'
+}
+
+function studentRecordForClassStudent(student: { accountId: number; name: string }) {
+  return recordsByStudentKey.value.get(String(student.accountId))
+    ?? recordsByStudentKey.value.get(student.name.trim().toLowerCase())
+    ?? null
+}
+
+function studentNeedsGuidance(student: { accountId: number; name: string }) {
+  const record = studentRecordForClassStudent(student)
+  return record ? recordNeedsGuidance(record) : false
+}
+
+function studentSupportLabel(student: { accountId: number; name: string }) {
+  const record = studentRecordForClassStudent(student)
+  return record ? statusLabel(record.status) : 'On Track'
+}
+
+function supportBadge(student: { accountId: number; name: string }) {
+  const record = studentRecordForClassStudent(student)
+  if (!record) return 'inline-flex items-center gap-1.5 rounded-full bg-brand-blue-soft px-2.5 py-1 text-[10px] font-bold text-brand-blue'
+  return `${statusBadge(record.status)} inline-flex items-center gap-1.5`
 }
 
 function toggleSelectedRecord(record: StudentRecord) {
