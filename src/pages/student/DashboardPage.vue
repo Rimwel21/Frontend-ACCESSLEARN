@@ -222,7 +222,7 @@
 
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <article
-                    v-for="module in newModules"
+                    v-for="module in paginatedNewModules"
                     :key="`new-${module.id}`"
                     class="group flex flex-col justify-between border-[3px] border-brand-teal bg-white p-4 shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover"
                   >
@@ -260,6 +260,11 @@
                     </div>
                   </article>
                 </div>
+                <PaginationControls
+                  v-model:current-page="newModulesPage"
+                  :total-items="newModules.length"
+                  :page-size="dashboardPageSize"
+                />
               </div>
 
               <!-- SECTION 2: IN PROGRESS -->
@@ -274,7 +279,7 @@
 
                 <div class="space-y-3">
                   <article
-                    v-for="module in inProgressModules"
+                    v-for="module in paginatedInProgressModules"
                     :key="`progress-${module.id}`"
                     class="flex flex-wrap items-center gap-4 border-[3px] border-brand-teal bg-white p-4 shadow-card transition-all hover:-translate-y-1 hover:border-brand-blue hover:shadow-card-hover sm:flex-nowrap"
                   >
@@ -307,6 +312,11 @@
                     </button>
                   </article>
                 </div>
+                <PaginationControls
+                  v-model:current-page="inProgressModulesPage"
+                  :total-items="inProgressModules.length"
+                  :page-size="dashboardPageSize"
+                />
               </div>
 
               <!-- SECTION 3: FINISHED & REVIEW -->
@@ -321,7 +331,7 @@
 
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <article
-                    v-for="module in finishedModules"
+                    v-for="module in paginatedFinishedModules"
                     :key="`finished-${module.id}`"
                     class="group flex flex-col justify-between border-[3px] border-emerald-600 bg-emerald-50/40 p-4 shadow-card transition-all hover:-translate-y-1 hover:border-emerald-700 hover:shadow-card-hover"
                   >
@@ -358,6 +368,11 @@
                     </div>
                   </article>
                 </div>
+                <PaginationControls
+                  v-model:current-page="finishedModulesPage"
+                  :total-items="finishedModules.length"
+                  :page-size="dashboardPageSize"
+                />
               </div>
             </div>
           </section>
@@ -369,8 +384,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import PaginationControls from '@/components/common/PaginationControls.vue'
 import { useProfileStore } from '@/stores/profile'
 import { useStudentContentStore } from '@/stores/studentContent'
 
@@ -392,6 +408,10 @@ const content = useStudentContentStore()
 const search = ref('')
 const calendarOffset = ref(0)
 const activeTab = ref<ModuleTab>('all')
+const dashboardPageSize = 6
+const newModulesPage = ref(1)
+const inProgressModulesPage = ref(1)
+const finishedModulesPage = ref(1)
 
 const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const viewedDate = computed(() => {
@@ -423,6 +443,9 @@ const inProgressModules = computed(() => allFilteredModules.value.filter(module 
   return pct > 0 && pct < 100
 }))
 const finishedModules = computed(() => allFilteredModules.value.filter(module => getModulePercent(module.id) === 100))
+const paginatedNewModules = computed(() => paginate(newModules.value, newModulesPage.value, dashboardPageSize))
+const paginatedInProgressModules = computed(() => paginate(inProgressModules.value, inProgressModulesPage.value, dashboardPageSize))
+const paginatedFinishedModules = computed(() => paginate(finishedModules.value, finishedModulesPage.value, dashboardPageSize))
 
 // Displayed Modules based on Active Tab
 const displayedModules = computed(() => {
@@ -435,6 +458,17 @@ const displayedModules = computed(() => {
 const filteredDeadlines = computed(() => content.deadlines.filter(deadline =>
   !hasSearch.value || matchesText(deadline.title, deadline.item_type)
 ))
+
+watch([activeTab, normalizedSearch], () => {
+  newModulesPage.value = 1
+  inProgressModulesPage.value = 1
+  finishedModulesPage.value = 1
+})
+
+function paginate<T>(items: T[], page: number, pageSize: number) {
+  const start = (page - 1) * pageSize
+  return items.slice(start, start + pageSize)
+}
 
 const searchResults = computed<DashboardSearchResult[]>(() => {
   if (!hasSearch.value) return []

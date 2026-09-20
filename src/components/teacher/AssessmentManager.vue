@@ -131,7 +131,7 @@
         <div class="text-right">Actions</div>
       </div>
       <article
-        v-for="item in filteredCards"
+        v-for="item in paginatedCards"
         :key="item.id"
         class="grid gap-3 border-b border-gray-100 px-5 py-4 transition-colors last:border-b-0 hover:bg-gray-50/70 lg:grid-cols-[minmax(240px,1.35fr)_minmax(160px,0.9fr)_90px_110px_110px_120px] lg:items-center"
       >
@@ -172,6 +172,11 @@
           </button>
         </div>
       </article>
+      <PaginationControls
+        v-model:current-page="assessmentPage"
+        :total-items="filteredCards.length"
+        :page-size="assessmentPageSize"
+      />
     </div>
 
     <Teleport to="body">
@@ -196,8 +201,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import AssessmentDesigner from '@/components/teacher/AssessmentDesigner.vue'
+import PaginationControls from '@/components/common/PaginationControls.vue'
 import { useTeacherStore } from '@/stores/teacher'
 import type { Activity, Quiz } from '@/stores/teacher'
 
@@ -215,6 +221,8 @@ const editingItem = ref<Quiz | Activity | null>(null)
 const deletingId = ref('')
 const reviewingRetakeId = ref<number | null>(null)
 const retakeStatusFilter = ref('pending')
+const assessmentPage = ref(1)
+const assessmentPageSize = 8
 
 const listTitle = computed(() => props.kind === 'quiz' ? 'Quizzes' : 'Activities')
 const items = computed(() => props.kind === 'quiz' ? store.quizzes : store.activities)
@@ -250,6 +258,14 @@ const filteredCards = computed(() => items.value.map(item => {
   }
 }))
 const retakeRequests = computed(() => store.retakeRequests.filter(request => request.assessmentType === props.kind))
+const paginatedCards = computed(() => {
+  const start = (assessmentPage.value - 1) * assessmentPageSize
+  return filteredCards.value.slice(start, start + assessmentPageSize)
+})
+
+watch(() => [props.kind, filteredCards.value.length], () => {
+  assessmentPage.value = 1
+})
 
 onMounted(async () => {
   loading.value = true

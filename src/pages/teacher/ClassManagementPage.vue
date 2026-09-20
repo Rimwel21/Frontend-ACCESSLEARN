@@ -97,7 +97,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="student in store.classStudents" :key="student.id" class="border-b border-gray-50 last:border-0">
+                    <tr v-for="student in paginatedClassStudents" :key="student.id" class="border-b border-gray-50 last:border-0">
                       <td class="max-w-[170px] px-2 py-2 font-semibold text-ink first:pl-0">
                         <span class="block truncate" :title="student.name">{{ student.name }}</span>
                       </td>
@@ -120,6 +120,11 @@
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                v-model:current-page="classStudentsPage"
+                :total-items="store.classStudents.length"
+                :page-size="classStudentsPageSize"
+              />
           </div>
 
           <div class="card overflow-hidden">
@@ -208,7 +213,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="record in store.studentRecords" :key="record.studentId" class="transition-colors hover:bg-gray-50">
+                  <tr v-for="record in paginatedClassRecords" :key="record.studentId" class="transition-colors hover:bg-gray-50">
                     <td class="table-td">
                       <div class="flex items-center gap-2.5">
                         <div :class="`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${record.avatarGradient} text-xs font-bold text-white`">{{ record.initials }}</div>
@@ -259,6 +264,11 @@
                 </tbody>
               </table>
             </div>
+            <PaginationControls
+              v-model:current-page="classRecordsPage"
+              :total-items="store.studentRecords.length"
+              :page-size="classRecordsPageSize"
+            />
 
             <section v-if="selectedRecord" class="border-t border-gray-100 p-5">
               <div class="flex flex-wrap items-start justify-between gap-3">
@@ -406,6 +416,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import PaginationControls from '@/components/common/PaginationControls.vue'
 import { useTeacherStore } from '@/stores/teacher'
 import type { StudentAssessmentRecord, StudentRecord } from '@/stores/teacher'
 import { fetchGradeLevelOptions, type GradeLevelOption } from '@/lib/gradeSections'
@@ -421,6 +432,10 @@ const deleteTargetId = ref<string | null>(null)
 const gradeLevels = ref<GradeLevelOption[]>([])
 const selectedRecord = ref<StudentRecord | null>(null)
 const retakeSavingKey = ref<string | null>(null)
+const classStudentsPage = ref(1)
+const classStudentsPageSize = 8
+const classRecordsPage = ref(1)
+const classRecordsPageSize = 8
 const recordFilters = reactive({
   classId: '',
   assessmentType: '',
@@ -429,6 +444,14 @@ const recordFilters = reactive({
 })
 
 const classModules = computed(() => store.modules.filter(module => module.classId === Number(store.selectedClassId)))
+const paginatedClassStudents = computed(() => {
+  const start = (classStudentsPage.value - 1) * classStudentsPageSize
+  return store.classStudents.slice(start, start + classStudentsPageSize)
+})
+const paginatedClassRecords = computed(() => {
+  const start = (classRecordsPage.value - 1) * classRecordsPageSize
+  return store.studentRecords.slice(start, start + classRecordsPageSize)
+})
 
 const completedAssessmentCount = computed(() => store.studentRecords.reduce((total, record) => (
   total + record.assessments.filter(item => item.status === 'completed').length
@@ -459,7 +482,17 @@ onMounted(async () => {
 
 watch(() => store.selectedClassId, (classId) => {
   if (classId && !recordFilters.classId) recordFilters.classId = classId
+  classStudentsPage.value = 1
+  classRecordsPage.value = 1
   void loadClassRecords()
+})
+
+watch(() => store.classStudents.length, () => {
+  classStudentsPage.value = 1
+})
+
+watch(() => store.studentRecords.length, () => {
+  classRecordsPage.value = 1
 })
 
 function defaultClassForm() {

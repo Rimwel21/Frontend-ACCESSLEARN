@@ -27,6 +27,30 @@
       </h1>
 
       <form class="grid gap-4" @submit.prevent="submitLogin">
+        <div
+          v-if="loginAlert"
+          :class="[
+            'flex items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-sm',
+            loginAlert.type === 'warning'
+              ? 'border-amber-200 bg-amber-50 text-amber-800'
+              : 'border-rose-200 bg-rose-50 text-brand-rose'
+          ]"
+          :role="loginAlert.type === 'warning' ? 'status' : 'alert'"
+        >
+          <span
+            :class="[
+              'grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-black',
+              loginAlert.type === 'warning' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-brand-rose'
+            ]"
+            aria-hidden="true"
+          >
+            !
+          </span>
+          <span class="min-w-0">
+            <span class="block font-black">{{ loginAlert.title }}</span>
+            <span v-if="loginAlert.detail" class="mt-0.5 block text-xs font-semibold opacity-80">{{ loginAlert.detail }}</span>
+          </span>
+        </div>
 
         <div>
           <label class="field-label" :for="role === 'teacher' ? 'email' : 'account'">
@@ -137,17 +161,17 @@
           </div>
         </div>
 
-        <div v-if="isPendingApproval" class="status-warning" role="status">
+        <div v-if="false && isPendingApproval" class="status-warning" role="status">
           <p class="font-bold">⏳ Account Pending Approval</p>
           <p class="mt-1 text-xs font-normal opacity-80">Your account is waiting for admin verification.</p>
         </div>
 
-        <div v-else-if="isBlocked" class="status-error" role="alert">
+        <div v-else-if="false && isBlocked" class="status-error" role="alert">
           <p class="font-bold">🚫 Account Blocked</p>
           <p class="mt-1 text-xs font-normal opacity-80">Please contact support if you believe this is a mistake.</p>
         </div>
 
-        <p v-else-if="auth.error" class="status-error" role="alert">{{ auth.error }}</p>
+        <p v-else-if="false && auth.error" class="status-error" role="alert">{{ auth.error }}</p>
 
         <button type="submit" class="btn-primary w-full justify-center rounded-xl py-3 mt-1 text-sm font-bold" :disabled="auth.loading">
           {{ auth.loading ? 'Signing in...' : 'Login' }}
@@ -196,6 +220,33 @@ const resetIdentityLabel = computed(() => role.value === 'teacher' ? 'Teacher Em
 const resetHelpText = computed(() => role.value === 'teacher'
   ? 'Use the OTP sent to your teacher email.'
   : 'Use your student username. If your account has no email, ask your teacher or administrator for help.')
+const loginAlert = computed(() => {
+  if (isPendingApproval.value) {
+    return {
+      type: 'warning',
+      title: 'Account pending approval',
+      detail: 'Your account is waiting for admin verification.',
+    }
+  }
+
+  if (isBlocked.value) {
+    return {
+      type: 'error',
+      title: 'Account blocked',
+      detail: 'Please contact support if you believe this is a mistake.',
+    }
+  }
+
+  if (auth.error) {
+    return {
+      type: 'error',
+      title: auth.error,
+      detail: 'Check your credentials and try again.',
+    }
+  }
+
+  return null
+})
 
 function handleForgotPassword() {
   showPasswordReset.value = true

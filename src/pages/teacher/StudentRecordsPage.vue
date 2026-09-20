@@ -84,7 +84,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="record in store.studentRecords" :key="record.studentId" class="transition-colors hover:bg-gray-50">
+            <tr v-for="record in paginatedRecords" :key="record.studentId" class="transition-colors hover:bg-gray-50">
               <td class="table-td">
                 <div class="flex items-center gap-2.5">
                   <div :class="`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${record.avatarGradient} text-xs font-bold text-white`">{{ record.initials }}</div>
@@ -127,6 +127,11 @@
           </tbody>
         </table>
       </div>
+      <PaginationControls
+        v-model:current-page="recordsPage"
+        :total-items="store.studentRecords.length"
+        :page-size="recordsPageSize"
+      />
     </section>
 
     <Teleport to="body">
@@ -209,12 +214,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import PaginationControls from '@/components/common/PaginationControls.vue'
 import { useTeacherStore, type StudentAssessmentRecord, type StudentRecord } from '@/stores/teacher'
 
 const store = useTeacherStore()
 const selectedRecord = ref<StudentRecord | null>(null)
 const retakeSavingKey = ref<string | null>(null)
+const recordsPage = ref(1)
+const recordsPageSize = 8
 const filters = reactive({
   classId: '',
   assessmentType: '',
@@ -230,6 +238,14 @@ const averageHandsignScore = computed(() => {
   const scores = store.studentRecords.flatMap(record => record.handsignPractice.map(item => item.highestScore))
   if (!scores.length) return 0
   return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+})
+const paginatedRecords = computed(() => {
+  const start = (recordsPage.value - 1) * recordsPageSize
+  return store.studentRecords.slice(start, start + recordsPageSize)
+})
+
+watch(() => store.studentRecords.length, () => {
+  recordsPage.value = 1
 })
 
 onMounted(async () => {

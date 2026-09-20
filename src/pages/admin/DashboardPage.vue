@@ -54,6 +54,62 @@
         <button class="text-xs font-bold text-ink-soft transition-all hover:text-brand-rose" @click="closeAccountPanel">Close</button>
       </div>
 
+      <div
+        v-if="accountPanel.kind === 'teachers'"
+        class="grid gap-3 border-b border-gray-50 bg-brand-blue-soft/35 px-5 py-4 md:grid-cols-[minmax(0,1fr)_minmax(220px,0.45fr)_auto]"
+      >
+        <label class="grid gap-1 text-xs font-bold text-ink">
+          Search Teacher
+          <input
+            v-model.trim="accountPanelFilters.search"
+            class="input-field !h-11 !rounded-xl !text-sm"
+            placeholder="Name, email, or username"
+            type="search"
+          >
+        </label>
+        <label class="grid gap-1 text-xs font-bold text-ink">
+          Status
+          <select v-model="accountPanelFilters.status" class="input-field !h-11 !rounded-xl !text-sm">
+            <option value="">All statuses</option>
+            <option v-for="status in accountPanelStatusOptions" :key="status" :value="status">{{ formatStatus(status) }}</option>
+          </select>
+        </label>
+        <button
+          class="self-end rounded-xl border border-brand-teal/40 bg-white px-4 py-3 text-xs font-bold text-brand-blue transition-all hover:border-brand-blue hover:bg-brand-blue-soft"
+          type="button"
+          @click="clearAccountPanelFilters"
+        >
+          Clear Filters
+        </button>
+      </div>
+
+      <div
+        v-else-if="accountPanel.kind === 'students'"
+        class="grid gap-3 border-b border-gray-50 bg-brand-blue-soft/35 px-5 py-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+      >
+        <label class="grid gap-1 text-xs font-bold text-ink">
+          Grade Level
+          <select v-model="accountPanelFilters.gradeLevel" class="input-field !h-11 !rounded-xl !text-sm" :disabled="accountPanelGradeOptions.length === 0">
+            <option value="">All grade levels</option>
+            <option v-for="grade in accountPanelGradeOptions" :key="grade" :value="grade">{{ grade }}</option>
+          </select>
+        </label>
+        <label class="grid gap-1 text-xs font-bold text-ink">
+          Section
+          <select v-model="accountPanelFilters.section" class="input-field !h-11 !rounded-xl !text-sm" :disabled="accountPanelSectionOptions.length === 0">
+            <option value="">All sections</option>
+            <option v-for="section in accountPanelSectionOptions" :key="section" :value="section">{{ section }}</option>
+          </select>
+        </label>
+        <button
+          class="self-end rounded-xl border border-brand-teal/40 bg-white px-4 py-3 text-xs font-bold text-brand-blue transition-all hover:border-brand-blue hover:bg-brand-blue-soft"
+          type="button"
+          @click="clearAccountPanelFilters"
+        >
+          Clear Filters
+        </button>
+      </div>
+
       <div v-if="accountPanelLoading" class="p-8 text-center text-sm font-bold text-ink-soft">Loading accounts...</div>
       <div v-else-if="accountPanelError" class="p-8 text-center">
         <p class="text-sm font-bold text-brand-rose">{{ accountPanelError }}</p>
@@ -115,28 +171,11 @@
           </div>
         </div>
       </div>
-      <div v-if="accountPanel && accountPanelTotal > accountPanelItems.length" class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-50 px-5 py-4">
-        <p class="text-xs font-bold text-ink-soft">
-          Showing {{ accountPanelItems.length }} of {{ accountPanelTotal }} accounts
-        </p>
-        <div class="flex items-center gap-2">
-          <button
-            class="rounded-full border border-brand-teal/40 px-3 py-1.5 text-xs font-bold text-brand-blue disabled:cursor-not-allowed disabled:opacity-40"
-            :disabled="accountPanelPage <= 1 || accountPanelLoading"
-            @click="changeAccountPanelPage(accountPanelPage - 1)"
-          >
-            Previous
-          </button>
-          <span class="text-xs font-bold text-ink-soft">Page {{ accountPanelPage }} of {{ accountPanelTotalPages }}</span>
-          <button
-            class="rounded-full border border-brand-teal/40 px-3 py-1.5 text-xs font-bold text-brand-blue disabled:cursor-not-allowed disabled:opacity-40"
-            :disabled="accountPanelPage >= accountPanelTotalPages || accountPanelLoading"
-            @click="changeAccountPanelPage(accountPanelPage + 1)"
-          >
-            Next
-          </button>
-        </div>
-      </div>
+      <PaginationControls
+        v-model:current-page="accountPanelPage"
+        :total-items="accountPanelTotal"
+        :page-size="accountPanelPerPage"
+      />
     </section>
 
     <section class="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
@@ -227,8 +266,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import PaginationControls from '@/components/common/PaginationControls.vue'
 import { apiFetch, ApiError } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 import { adminService } from '@/services/adminService'
@@ -257,13 +297,40 @@ const successMsg = ref('')
 const errorMsg = ref('')
 const selectedTeacher = ref<PendingTeacher | null>(null)
 const accountPanel = ref<{ kind: 'blocked' | 'teachers' | 'students', title: string, subtitle: string } | null>(null)
-const accountPanelItems = ref<AccountListOut[]>([])
+const accountPanelAllItems = ref<AccountListOut[]>([])
+const accountPanelFilters = reactive({ gradeLevel: '', section: '', search: '', status: '' })
 const accountPanelLoading = ref(false)
 const accountPanelError = ref('')
 const accountPanelPage = ref(1)
-const accountPanelTotal = ref(0)
-const accountPanelPerPage = 25
+const accountPanelPerPage = 5
+const allowedStudentGrades = ['Grade 4', 'Grade 5', 'Grade 6']
+const filteredAccountPanelItems = computed(() => accountPanelAllItems.value.filter(matchesAccountPanelFilters))
+const accountPanelItems = computed(() => {
+  const start = (accountPanelPage.value - 1) * accountPanelPerPage
+  return filteredAccountPanelItems.value.slice(start, start + accountPanelPerPage)
+})
+const accountPanelTotal = computed(() => filteredAccountPanelItems.value.length)
 const accountPanelTotalPages = computed(() => Math.max(Math.ceil(accountPanelTotal.value / accountPanelPerPage), 1))
+const accountPanelGradeOptions = computed(() => allowedStudentGrades)
+const accountPanelSectionOptions = computed(() => {
+  const grade = normalizeFilter(accountPanelFilters.gradeLevel)
+  return uniqueAccountFieldOptions(
+    accountPanelAllItems.value.filter(account => {
+      if (!isAllowedStudentGrade(account.grade_level)) return false
+      return !grade || normalizeFilter(account.grade_level) === grade
+    }),
+    'section_name',
+  )
+})
+const accountPanelStatusOptions = computed(() => uniqueAccountFieldOptions(accountPanelAllItems.value, 'account_status'))
+
+watch(() => [accountPanelFilters.gradeLevel, accountPanelFilters.section, accountPanelFilters.search, accountPanelFilters.status], () => {
+  accountPanelPage.value = 1
+})
+
+watch(accountPanelTotalPages, totalPages => {
+  if (accountPanelPage.value > totalPages) accountPanelPage.value = totalPages
+})
 
 const statCards = computed(() => [
   { label: 'Pending Verification Requests', value: pendingAccounts.value.length, description: 'Teacher accounts waiting for review.', icon: 'VR', tone: 'bg-brand-amber/15 text-brand-amber', action: 'pending' },
@@ -370,6 +437,7 @@ async function openAccountPanel(kind: 'blocked' | 'teachers' | 'students') {
         : 'Student accounts recorded in the system.',
   }
   accountPanelPage.value = 1
+  clearAccountPanelFilters()
   await loadAccountPanel()
 }
 
@@ -381,22 +449,18 @@ async function loadAccountPanel() {
   try {
     if (accountPanel.value.kind === 'blocked') {
       const [suspended, inactive, archived] = await Promise.all([
-        withAccountTimeout(adminService.getAccounts({ status: 'suspended', page: accountPanelPage.value, per_page: accountPanelPerPage })),
-        withAccountTimeout(adminService.getAccounts({ status: 'inactive', page: accountPanelPage.value, per_page: accountPanelPerPage })),
-        withAccountTimeout(adminService.getAccounts({ status: 'archived', page: accountPanelPage.value, per_page: accountPanelPerPage })),
+        fetchAllAccountPages({ status: 'suspended' }),
+        fetchAllAccountPages({ status: 'inactive' }),
+        fetchAllAccountPages({ status: 'archived' }),
       ])
-      accountPanelItems.value = [...suspended.items, ...inactive.items, ...archived.items]
-      accountPanelTotal.value = suspended.total + inactive.total + archived.total
+      accountPanelAllItems.value = [...suspended, ...inactive, ...archived]
       return
     }
 
     const role = accountPanel.value.kind === 'teachers' ? 'teacher' : 'student'
-    const all = await withAccountTimeout(adminService.getAccounts({ role, page: accountPanelPage.value, per_page: accountPanelPerPage }))
-    accountPanelItems.value = all.items
-    accountPanelTotal.value = all.total
+    accountPanelAllItems.value = await fetchAllAccountPages({ role })
   } catch (err) {
-    accountPanelItems.value = []
-    accountPanelTotal.value = 0
+    accountPanelAllItems.value = []
     accountPanelError.value = err instanceof Error ? err.message : 'Failed to load accounts.'
   } finally {
     accountPanelLoading.value = false
@@ -405,10 +469,10 @@ async function loadAccountPanel() {
 
 function closeAccountPanel() {
   accountPanel.value = null
-  accountPanelItems.value = []
+  accountPanelAllItems.value = []
   accountPanelError.value = ''
   accountPanelPage.value = 1
-  accountPanelTotal.value = 0
+  clearAccountPanelFilters()
 }
 
 function withAccountTimeout<T>(promise: Promise<T>, timeoutMs = 8000): Promise<T> {
@@ -419,11 +483,6 @@ function withAccountTimeout<T>(promise: Promise<T>, timeoutMs = 8000): Promise<T
   return Promise.race([promise, timeout]).finally(() => {
     if (timeoutId) window.clearTimeout(timeoutId)
   })
-}
-
-async function changeAccountPanelPage(page: number) {
-  accountPanelPage.value = Math.min(Math.max(page, 1), accountPanelTotalPages.value)
-  await loadAccountPanel()
 }
 
 async function unblockDashboardAccount(account: AccountListOut) {
@@ -487,6 +546,67 @@ function accountSubtext(account: AccountListOut) {
     account.section_name ? `Section ${account.section_name}` : '',
   ].filter(Boolean)
   return details.join(' | ') || account.role
+}
+
+async function fetchAllAccountPages(params: { role?: string, status?: string }) {
+  const perPage = 100
+  const firstPage = await withAccountTimeout(adminService.getAccounts({ ...params, page: 1, per_page: perPage }))
+  const items = [...firstPage.items]
+  const totalPages = Math.max(Math.ceil(firstPage.total / perPage), 1)
+
+  for (let page = 2; page <= totalPages; page += 1) {
+    const nextPage = await withAccountTimeout(adminService.getAccounts({ ...params, page, per_page: perPage }))
+    items.push(...nextPage.items)
+  }
+
+  return items
+}
+
+function clearAccountPanelFilters() {
+  accountPanelFilters.gradeLevel = ''
+  accountPanelFilters.section = ''
+  accountPanelFilters.search = ''
+  accountPanelFilters.status = ''
+}
+
+function matchesAccountPanelFilters(account: AccountListOut) {
+  if (accountPanel.value?.kind === 'teachers') {
+    const search = normalizeFilter(accountPanelFilters.search)
+    const status = normalizeFilter(accountPanelFilters.status)
+    const searchableText = normalizeFilter([
+      accountDisplayName(account),
+      account.email,
+      account.username,
+      account.contact_no,
+    ].filter(Boolean).join(' '))
+
+    if (status && normalizeFilter(account.account_status) !== status) return false
+    if (search && !searchableText.includes(search)) return false
+    return true
+  }
+
+  if (accountPanel.value?.kind !== 'students') return true
+
+  const grade = normalizeFilter(accountPanelFilters.gradeLevel)
+  const section = normalizeFilter(accountPanelFilters.section)
+  if (!isAllowedStudentGrade(account.grade_level)) return false
+  if (grade && normalizeFilter(account.grade_level) !== grade) return false
+  if (section && normalizeFilter(account.section_name) !== section) return false
+  return true
+}
+
+function isAllowedStudentGrade(gradeLevel?: string | null) {
+  const grade = normalizeFilter(gradeLevel)
+  return allowedStudentGrades.some(allowedGrade => normalizeFilter(allowedGrade) === grade)
+}
+
+function uniqueAccountFieldOptions(accounts: AccountListOut[], field: 'grade_level' | 'section_name' | 'account_status') {
+  return Array.from(new Set(accounts.map(account => account[field]).filter(Boolean) as string[]))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+}
+
+function normalizeFilter(value?: string | null) {
+  return String(value || '').trim().toLowerCase()
 }
 
 function teacherName(teacher: PendingTeacher) {

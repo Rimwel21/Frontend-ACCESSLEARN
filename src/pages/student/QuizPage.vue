@@ -47,7 +47,7 @@
 
           <div v-else class="space-y-3">
             <button
-              v-for="quiz in quizzes"
+              v-for="quiz in paginatedQuizzes"
               :key="quiz.id"
               type="button"
               :class="[
@@ -73,6 +73,11 @@
                 <svg class="h-4 w-4 flex-shrink-0 text-ink-soft" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
               </div>
             </button>
+            <PaginationControls
+              v-model:current-page="quizPage"
+              :total-items="quizzes.length"
+              :page-size="quizPageSize"
+            />
           </div>
         </div>
 
@@ -101,8 +106,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import PaginationControls from '@/components/common/PaginationControls.vue'
 import { useStudentContentStore } from '@/stores/studentContent'
 
 type QuizStatus = 'Finished' | 'In Progress' | 'Not Started'
@@ -121,6 +127,8 @@ const router = useRouter()
 const route = useRoute()
 const content = useStudentContentStore()
 const selectedQuizId = computed(() => route.query.deadlineId ? Number(route.query.deadlineId) : null)
+const quizPage = ref(1)
+const quizPageSize = 6
 
 const quizzes = computed<QuizRow[]>(() => content.modules.flatMap(module =>
   module.assessments
@@ -141,6 +149,14 @@ const quizzes = computed<QuizRow[]>(() => content.modules.flatMap(module =>
 ))
 
 const completedCount = computed(() => quizzes.value.filter(quiz => quiz.status === 'Finished').length)
+const paginatedQuizzes = computed(() => {
+  const start = (quizPage.value - 1) * quizPageSize
+  return quizzes.value.slice(start, start + quizPageSize)
+})
+
+watch(() => quizzes.value.length, () => {
+  quizPage.value = 1
+})
 
 onMounted(() => {
   content.fetchModules()

@@ -58,7 +58,7 @@
         <div class="text-right">Actions</div>
       </div>
       <article
-        v-for="material in store.modules"
+        v-for="material in paginatedModules"
         :key="material.id"
         class="grid gap-3 border-b border-gray-100 px-5 py-4 last:border-b-0 lg:grid-cols-[minmax(240px,1.4fr)_minmax(170px,1fr)_110px_120px_minmax(180px,1fr)_220px] lg:items-center"
       >
@@ -100,6 +100,11 @@
           </div>
         </div>
       </article>
+      <PaginationControls
+        v-model:current-page="modulePage"
+        :total-items="store.modules.length"
+        :page-size="modulePageSize"
+      />
     </div>
 
     <Teleport to="body">
@@ -252,6 +257,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import PaginationControls from '@/components/common/PaginationControls.vue'
 import { learningWeekOptions } from '@/constants/learning'
 import { useTeacherStore } from '@/stores/teacher'
 
@@ -307,6 +313,8 @@ const fileName = ref('')
 const isDraggingFile = ref(false)
 const form = ref<MaterialForm>(defaultForm())
 const editingMaterialId = ref<string | null>(null)
+const modulePage = ref(1)
+const modulePageSize = 8
 
 const selectedClassLabel = computed(() => classNameFor(form.value.classId ? Number(form.value.classId) : null))
 const selectedContentType = computed(() => isSupportedContentType(form.value.contentType) ? form.value.contentType : 'PDF')
@@ -314,6 +322,10 @@ const selectedContentTypeLabel = computed(() => contentTypeLabel(selectedContent
 const fileAccept = computed(() => contentTypeConfig[selectedContentType.value].accept)
 const fileHint = computed(() => contentTypeConfig[selectedContentType.value].hint)
 const dropLabel = computed(() => `Drop your ${selectedContentTypeLabel.value} here`)
+const paginatedModules = computed(() => {
+  const start = (modulePage.value - 1) * modulePageSize
+  return store.modules.slice(start, start + modulePageSize)
+})
 
 onMounted(() => {
   store.fetchClasses()
@@ -521,5 +533,9 @@ watch(() => form.value.hasDeadline, (hasDeadline) => {
   if (!hasDeadline) {
     form.value.releaseDate = ''
   }
+})
+
+watch(() => store.modules.length, () => {
+  modulePage.value = 1
 })
 </script>

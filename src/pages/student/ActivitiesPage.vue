@@ -36,7 +36,7 @@
 
           <div v-else class="scrollbar-thin space-y-3 xl:max-h-[calc(100vh-11rem)] xl:overflow-y-auto xl:pr-2">
             <div
-              v-for="act in activities"
+              v-for="act in paginatedActivities"
               :key="act.id"
               :class="[
                 'flex cursor-pointer flex-wrap items-center gap-3 border-[3px] bg-white p-4 shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover sm:flex-nowrap sm:gap-4',
@@ -64,6 +64,11 @@
                 <svg class="h-4 w-4 flex-shrink-0 text-ink-soft" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
               </div>
             </div>
+            <PaginationControls
+              v-model:current-page="activityPage"
+              :total-items="activities.length"
+              :page-size="activityPageSize"
+            />
           </div>
         </div>
 
@@ -103,8 +108,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PaginationControls from '@/components/common/PaginationControls.vue'
 import { useStudentContentStore } from '@/stores/studentContent'
 
 type ActivityStatus = 'In Progress' | 'Not Started' | 'Finished'
@@ -123,6 +129,8 @@ const router = useRouter()
 const route = useRoute()
 const content = useStudentContentStore()
 const selectedActivityId = computed(() => route.query.deadlineId ? Number(route.query.deadlineId) : null)
+const activityPage = ref(1)
+const activityPageSize = 6
 
 const activities = computed<ActivityRow[]>(() => content.activities.map(assessment => ({
   id: assessment.id,
@@ -137,6 +145,14 @@ const activities = computed<ActivityRow[]>(() => content.activities.map(assessme
 })))
 
 const inProgress = computed(() => activities.value.filter(activity => activity.status === 'In Progress'))
+const paginatedActivities = computed(() => {
+  const start = (activityPage.value - 1) * activityPageSize
+  return activities.value.slice(start, start + activityPageSize)
+})
+
+watch(() => activities.value.length, () => {
+  activityPage.value = 1
+})
 
 onMounted(() => {
   content.fetchActivities()
