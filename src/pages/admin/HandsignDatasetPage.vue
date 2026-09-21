@@ -51,12 +51,31 @@
             <select v-model="week" class="input-field mt-1.5">
               <option v-for="item in weeks" :key="item" :value="item">{{ item }}</option>
             </select>
+            <button class="mt-2 text-xs font-bold text-brand-blue hover:text-brand-teal" type="button" :disabled="busy || nextWeekNumber > 999" @click="addWeek">
+              + Add Week {{ nextWeekNumber }}
+            </button>
           </div>
           <div>
             <label class="field-label">Word Label</label>
             <select v-model="label" class="input-field mt-1.5">
               <option v-for="item in labels" :key="item" :value="item">{{ formatLabel(item) }}</option>
             </select>
+          </div>
+          <div class="md:col-span-2 flex flex-col gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:items-end">
+            <div class="min-w-0 flex-1">
+              <label class="field-label" for="new-dataset-label">Add Label to {{ formatWeek(week) }}</label>
+              <input
+                id="new-dataset-label"
+                v-model.trim="newLabel"
+                class="input-field mt-1.5"
+                maxlength="80"
+                placeholder="Example: Garbage"
+                @keydown.enter.prevent="addLabel"
+              />
+            </div>
+            <button class="btn-secondary w-full sm:w-auto" :disabled="busy || !newLabel" @click="addLabel">
+              Add Label
+            </button>
           </div>
         </div>
 
@@ -150,11 +169,12 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { getDatasetSummary, trainWordGestureModel, uploadWordGestureSample, type DatasetSummary } from '@/services/handsignAdmin'
+import { addDatasetLabel, addDatasetWeek, getDatasetSummary, trainWordGestureModel, uploadWordGestureSample, type DatasetSummary } from '@/services/handsignAdmin'
 
 const summary = ref<DatasetSummary | null>(null)
 const week = ref('WEEK1')
 const label = ref('')
+const newLabel = ref('')
 const videoRef = ref<HTMLVideoElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const cameraOn = ref(false)
@@ -165,14 +185,20 @@ const statusMessage = ref('')
 let stream: MediaStream | null = null
 let pollTimer: number | null = null
 
-const weeks = computed(() => Object.keys(summary.value?.weekly_labels ?? {}))
+const weeks = computed(() => summary.value?.weeks ?? Object.keys(summary.value?.weekly_labels ?? {}))
 const labels = computed(() => summary.value?.weekly_labels[week.value] ?? [])
 const required = computed(() => summary.value?.samples_required ?? 40)
 const sampleCount = computed(() => summary.value?.classes.find(item => item.label === label.value)?.sample_count ?? 0)
 const sampleProgress = computed(() => labelProgress(label.value))
+const nextWeekNumber = computed(() => Math.max(0, ...weeks.value.map(item => Number(item.replace(/\D/g, '')) || 0)) + 1)
 
 function formatLabel(value: string) {
   return value.replace(/_/g, ' ')
+}
+
+function formatWeek(value: string) {
+  const number = value.replace(/\D/g, '')
+  return number ? `Week ${number}` : value
 }
 
 function labelSampleCount(value: string) {
@@ -191,6 +217,37 @@ onMounted(async () => { await refresh(); pollTimer = window.setInterval(refresh,
 onBeforeUnmount(() => { stopCamera(); if (pollTimer) window.clearInterval(pollTimer) })
 
 async function refresh() { try { summary.value = await getDatasetSummary() } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to load dataset status.' } }
+async function addWeek() {
+  if (nextWeekNumber.value > 999) return
+  busy.value = true
+  error.value = ''
+  try {
+    const result = await addDatasetWeek(`Week ${nextWeekNumber.value}`)
+    await refresh()
+    week.value = `WEEK${result.week.replace(/\D/g, '')}`
+    statusMessage.value = result.created ? `${formatWeek(result.week)} is ready for labels.` : `${formatWeek(result.week)} is already available.`
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Unable to add a dataset week.'
+  } finally {
+    busy.value = false
+  }
+}
+async function addLabel() {
+  if (!newLabel.value) return
+  busy.value = true
+  error.value = ''
+  try {
+    const result = await addDatasetLabel(newLabel.value, week.value)
+    newLabel.value = ''
+    await refresh()
+    label.value = result.label
+    statusMessage.value = result.created ? `${formatLabel(result.label)} was added to ${formatWeek(result.week)}.` : `${formatLabel(result.label)} is already available for ${formatWeek(result.week)}.`
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Unable to add the label.'
+  } finally {
+    busy.value = false
+  }
+}
 async function startCamera() { try { error.value = ''; stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false }); if (!videoRef.value) return; videoRef.value.srcObject = stream; await videoRef.value.play(); cameraOn.value = true } catch { error.value = 'Camera permission is required to record dataset samples.'; stopCamera() } }
 function stopCamera() { stream?.getTracks().forEach(track => track.stop()); stream = null; cameraOn.value = false; if (videoRef.value) videoRef.value.srcObject = null }
 async function recordAndUpload() { if (!cameraOn.value || !label.value) return; busy.value = true; error.value = ''; try { for (let value = 3; value >= 1; value -= 1) { countdown.value = value; await wait(1000) }; countdown.value = 0; statusMessage.value = 'Recording 40 frames...'; const images = await captureFrames(); statusMessage.value = 'Uploading sample...'; const result = await uploadWordGestureSample(label.value, week.value, images); await refresh(); statusMessage.value = `Saved sample ${result.sample_count}/${required.value}.`; if (result.ready_to_train) { statusMessage.value = '40 samples reached. Training started automatically.'; await startTraining() } } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to record this sample.' } finally { busy.value = false; countdown.value = 0 } }

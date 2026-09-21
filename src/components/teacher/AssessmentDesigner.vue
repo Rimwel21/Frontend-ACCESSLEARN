@@ -32,8 +32,11 @@
               <label class="figma-label" for="assessment-week">Week</label>
               <select id="assessment-week" v-model="form.week" class="figma-input">
                 <option value="">Select week...</option>
-                <option v-for="week in learningWeekOptions" :key="week" :value="week">{{ week }}</option>
+                <option v-for="week in activityWeekOptions" :key="week" :value="week">{{ week }}</option>
               </select>
+              <button class="mt-2 text-xs font-bold text-brand-blue hover:text-brand-teal disabled:cursor-not-allowed disabled:opacity-50" type="button" :disabled="nextAdditionalWeekNumber > 999" @click="addAdditionalWeek">
+                + Add Week {{ nextAdditionalWeekNumber }}
+              </button>
             </div>
             <div>
               <label class="figma-label" for="assessment-due-date">Due Date</label>
@@ -243,12 +246,15 @@
               <!-- ── IDENTIFICATION ── -->
               <template v-if="question.type === 'Identification'">
                 <div>
-                  <label class="figma-label">Correct Answer</label>
-                  <input
-                    v-model.trim="question.answer"
-                    class="figma-input bg-white"
-                    placeholder="Enter the correct answer"
-                  />
+                  <label class="figma-label">{{ props.kind === 'activity' ? 'Correct Handsign Answer' : 'Correct Answer' }}</label>
+                  <select v-if="props.kind === 'activity'" v-model="question.answer" class="figma-input bg-white" :disabled="!form.week || labelsLoading">
+                    <option value="">{{ form.week ? (labelsLoading ? 'Loading week labels...' : 'Select an answer...') : 'Select the activity week first...' }}</option>
+                    <option v-for="item in identificationLabels" :key="item" :value="item">{{ formatHandsignLabel(item) }}</option>
+                  </select>
+                  <input v-else v-model.trim="question.answer" class="figma-input bg-white" placeholder="Enter the correct answer" />
+                  <p v-if="props.kind === 'activity' && form.week && !labelsLoading && identificationLabels.length === 0" class="mt-1 text-[11px] font-semibold text-amber-600">
+                    No Handsign labels have been configured for this week yet.
+                  </p>
                 </div>
               </template>
 
@@ -514,6 +520,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { learningWeekOptions } from '@/constants/learning'
 import { handsignErrorMessage, uploadTutorialVideo } from '@/services/handsign'
+import { getDatasetLabelsForWeek } from '@/services/handsignAdmin'
+import { addTeacherActivityWeek, getTeacherActivityWeeks } from '@/services/teacherActivityWeeks'
 import { useTeacherStore } from '@/stores/teacher'
 import type { Activity, Quiz } from '@/stores/teacher'
 
@@ -560,6 +568,9 @@ interface QuestionDraft {
 const store = useTeacherStore()
 const error = ref('')
 const success = ref('')
+const identificationLabels = ref<string[]>([])
+const labelsLoading = ref(false)
+const additionalWeeks = ref<string[]>([])
 
 // Type-change confirmation
 const showTypeChangeConfirm = ref(false)
@@ -631,6 +642,8 @@ function blankForm() {
 const form = ref(blankForm())
 
 const saving = computed(() => props.kind === 'quiz' ? store.quizSaving : store.activitySaving)
+const activityWeekOptions = computed(() => [...learningWeekOptions, ...additionalWeeks.value].sort((left, right) => weekNumber(left) - weekNumber(right)))
+const nextAdditionalWeekNumber = computed(() => Math.max(8, ...activityWeekOptions.value.map(weekNumber)) + 1)
 const isEditing = computed(() => Boolean(props.initialAssessment))
 const selectedTargetClasses = computed(() =>
   form.value.targetClassIds
@@ -733,6 +746,48 @@ function resolvedAnswerWord(q: QuestionDraft): string {
     return q._mcChoices.find(c => c.letter === q._mcCorrect)?.text?.trim() ?? ''
   }
   return q.answer?.trim() ?? ''
+}
+
+function formatHandsignLabel(value: string) {
+  return value.replace(/_/g, ' ')
+}
+
+function weekNumber(value: string) {
+  return Number(value.replace(/\D/g, '')) || 0
+}
+
+async function addAdditionalWeek() {
+  const number = nextAdditionalWeekNumber.value
+  if (number > 999) return
+  const week = `Week ${number}`
+  try {
+    const result = await addTeacherActivityWeek(week)
+    if (!additionalWeeks.value.includes(result.week)) {
+      additionalWeeks.value = [...additionalWeeks.value, result.week]
+    }
+    form.value.week = result.week
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Unable to add a new activity week.'
+  }
+}
+
+async function loadIdentificationLabels() {
+  identificationLabels.value = []
+  if (props.kind !== 'activity' || !form.value.week) return
+  labelsLoading.value = true
+  try {
+    const result = await getDatasetLabelsForWeek(form.value.week)
+    identificationLabels.value = result.labels
+    for (const question of form.value.questions) {
+      if (question.type === 'Identification' && question.answer && !result.labels.includes(question.answer)) {
+        question.answer = ''
+      }
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Unable to load Handsign labels for this week.'
+  } finally {
+    labelsLoading.value = false
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1272,11 +1327,21 @@ function canonicalPreview(value: string) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 watch(() => props.initialAssessment, () => { hydrateForm() }, { deep: true })
+watch(() => form.value.week, () => { void loadIdentificationLabels() })
 
 onMounted(async () => {
   await store.fetchClasses()
   if (props.kind === 'quiz') await store.fetchModules()
+  if (props.kind === 'activity') {
+    try {
+      const result = await getTeacherActivityWeeks()
+      additionalWeeks.value = result.weeks.filter(week => weekNumber(week) > 8)
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unable to load activity weeks.'
+    }
+  }
   hydrateForm()
+  await loadIdentificationLabels()
 })
 
 async function hydrateForm() {
@@ -1330,6 +1395,7 @@ async function hydrateForm() {
         }) as QuestionDraft[]
       : [blankQuestion(resolvedCategory as QuestionType)],
   }
+  await loadIdentificationLabels()
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
