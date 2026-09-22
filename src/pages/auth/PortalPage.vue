@@ -4,13 +4,12 @@
     <!-- Top Navbar -->
     <header class="bg-white border-b border-gray-100 px-5 sm:px-8 py-3.5 flex items-center justify-between shadow-[0_1px_12px_rgba(0,0,0,0.04)]">
       <div class="flex items-center gap-3 group">
-        <!-- Triple-click the logo badge to access admin login -->
         <button
           type="button"
           class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-brand-teal/20 transition-transform hover:scale-105 sm:h-16 sm:w-16"
           @click="handleLogoClick"
-          title="SIGNHEAR"
-          aria-label="SIGNHEAR"
+          title="Admin login"
+          aria-label="Open admin login"
         >
           <img
             src="@/assets/signhear_icon_logo.png"
@@ -120,29 +119,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// Triple-click the logo badge to secretly access admin login
-const logoClickCount = ref(0)
-let logoClickTimer: ReturnType<typeof setTimeout> | null = null
-
 function handleLogoClick() {
-  logoClickCount.value++
-  if (logoClickTimer) clearTimeout(logoClickTimer)
-
-  if (logoClickCount.value >= 3) {
-    logoClickCount.value = 0
-    router.push('/admin/login')
-    return
-  }
-
-  logoClickTimer = setTimeout(() => {
-    if (logoClickCount.value < 3) router.push('/')
-    logoClickCount.value = 0
-  }, 400)
+  router.push('/admin/login')
 }
 </script>
 

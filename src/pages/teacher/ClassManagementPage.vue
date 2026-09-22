@@ -4,20 +4,16 @@
       <div>
         <h2 class="font-display text-2xl font-bold text-white">Class Management</h2>
         <p class="text-white/75 text-sm mt-1">
-          {{ store.selectedClass ? `${store.selectedClass.className} - ${store.selectedClass.subject}` : 'Create a class to get started' }}
+          {{ store.selectedClass ? `${store.selectedClass.className} - ${store.selectedClass.subject}` : 'Classes are assigned by your administrator.' }}
         </p>
       </div>
-      <button @click="showAddClass = true" class="w-full rounded-full border border-white/40 bg-white/20 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/30 sm:w-auto">
-        New Class
-      </button>
     </div>
 
     <div v-if="store.classesLoading" class="empty-state">Loading classes...</div>
 
     <div v-else-if="!store.hasClasses" class="card flex flex-col items-center px-5 py-12 text-center sm:p-14">
       <h3 class="font-display text-xl font-bold mb-2">No classes yet</h3>
-      <p class="text-sm text-ink-soft max-w-sm mb-6">Create your first class to start adding modules, activities, and quizzes for your students.</p>
-      <button @click="showAddClass = true" class="btn-primary">Create Your First Class</button>
+      <p class="text-sm text-ink-soft max-w-sm mb-6">Ask your administrator to assign a class before adding modules, activities, or quizzes.</p>
       <p v-if="store.classError" class="status-error mt-4">{{ store.classError }}</p>
     </div>
 
@@ -34,8 +30,7 @@
             @click="selectClass(cls.id)"
             :class="['card-hover relative min-h-[142px] cursor-pointer border-2 p-4 transition-all', store.selectedClassId === cls.id ? 'border-brand-blue bg-brand-blue-soft/20' : 'border-transparent']"
           >
-            <button @click.stop="confirmDeleteClass(cls.id)" class="absolute top-2 right-2 w-6 h-6 rounded-full hover:bg-rose-50 text-gray-300 hover:text-brand-rose flex items-center justify-center text-xs transition-all">x</button>
-            <div class="mb-2 flex min-w-0 items-start justify-between gap-3 pr-5">
+            <div class="mb-2 flex min-w-0 items-start justify-between gap-3">
               <div class="min-w-0 font-display text-sm font-bold text-ink">{{ cls.className }}</div>
               <span v-if="store.selectedClassId === cls.id" class="shrink-0 rounded-full bg-brand-blue px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">Active</span>
             </div>
@@ -43,14 +38,6 @@
             <div class="text-xs text-ink-soft mt-1">{{ gradeLabel(cls.gradeLevel) }} - Section {{ cls.section }}</div>
             <div class="text-[11px] font-mono text-gray-400 mt-2">{{ cls.studentCount }} students</div>
           </div>
-
-          <button
-            @click="showAddClass = true"
-            class="flex min-h-[142px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 text-ink-soft transition-all hover:border-brand-blue hover:bg-brand-blue-soft/30 hover:text-brand-blue"
-          >
-            <span class="text-xl font-bold">+</span>
-            <span class="text-xs font-semibold">Add Class</span>
-          </button>
         </div>
       </div>
 
@@ -480,8 +467,10 @@ onMounted(async () => {
   await loadClassRecords()
 })
 
-watch(() => store.selectedClassId, (classId) => {
-  if (classId && !recordFilters.classId) recordFilters.classId = classId
+watch(() => store.selectedClassId, (classId, previousClassId) => {
+  if (recordFilters.classId === previousClassId || (!recordFilters.classId && classId)) {
+    recordFilters.classId = classId ?? ''
+  }
   classStudentsPage.value = 1
   classRecordsPage.value = 1
   void loadClassRecords()

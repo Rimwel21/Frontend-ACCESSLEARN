@@ -437,6 +437,7 @@ export const useTeacherStore = defineStore('teacher', () => {
       } else if (selectedClassId.value && !classes.value.some(c => c.id === selectedClassId.value)) {
         selectedClassId.value = classes.value[0]?.id ?? null
         classStudents.value = []
+        if (selectedClassId.value) await fetchClassStudents(selectedClassId.value)
       }
     } catch (err) {
       classError.value = err instanceof Error ? err.message : 'Unable to load classes'
