@@ -4,16 +4,20 @@
       <div>
         <h2 class="font-display text-2xl font-bold text-white">Class Management</h2>
         <p class="text-white/75 text-sm mt-1">
-          {{ store.selectedClass ? `${store.selectedClass.className} - ${store.selectedClass.subject}` : 'Classes are assigned by your administrator.' }}
+          {{ store.selectedClass ? `${store.selectedClass.className} - ${store.selectedClass.subject}` : 'Create a classroom using an administrator-created grade and section.' }}
         </p>
       </div>
+      <button @click="showAddClass = true" class="w-full rounded-full border border-white/40 bg-white/20 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/30 sm:w-auto">
+        Create Class
+      </button>
     </div>
 
     <div v-if="store.classesLoading" class="empty-state">Loading classes...</div>
 
     <div v-else-if="!store.hasClasses" class="card flex flex-col items-center px-5 py-12 text-center sm:p-14">
       <h3 class="font-display text-xl font-bold mb-2">No classes yet</h3>
-      <p class="text-sm text-ink-soft max-w-sm mb-6">Ask your administrator to assign a class before adding modules, activities, or quizzes.</p>
+      <p class="text-sm text-ink-soft max-w-sm mb-6">Create a classroom by choosing one of the grade levels and sections created by your administrator.</p>
+      <button @click="showAddClass = true" class="btn-primary">Create Your First Class</button>
       <p v-if="store.classError" class="status-error mt-4">{{ store.classError }}</p>
     </div>
 
@@ -38,6 +42,13 @@
             <div class="text-xs text-ink-soft mt-1">{{ gradeLabel(cls.gradeLevel) }} - Section {{ cls.section }}</div>
             <div class="text-[11px] font-mono text-gray-400 mt-2">{{ cls.studentCount }} students</div>
           </div>
+          <button
+            @click="showAddClass = true"
+            class="flex min-h-[142px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 text-ink-soft transition-all hover:border-brand-blue hover:bg-brand-blue-soft/30 hover:text-brand-blue"
+          >
+            <span class="text-xl font-bold">+</span>
+            <span class="text-xs font-semibold">Create Class</span>
+          </button>
         </div>
       </div>
 
@@ -349,22 +360,19 @@
                 <input v-model.trim="newClass.className" class="input-field" placeholder="e.g. Grade 6 Science" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-ink-soft mb-1.5">Subject</label>
-                <select v-model="newClass.subject" class="input-field">
-                  <option value="">Select subject...</option>
-                  <option v-for="subject in subjectOptions" :key="subject" :value="subject">{{ subject }}</option>
-                </select>
-              </div>
-              <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Grade Level</label>
-                <select v-model.number="newClass.gradeLevelId" class="input-field">
+                <select v-model.number="newClass.gradeLevelId" class="input-field" @change="loadSections">
                   <option :value="null">Select grade level...</option>
                   <option v-for="g in gradeLevels" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Section</label>
-                <input v-model.trim="newClass.section" class="input-field" placeholder="e.g. A, Rizal, Sampaguita" />
+                <select v-model.number="newClass.sectionId" class="input-field" :disabled="!newClass.gradeLevelId || sectionsLoading">
+                  <option :value="null">{{ sectionsLoading ? 'Loading sections...' : 'Select section...' }}</option>
+                  <option v-for="section in sectionOptions" :key="section.id" :value="section.id">{{ section.name }}</option>
+                </select>
+                <p v-if="newClass.gradeLevelId && !sectionsLoading && sectionOptions.length === 0" class="mt-1 text-xs text-ink-soft">No sections are available for this grade yet.</p>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">School Year</label>
@@ -406,17 +414,23 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import PaginationControls from '@/components/common/PaginationControls.vue'
 import { useTeacherStore } from '@/stores/teacher'
 import type { StudentAssessmentRecord, StudentRecord } from '@/stores/teacher'
-import { fetchGradeLevelOptions, type GradeLevelOption } from '@/lib/gradeSections'
+import {
+  fetchGradeLevelOptions,
+  fetchSectionOptions,
+  type GradeLevelOption,
+  type SectionOption,
+} from '@/lib/gradeSections'
 import { useAuthStore } from '@/stores/auth'
 
 const store = useTeacherStore()
 const auth = useAuthStore()
 
-const subjectOptions = ['Science']
 const showAddClass = ref(false)
 const newClass = ref(defaultClassForm())
 const deleteTargetId = ref<string | null>(null)
 const gradeLevels = ref<GradeLevelOption[]>([])
+const sectionOptions = ref<SectionOption[]>([])
+const sectionsLoading = ref(false)
 const selectedRecord = ref<StudentRecord | null>(null)
 const retakeSavingKey = ref<string | null>(null)
 const classStudentsPage = ref(1)
@@ -487,15 +501,15 @@ watch(() => store.studentRecords.length, () => {
 function defaultClassForm() {
   return {
     className: '',
-    subject: '',
+    subject: 'Science',
     gradeLevelId: null as number | null,
-    section: '',
+    sectionId: null as number | null,
     schoolYear: '',
   }
 }
 
 async function createClass() {
-  if (!newClass.value.className || !newClass.value.subject || !newClass.value.gradeLevelId || !newClass.value.section) {
+  if (!newClass.value.className || !newClass.value.gradeLevelId || !newClass.value.sectionId) {
     alert('Please complete the class details.')
     return
   }
@@ -505,7 +519,7 @@ async function createClass() {
       className: newClass.value.className,
       subject: newClass.value.subject,
       gradeLevelId: newClass.value.gradeLevelId,
-      section: newClass.value.section,
+      sectionId: newClass.value.sectionId,
       schoolYear: newClass.value.schoolYear || null,
     })
     closeClassModal()
@@ -677,6 +691,19 @@ function formatDate(value?: string | null) {
 async function loadGradeLevels() {
   if (!auth.token) return
   gradeLevels.value = await fetchGradeLevelOptions(auth.token)
+}
+
+async function loadSections() {
+  newClass.value.sectionId = null
+  sectionOptions.value = []
+  if (!auth.token || !newClass.value.gradeLevelId) return
+
+  sectionsLoading.value = true
+  try {
+    sectionOptions.value = await fetchSectionOptions(newClass.value.gradeLevelId, auth.token)
+  } finally {
+    sectionsLoading.value = false
+  }
 }
 </script>
 

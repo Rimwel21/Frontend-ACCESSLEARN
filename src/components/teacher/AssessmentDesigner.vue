@@ -256,6 +256,17 @@
                     No Handsign labels have been configured for this week yet.
                   </p>
                 </div>
+                <div v-if="props.kind === 'activity' && question.answer">
+                  <label class="figma-label">Minimum samples for this sign</label>
+                  <select
+                    class="figma-input bg-white"
+                    :value="labelSampleRequirement(question.answer)"
+                    @change="updateLabelSampleRequirement(question.answer, Number(($event.target as HTMLSelectElement).value))"
+                  >
+                    <option v-for="option in SAMPLE_REQUIREMENT_OPTIONS" :key="option" :value="option">{{ option }} samples</option>
+                  </select>
+                  <p class="mt-1 text-[11px] font-semibold text-ink-soft">Use 40 for the best recognition. Choose a lower target only when the activity is urgent.</p>
+                </div>
               </template>
 
               <!-- ── TRUE OR FALSE ── -->
@@ -520,7 +531,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { learningWeekOptions } from '@/constants/learning'
 import { handsignErrorMessage, uploadTutorialVideo } from '@/services/handsign'
-import { getDatasetLabelsForWeek } from '@/services/handsignAdmin'
+import { getDatasetLabelsForWeek, updateDatasetLabelSampleRequirement } from '@/services/handsignAdmin'
 import { addTeacherActivityWeek, getTeacherActivityWeeks } from '@/services/teacherActivityWeeks'
 import { useTeacherStore } from '@/stores/teacher'
 import type { Activity, Quiz } from '@/stores/teacher'
@@ -540,6 +551,7 @@ const emit = defineEmits<{
 
 const QUESTION_TYPES = ['Identification', 'True or False', 'Multiple Choice'] as const
 const CHOICE_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+const SAMPLE_REQUIREMENT_OPTIONS = [5, 10, 20, 40]
 type QuestionType = typeof QUESTION_TYPES[number]
 type ApiQuestionType = 'identification' | 'multiple_choice' | 'true_false'
 
@@ -569,6 +581,7 @@ const store = useTeacherStore()
 const error = ref('')
 const success = ref('')
 const identificationLabels = ref<string[]>([])
+const identificationLabelRequirements = ref<Record<string, number>>({})
 const labelsLoading = ref(false)
 const additionalWeeks = ref<string[]>([])
 
@@ -773,11 +786,13 @@ async function addAdditionalWeek() {
 
 async function loadIdentificationLabels() {
   identificationLabels.value = []
+  identificationLabelRequirements.value = {}
   if (props.kind !== 'activity' || !form.value.week) return
   labelsLoading.value = true
   try {
     const result = await getDatasetLabelsForWeek(form.value.week)
     identificationLabels.value = result.labels
+    identificationLabelRequirements.value = result.requirements
     for (const question of form.value.questions) {
       if (question.type === 'Identification' && question.answer && !result.labels.includes(question.answer)) {
         question.answer = ''
@@ -787,6 +802,26 @@ async function loadIdentificationLabels() {
     error.value = err instanceof Error ? err.message : 'Unable to load Handsign labels for this week.'
   } finally {
     labelsLoading.value = false
+  }
+}
+
+function labelSampleRequirement(label: string) {
+  return identificationLabelRequirements.value[label] ?? 40
+}
+
+async function updateLabelSampleRequirement(label: string, samplesRequired: number) {
+  if (!form.value.week || !SAMPLE_REQUIREMENT_OPTIONS.includes(samplesRequired)) return
+  try {
+    const result = await updateDatasetLabelSampleRequirement(label, form.value.week, samplesRequired)
+    identificationLabelRequirements.value = {
+      ...identificationLabelRequirements.value,
+      [label]: result.samples_required,
+    }
+    success.value = result.training
+      ? `${formatHandsignLabel(label)} is ready. Model training started.`
+      : `${formatHandsignLabel(label)} now needs ${result.samples_required} samples.`
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Unable to update the sample requirement.'
   }
 }
 

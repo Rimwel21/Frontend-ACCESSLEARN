@@ -3,7 +3,14 @@ const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`
 const CURRENT_CACHES = [APP_SHELL_CACHE, RUNTIME_CACHE]
 const APP_SHELL_FALLBACK = '/index.html'
-const APP_SHELL = [APP_SHELL_FALLBACK, '/manifest.webmanifest', '/favicon.svg', '/icons.svg']
+const APP_SHELL = [
+  APP_SHELL_FALLBACK,
+  '/manifest.webmanifest',
+  '/favicon.svg',
+  '/icons.svg',
+  '/pwa-icon-192.png',
+  '/pwa-icon-512.png',
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

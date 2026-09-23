@@ -40,6 +40,18 @@
         <p class="text-[11px] font-black uppercase tracking-widest text-ink-soft">Training</p>
         <div class="mt-2 text-lg font-bold capitalize text-ink">{{ summary?.training.status ?? 'Loading' }}</div>
         <p class="mt-1 line-clamp-2 text-xs font-medium text-ink-soft">{{ summary?.training.message || 'Waiting for dataset status.' }}</p>
+        <p v-if="summary?.training.status === 'training' && summary.training.total_samples" class="mt-1 text-xs font-semibold text-ink-soft">
+          {{ summary.training.processed_samples ?? 0 }}/{{ summary.training.total_samples }} samples prepared
+        </p>
+        <div v-if="trainingActive || summary?.training.status === 'completed'" class="mt-3">
+          <div class="h-2 overflow-hidden rounded-full bg-gray-100">
+            <div
+              :class="['h-full rounded-full bg-brand-teal transition-all duration-500', trainingActive ? 'animate-pulse' : '']"
+              :style="{ width: `${trainingProgress}%` }"
+            ></div>
+          </div>
+          <p class="mt-1 text-xs font-semibold text-ink-soft">{{ trainingProgressLabel }}</p>
+        </div>
       </article>
     </section>
 
@@ -60,6 +72,18 @@
             <select v-model="label" class="input-field mt-1.5">
               <option v-for="item in labels" :key="item" :value="item">{{ formatLabel(item) }}</option>
             </select>
+          </div>
+          <div>
+            <label class="field-label">Samples Required</label>
+            <select
+              class="input-field mt-1.5"
+              :value="required"
+              :disabled="busy || !label"
+              @change="updateSampleRequirement(Number(($event.target as HTMLSelectElement).value))"
+            >
+              <option v-for="option in sampleRequirementOptions" :key="option" :value="option">{{ option }} samples</option>
+            </select>
+            <p class="mt-1 text-[11px] font-semibold text-ink-soft">40 is recommended. Use a lower target only for urgent activities.</p>
           </div>
           <div class="md:col-span-2 flex flex-col gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:items-end">
             <div class="min-w-0 flex-1">
@@ -98,6 +122,9 @@
             <div class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-black text-brand-blue">
               {{ cameraOn ? 'Camera Active' : 'Camera Off' }}
             </div>
+            <div v-if="recordingFrameCount > 0" class="absolute right-3 top-3 rounded-full bg-brand-amber px-3 py-1 text-xs font-black text-white shadow-sm">
+              Recording frames: {{ recordingFrameCount }}/{{ RECORDING_FRAME_COUNT }}
+            </div>
           </div>
 
           <div class="mt-4 grid gap-2 sm:grid-cols-3">
@@ -133,12 +160,33 @@
           <p class="mt-3 text-sm leading-relaxed text-ink-soft">
             Train only when the selected labels have enough clear samples. Automatic training will still run once the required sample count is reached.
           </p>
+          <p v-if="!canTrain" class="mt-2 text-xs font-semibold text-ink-soft">
+            Complete {{ minimumCompleteLabels }} labels using their selected sample targets to enable training.
+          </p>
           <button
             class="btn-secondary mt-4 w-full"
-            :disabled="summary?.training.status === 'training' || summary?.training.status === 'queued'"
+            :disabled="!canTrain || summary?.training.status === 'training' || summary?.training.status === 'queued'"
             @click="startTraining"
           >
             Train Current Dataset
+          </button>
+          <div v-if="trainingActive" class="mt-4 rounded-md border border-brand-teal/25 bg-brand-blue-soft/35 p-3">
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <span class="text-xs font-bold text-ink">Training progress</span>
+              <span class="text-xs font-black text-brand-blue">{{ trainingProgress }}%</span>
+            </div>
+            <div class="h-2 overflow-hidden rounded-full bg-white">
+              <div class="h-full rounded-full bg-brand-teal transition-all duration-500" :style="{ width: `${trainingProgress}%` }"></div>
+            </div>
+            <p class="mt-2 text-xs font-semibold leading-relaxed text-ink-soft">{{ trainingProgressLabel }}</p>
+          </div>
+          <button
+            v-if="trainingActive"
+            class="mt-2 w-full rounded-md border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-brand-rose transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="busy"
+            @click="stopTraining"
+          >
+            Stop Training
           </button>
         </div>
 
@@ -151,7 +199,7 @@
             <div v-for="item in labels" :key="item" class="px-5 py-3">
               <div class="flex items-center justify-between gap-3">
                 <span class="truncate text-sm font-bold text-ink">{{ formatLabel(item) }}</span>
-                <span class="text-xs font-black text-ink-soft">{{ labelSampleCount(item) }}/{{ required }}</span>
+                <span class="text-xs font-black text-ink-soft">{{ labelSampleCount(item) }}/{{ labelRequirement(item) }}</span>
               </div>
               <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
                 <div class="h-full rounded-full bg-brand-teal" :style="{ width: `${labelProgress(item)}%` }"></div>
@@ -169,9 +217,10 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { addDatasetLabel, addDatasetWeek, getDatasetSummary, trainWordGestureModel, uploadWordGestureSample, type DatasetSummary } from '@/services/handsignAdmin'
+import { addDatasetLabel, addDatasetWeek, getDatasetSummary, stopWordGestureTraining, trainWordGestureModel, updateDatasetLabelSampleRequirement, uploadWordGestureSample, type DatasetSummary } from '@/services/handsignAdmin'
 
 const summary = ref<DatasetSummary | null>(null)
+const RECORDING_FRAME_COUNT = 40
 const week = ref('WEEK1')
 const label = ref('')
 const newLabel = ref('')
@@ -180,6 +229,7 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 const cameraOn = ref(false)
 const busy = ref(false)
 const countdown = ref(0)
+const recordingFrameCount = ref(0)
 const error = ref('')
 const statusMessage = ref('')
 let stream: MediaStream | null = null
@@ -187,10 +237,36 @@ let pollTimer: number | null = null
 
 const weeks = computed(() => summary.value?.weeks ?? Object.keys(summary.value?.weekly_labels ?? {}))
 const labels = computed(() => summary.value?.weekly_labels[week.value] ?? [])
-const required = computed(() => summary.value?.samples_required ?? 40)
+const sampleRequirementOptions = computed(() => summary.value?.sample_requirement_options ?? [5, 10, 20, 40])
+const required = computed(() => labelRequirement(label.value))
 const sampleCount = computed(() => summary.value?.classes.find(item => item.label === label.value)?.sample_count ?? 0)
 const sampleProgress = computed(() => labelProgress(label.value))
 const nextWeekNumber = computed(() => Math.max(0, ...weeks.value.map(item => Number(item.replace(/\D/g, '')) || 0)) + 1)
+const minimumCompleteLabels = computed(() => summary.value?.readiness?.minimum_complete_labels ?? 2)
+const canTrain = computed(() => summary.value?.readiness?.can_train ?? false)
+const trainingActive = computed(() => ['queued', 'training', 'stopping'].includes(summary.value?.training.status ?? ''))
+const trainingProgress = computed(() => {
+  const training = summary.value?.training
+  if (!training) return 0
+  if (training.status === 'completed') return 100
+  if (training.status === 'queued') return 5
+  if (training.status === 'stopping') return 0
+  if (training.total_trees && training.trained_trees !== undefined) {
+    return 30 + Math.round((training.trained_trees / training.total_trees) * 70)
+  }
+  if (training.total_samples) {
+    return Math.min(30, Math.round(((training.processed_samples ?? 0) / training.total_samples) * 30))
+  }
+  return 5
+})
+const trainingProgressLabel = computed(() => {
+  const training = summary.value?.training
+  if (!training) return ''
+  if (training.status === 'completed') return 'Training complete'
+  if (training.total_trees && training.trained_trees !== undefined) return `Training model: ${training.trained_trees}/${training.total_trees} trees`
+  if (training.total_samples) return `Preparing samples: ${training.processed_samples ?? 0}/${training.total_samples}`
+  return training.message
+})
 
 function formatLabel(value: string) {
   return value.replace(/_/g, ' ')
@@ -203,6 +279,12 @@ function formatWeek(value: string) {
 
 function labelSampleCount(value: string) {
   return summary.value?.classes.find(item => item.label === value)?.sample_count ?? 0
+}
+
+function labelRequirement(value: string) {
+  return summary.value?.label_requirements?.find(item => item.week === week.value && item.label === value)?.samples_required
+    ?? summary.value?.samples_required
+    ?? 40
 }
 
 function labelProgress(value: string) {
@@ -248,11 +330,28 @@ async function addLabel() {
     busy.value = false
   }
 }
+async function updateSampleRequirement(samplesRequired: number) {
+  if (!label.value || !sampleRequirementOptions.value.includes(samplesRequired)) return
+  busy.value = true
+  error.value = ''
+  try {
+    const result = await updateDatasetLabelSampleRequirement(label.value, week.value, samplesRequired)
+    await refresh()
+    statusMessage.value = result.training
+      ? `${formatLabel(label.value)} is ready. Model training started.`
+      : `${formatLabel(label.value)} now needs ${samplesRequired} samples.`
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Unable to update the sample requirement.'
+  } finally {
+    busy.value = false
+  }
+}
 async function startCamera() { try { error.value = ''; stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false }); if (!videoRef.value) return; videoRef.value.srcObject = stream; await videoRef.value.play(); cameraOn.value = true } catch { error.value = 'Camera permission is required to record dataset samples.'; stopCamera() } }
 function stopCamera() { stream?.getTracks().forEach(track => track.stop()); stream = null; cameraOn.value = false; if (videoRef.value) videoRef.value.srcObject = null }
-async function recordAndUpload() { if (!cameraOn.value || !label.value) return; busy.value = true; error.value = ''; try { for (let value = 3; value >= 1; value -= 1) { countdown.value = value; await wait(1000) }; countdown.value = 0; statusMessage.value = 'Recording 40 frames...'; const images = await captureFrames(); statusMessage.value = 'Uploading sample...'; const result = await uploadWordGestureSample(label.value, week.value, images); await refresh(); statusMessage.value = `Saved sample ${result.sample_count}/${required.value}.`; if (result.ready_to_train) { statusMessage.value = '40 samples reached. Training started automatically.'; await startTraining() } } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to record this sample.' } finally { busy.value = false; countdown.value = 0 } }
+async function recordAndUpload() { if (!cameraOn.value || !label.value) return; busy.value = true; error.value = ''; recordingFrameCount.value = 0; try { for (let value = 3; value >= 1; value -= 1) { countdown.value = value; await wait(1000) }; countdown.value = 0; statusMessage.value = 'Recording sign sample...'; const images = await captureFrames(); statusMessage.value = 'Uploading recorded sample...'; const result = await uploadWordGestureSample(label.value, week.value, images); await refresh(); statusMessage.value = `Saved sample ${result.sample_count}/${result.samples_required}.`; if (result.ready_to_train && canTrain.value) { statusMessage.value = `${result.samples_required} samples reached. Training started automatically.`; await startTraining() } else if (result.ready_to_train) { statusMessage.value = `This label is ready. Complete ${minimumCompleteLabels.value} labels to train the model.` } } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to record this sample.' } finally { busy.value = false; countdown.value = 0; recordingFrameCount.value = 0 } }
 async function startTraining() { try { const training = await trainWordGestureModel(); if (summary.value) summary.value.training = training; statusMessage.value = training.message } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to start training.' } }
-async function captureFrames() { const images: string[] = []; while (images.length < required.value) { const image = captureFrame(); if (image) images.push(image); await wait(80) } return images }
-function captureFrame() { const video = videoRef.value; const canvas = canvasRef.value; if (!video || !canvas || video.readyState < 2) return null; const scale = Math.min(1, 320 / video.videoWidth); canvas.width = Math.round(video.videoWidth * scale); canvas.height = Math.round(video.videoHeight * scale); canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height); return canvas.toDataURL('image/jpeg', 0.55) }
+async function stopTraining() { busy.value = true; error.value = ''; try { const training = await stopWordGestureTraining(); if (summary.value) summary.value.training = training; statusMessage.value = training.message } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to stop training.' } finally { busy.value = false } }
+async function captureFrames() { const images: string[] = []; while (images.length < RECORDING_FRAME_COUNT) { const image = captureFrame(); if (image) { images.push(image); recordingFrameCount.value = images.length }; await wait(80) } return images }
+function captureFrame() { const video = videoRef.value; const canvas = canvasRef.value; if (!video || !canvas || video.readyState < 2) return null; const scale = Math.min(1, 256 / video.videoWidth); canvas.width = Math.round(video.videoWidth * scale); canvas.height = Math.round(video.videoHeight * scale); canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height); return canvas.toDataURL('image/jpeg', 0.45) }
 function wait(ms: number) { return new Promise(resolve => window.setTimeout(resolve, ms)) }
 </script>
