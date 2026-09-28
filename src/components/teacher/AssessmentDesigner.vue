@@ -43,6 +43,10 @@
               <input id="assessment-due-date" v-model="form.dueDate" class="figma-input" type="date" />
             </div>
             <div>
+              <label class="figma-label" for="assessment-due-time">Due Time</label>
+              <input id="assessment-due-time" v-model="form.dueTime" class="figma-input" type="time" :disabled="!form.dueDate" />
+            </div>
+            <div>
               <label class="figma-label" for="target-count">Target Sections</label>
               <input
                 id="target-count"
@@ -641,6 +645,7 @@ function blankForm() {
     category: 'Identification',
     week: '',
     dueDate: '',
+    dueTime: '23:59',
     timerEnabled: false,
     timeLimitValue: null as number | null,
     timeLimitUnit: 'minutes' as 'seconds' | 'minutes' | 'hours',
@@ -1141,7 +1146,7 @@ async function saveAssessment() {
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
       allowTextAnswers: form.value.allowTextAnswers,
       questions,
-      dueAt: toApiDateTime(form.value.dueDate),
+      dueAt: toApiDateTime(form.value.dueDate, form.value.dueTime),
     })
 
     if (props.initialAssessment) await store.updateQuiz(props.initialAssessment.id, buildPayload(targetClassIds[0]))
@@ -1162,7 +1167,7 @@ async function saveAssessment() {
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
       allowTextAnswers: form.value.allowTextAnswers,
       questions,
-      dueAt: toApiDateTime(form.value.dueDate),
+      dueAt: toApiDateTime(form.value.dueDate, form.value.dueTime),
     })
 
     if (props.initialAssessment) await store.updateActivity(props.initialAssessment.id, buildPayload(targetClassIds[0]))
@@ -1411,6 +1416,7 @@ async function hydrateForm() {
     category: resolvedCategory,
     week: assessment.week ?? '',
     dueDate: toDateInput(assessment.dueAt),
+    dueTime: toTimeInput(assessment.dueAt),
     ...parseTimeLimit(
       assessment.timeLimitSeconds,
       assessment.timeLimit ?? ('dueTime' in assessment ? assessment.dueTime : '') ?? '',
@@ -1439,13 +1445,20 @@ async function hydrateForm() {
 
 function gradeLabel(value: string) { return value }
 
-function toApiDateTime(value: string) { return value ? `${value}T23:59:00` : null }
+function toApiDateTime(date: string, time: string) {
+  return date ? `${date}T${time || '23:59'}:00` : null
+}
 
 function toDateInput(value?: string | null) {
   if (!value) return ''
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
   return date.toISOString().slice(0, 10)
+}
+
+function toTimeInput(value?: string | null) {
+  const matchedTime = value?.match(/T(\d{2}:\d{2})/)
+  return matchedTime?.[1] ?? '23:59'
 }
 
 function composeTimeLimitSeconds() {

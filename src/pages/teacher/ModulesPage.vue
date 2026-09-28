@@ -219,13 +219,28 @@
                         ></span>
                       </label>
                     </div>
-                    <input
-                      v-model="form.releaseDate"
-                      class="figma-input mt-3"
-                      type="date"
-                      :disabled="!form.hasDeadline"
-                      :class="!form.hasDeadline ? 'cursor-not-allowed bg-slate-100 text-ink-soft opacity-70' : ''"
-                    />
+                    <div class="mt-3 grid grid-cols-2 gap-2">
+                      <label class="min-w-0">
+                        <span class="figma-label">Date</span>
+                        <input
+                          v-model="form.releaseDate"
+                          class="figma-input"
+                          type="date"
+                          :disabled="!form.hasDeadline"
+                          :class="!form.hasDeadline ? 'cursor-not-allowed bg-slate-100 text-ink-soft opacity-70' : ''"
+                        />
+                      </label>
+                      <label class="min-w-0">
+                        <span class="figma-label">Time</span>
+                        <input
+                          v-model="form.releaseTime"
+                          class="figma-input"
+                          type="time"
+                          :disabled="!form.hasDeadline || !form.releaseDate"
+                          :class="!form.hasDeadline || !form.releaseDate ? 'cursor-not-allowed bg-slate-100 text-ink-soft opacity-70' : ''"
+                        />
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -239,7 +254,7 @@
                 <dl class="grid gap-2 text-xs">
                   <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">Class</dt><dd class="text-right font-semibold">{{ selectedClassLabel }}</dd></div>
                   <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">Week</dt><dd class="text-right font-semibold">{{ form.week || 'Not set' }}</dd></div>
-                  <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">Deadline</dt><dd class="text-right font-semibold">{{ form.hasDeadline && form.releaseDate ? form.releaseDate : 'No deadline' }}</dd></div>
+                  <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">Deadline</dt><dd class="text-right font-semibold">{{ form.hasDeadline && form.releaseDate ? `${form.releaseDate} ${form.releaseTime}` : 'No deadline' }}</dd></div>
                   <div class="flex justify-between gap-3"><dt class="font-bold text-ink-soft">File</dt><dd class="max-w-44 truncate text-right font-semibold">{{ fileName || 'No file selected' }}</dd></div>
                 </dl>
               </div>
@@ -276,6 +291,7 @@ interface MaterialForm {
   status: 'Published' | 'Unpublished'
   hasDeadline: boolean
   releaseDate: string
+  releaseTime: string
   behaviorRequired: boolean
 }
 
@@ -342,6 +358,7 @@ function defaultForm(): MaterialForm {
     status: 'Unpublished' as 'Published' | 'Unpublished',
     hasDeadline: false,
     releaseDate: '',
+    releaseTime: '23:59',
     behaviorRequired: true,
   }
 }
@@ -368,6 +385,7 @@ function openForm(material?: {
     status: material.status,
     hasDeadline: Boolean(material.dueAt),
     releaseDate: toDateInputValue(material.dueAt),
+    releaseTime: toTimeInputValue(material.dueAt),
     behaviorRequired: material.behaviorRequired ?? true,
   } : defaultForm()
   selectedFile.value = null
@@ -509,16 +527,21 @@ async function deleteMaterial(id: string) {
   successMessage.value = 'Learning material deleted.'
 }
 
-function toApiDateTime(value: string) {
-  return value ? `${value}T23:59:00` : null
+function toApiDateTime(date: string, time: string) {
+  return date ? `${date}T${time || '23:59'}:00` : null
 }
 
 function moduleDueAt() {
-  return form.value.hasDeadline ? toApiDateTime(form.value.releaseDate) : null
+  return form.value.hasDeadline ? toApiDateTime(form.value.releaseDate, form.value.releaseTime) : null
 }
 
 function toDateInputValue(value?: string | null) {
   return value ? value.slice(0, 10) : ''
+}
+
+function toTimeInputValue(value?: string | null) {
+  const matchedTime = value?.match(/T(\d{2}:\d{2})/)
+  return matchedTime?.[1] ?? '23:59'
 }
 
 watch(() => form.value.contentType, () => {
@@ -532,6 +555,7 @@ watch(() => form.value.contentType, () => {
 watch(() => form.value.hasDeadline, (hasDeadline) => {
   if (!hasDeadline) {
     form.value.releaseDate = ''
+    form.value.releaseTime = '23:59'
   }
 })
 

@@ -88,56 +88,25 @@
             </div>
           </section>
 
-          <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_260px]">
-            <section class="border-[3px] border-brand-teal bg-white shadow-card xl:order-2">
-              <div class="flex items-center justify-between border-b-[3px] border-brand-teal/30 bg-brand-amber px-3 py-2 text-white">
-                <button type="button" class="grid h-7 w-7 place-items-center font-black hover:bg-white/15" aria-label="Previous month" @click="calendarOffset--">
-                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6" /></svg>
-                </button>
-                <div class="text-center">
-                  <h2 class="font-display text-sm font-black">{{ calendarTitle }}</h2>
-                  <p class="font-mono text-[10px] font-bold">{{ calendarYear }}</p>
-                </div>
-                <button type="button" class="grid h-7 w-7 place-items-center font-black hover:bg-white/15" aria-label="Next month" @click="calendarOffset++">
-                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" /></svg>
-                </button>
-              </div>
-              <div class="grid grid-cols-7 gap-1 p-3 text-center font-mono text-[11px] font-black text-brand-blue">
-                <div v-for="day in weekDays" :key="day" class="py-1">{{ day }}</div>
-                <div v-for="blank in calendarLeadingBlanks" :key="`blank-${blank}`" aria-hidden="true"></div>
-                <div
-                  v-for="day in calendarDays"
-                  :key="day"
-                  :class="[
-                    'grid aspect-square place-items-center',
-                    isToday(day) ? 'bg-brand-blue text-white' : 'text-ink hover:bg-brand-blue-soft'
-                  ]"
-                >
-                  {{ day }}
-                </div>
-              </div>
-            </section>
-
-            <section class="border-[3px] border-brand-teal bg-white shadow-card xl:order-1">
+          <section class="border-[3px] border-brand-teal bg-white shadow-card">
               <div class="flex items-center gap-2 border-b-[3px] border-brand-teal/30 bg-brand-blue px-4 py-3">
                 <svg class="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M5 5h14v16H5z" /></svg>
                 <h2 class="font-display text-sm font-black uppercase tracking-widest text-white">Upcoming Deadlines</h2>
               </div>
-              <div class="scrollbar-thin flex gap-3 overflow-x-auto p-3 xl:block xl:space-y-2">
+              <div class="scrollbar-thin max-h-72 space-y-2 overflow-y-auto p-3 pr-2 sm:grid sm:max-h-none sm:grid-cols-2 sm:gap-3 sm:space-y-0 lg:grid-cols-3">
                 <button
                   v-for="deadline in filteredDeadlines"
                   :key="deadline.id"
                   type="button"
-                  class="min-w-[210px] border-[2px] border-brand-teal bg-surface p-3 text-left transition hover:border-brand-amber xl:w-full xl:min-w-0"
+                  class="w-full min-w-0 border-[2px] border-brand-teal bg-surface p-3 text-left transition hover:border-brand-amber"
                   @click="openDeadline(deadline)"
                 >
-                  <div class="text-xs font-black">{{ deadline.title }}</div>
-                  <div class="mt-1 font-mono text-[10px] font-bold text-ink-soft">{{ deadline.item_type }} | {{ formatDeadline(deadline.due_at) }}</div>
+                  <div class="break-words text-xs font-black">{{ deadline.title }}</div>
+                  <div class="mt-1 break-words font-mono text-[10px] font-bold text-ink-soft">{{ deadline.item_type }} | {{ formatDeadline(deadline.due_at) }}</div>
                 </button>
-                <div v-if="filteredDeadlines.length === 0" class="text-xs font-bold text-ink-soft">No upcoming deadlines.</div>
+                <div v-if="filteredDeadlines.length === 0" class="text-xs font-bold text-ink-soft sm:col-span-full">No upcoming deadlines.</div>
               </div>
-            </section>
-          </div>
+          </section>
 
           <!-- Module Layout Navigation Tabs -->
           <section>
@@ -406,23 +375,11 @@ const router = useRouter()
 const profile = useProfileStore()
 const content = useStudentContentStore()
 const search = ref('')
-const calendarOffset = ref(0)
 const activeTab = ref<ModuleTab>('all')
 const dashboardPageSize = 6
 const newModulesPage = ref(1)
 const inProgressModulesPage = ref(1)
 const finishedModulesPage = ref(1)
-
-const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
-const viewedDate = computed(() => {
-  const date = new Date()
-  date.setMonth(date.getMonth() + calendarOffset.value)
-  return date
-})
-const calendarTitle = computed(() => viewedDate.value.toLocaleString('default', { month: 'long' }))
-const calendarYear = computed(() => viewedDate.value.getFullYear())
-const calendarDays = computed(() => new Date(calendarYear.value, viewedDate.value.getMonth() + 1, 0).getDate())
-const calendarLeadingBlanks = computed(() => new Date(calendarYear.value, viewedDate.value.getMonth(), 1).getDay())
 
 const welcomeName = computed(() => profile.profile?.name ?? 'Student')
 const normalizedSearch = computed(() => search.value.trim().toLowerCase())
@@ -532,13 +489,6 @@ onMounted(() => {
   loadDashboard()
 })
 
-function isToday(day: number) {
-  const today = new Date()
-  return day === today.getDate()
-    && viewedDate.value.getMonth() === today.getMonth()
-    && calendarYear.value === today.getFullYear()
-}
-
 function loadDashboard() {
   content.fetchModules()
     .then(() => content.fetchActivities())
@@ -604,7 +554,13 @@ function openDeadline(deadline: typeof content.deadlines[number]) {
 }
 
 function formatDeadline(value: string) {
-  return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(value).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 }
 
 function getEmptyStateTitle() {
