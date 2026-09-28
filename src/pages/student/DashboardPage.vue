@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-surface">
-    <div class="space-y-5 px-5 py-5 xl:px-7">
+    <div class="space-y-5 px-3 py-4 sm:px-5 sm:py-5 xl:px-7">
       <div class="min-w-0">
         <section class="relative border-[3px] border-brand-teal bg-white shadow-card">
           <div class="flex items-center gap-3 px-4 py-3">
@@ -102,18 +102,36 @@
                   <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" /></svg>
                 </button>
               </div>
-              <div class="grid grid-cols-7 gap-1 p-3 text-center font-mono text-[11px] font-black text-brand-blue">
-                <div v-for="day in weekDays" :key="day" class="py-1">{{ day }}</div>
-                <div v-for="blank in calendarLeadingBlanks" :key="`blank-${blank}`" aria-hidden="true"></div>
+              <div class="grid grid-cols-7 border-b border-r border-brand-teal/25 bg-brand-teal/10 text-center font-mono text-[11px] font-black text-brand-blue">
+                <div
+                  v-for="day in weekDays"
+                  :key="day"
+                  class="border-l border-t border-brand-teal/25 bg-white px-1 py-2 text-[10px] sm:text-[11px]"
+                >
+                  {{ day }}
+                </div>
+                <div
+                  v-for="blank in calendarLeadingBlanks"
+                  :key="`blank-${blank}`"
+                  class="min-h-[42px] border-l border-t border-brand-teal/20 bg-brand-blue-soft/35 sm:min-h-[46px]"
+                  aria-hidden="true"
+                ></div>
                 <div
                   v-for="day in calendarDays"
                   :key="day"
                   :class="[
-                    'grid aspect-square place-items-center',
-                    isToday(day) ? 'bg-brand-blue text-white' : 'text-ink hover:bg-brand-blue-soft'
+                    'grid min-h-[42px] place-items-center border-l border-t border-brand-teal/25 bg-white transition sm:min-h-[46px]',
+                    isToday(day) ? 'bg-brand-blue text-white shadow-inner' : 'text-ink hover:bg-brand-blue-soft'
                   ]"
                 >
-                  {{ day }}
+                  <span
+                    :class="[
+                      'grid h-8 w-8 place-items-center',
+                      isToday(day) ? 'border border-white/70 bg-brand-blue text-white' : ''
+                    ]"
+                  >
+                    {{ day }}
+                  </span>
                 </div>
               </div>
             </section>
@@ -145,7 +163,7 @@
               <div class="flex flex-wrap items-center gap-2">
                 <button
                   :class="[
-                    'border-[2.5px] border-brand-teal px-3.5 py-1.5 font-display text-xs font-black uppercase tracking-wider transition-all shadow-sm',
+                    'border-[2.5px] border-brand-teal px-3 py-1.5 font-display text-[11px] font-black uppercase tracking-wider transition-all shadow-sm sm:px-3.5 sm:text-xs',
                     activeTab === 'all'
                       ? 'bg-brand-teal text-white shadow-card-hover -translate-y-0.5'
                       : 'bg-white text-ink hover:bg-brand-blue-soft'
@@ -157,7 +175,7 @@
 
                 <button
                   :class="[
-                    'border-[2.5px] border-brand-teal px-3.5 py-1.5 font-display text-xs font-black uppercase tracking-wider transition-all shadow-sm',
+                    'border-[2.5px] border-brand-teal px-3 py-1.5 font-display text-[11px] font-black uppercase tracking-wider transition-all shadow-sm sm:px-3.5 sm:text-xs',
                     activeTab === 'new'
                       ? 'bg-brand-amber text-white shadow-card-hover -translate-y-0.5'
                       : 'bg-white text-ink hover:bg-brand-amber/10'
@@ -169,7 +187,7 @@
 
                 <button
                   :class="[
-                    'border-[2.5px] border-brand-teal px-3.5 py-1.5 font-display text-xs font-black uppercase tracking-wider transition-all shadow-sm',
+                    'border-[2.5px] border-brand-teal px-3 py-1.5 font-display text-[11px] font-black uppercase tracking-wider transition-all shadow-sm sm:px-3.5 sm:text-xs',
                     activeTab === 'in_progress'
                       ? 'bg-brand-blue text-white shadow-card-hover -translate-y-0.5'
                       : 'bg-white text-ink hover:bg-brand-blue-soft'
@@ -181,7 +199,7 @@
 
                 <button
                   :class="[
-                    'border-[2.5px] border-brand-teal px-3.5 py-1.5 font-display text-xs font-black uppercase tracking-wider transition-all shadow-sm',
+                    'border-[2.5px] border-brand-teal px-3 py-1.5 font-display text-[11px] font-black uppercase tracking-wider transition-all shadow-sm sm:px-3.5 sm:text-xs',
                     activeTab === 'finished'
                       ? 'bg-emerald-600 text-white shadow-card-hover -translate-y-0.5'
                       : 'bg-white text-ink hover:bg-emerald-50'
@@ -212,27 +230,27 @@
             <div v-else class="mt-5 space-y-8">
               <!-- SECTION 1: NEW UPLOADS -->
               <div v-if="(activeTab === 'all' || activeTab === 'new') && newModules.length > 0" class="space-y-3">
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                   <span class="inline-flex items-center gap-1 border-[2px] border-brand-teal bg-brand-amber px-2.5 py-0.5 font-display text-[11px] font-black uppercase tracking-wider text-white">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" /></svg> NEW UPLOADS
                   </span>
-                  <span class="font-mono text-xs font-bold text-ink-soft">Recently added lessons ready for you</span>
-                  <div class="h-[2px] flex-1 bg-brand-teal/30" />
+                  <span class="min-w-0 flex-1 font-mono text-xs font-bold leading-snug text-ink-soft">Recently added lessons ready for you</span>
+                  <div class="hidden h-[2px] flex-1 bg-brand-teal/30 sm:block" />
                 </div>
 
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <article
                     v-for="module in paginatedNewModules"
                     :key="`new-${module.id}`"
-                    class="group flex flex-col justify-between border-[3px] border-brand-teal bg-white p-4 shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover"
+                    class="group flex min-w-0 flex-col justify-between border-[3px] border-brand-teal bg-white p-3 shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover sm:p-4"
                   >
                     <div>
-                      <div class="flex items-start justify-between gap-2">
-                        <span class="border border-brand-teal bg-amber-100 px-2 py-0.5 font-mono text-[9px] font-black uppercase text-amber-900">
+                      <div class="flex min-w-0 flex-wrap items-start gap-2">
+                        <span class="shrink-0 border border-brand-teal bg-amber-100 px-2 py-0.5 font-mono text-[9px] font-black uppercase text-amber-900">
                           NEW UPLOAD
                         </span>
-                        <span v-if="module.file_type || module.content_type" class="font-mono text-[10px] font-bold text-ink-soft uppercase">
-                          {{ module.file_type || module.content_type }}
+                        <span v-if="module.file_type || module.content_type" class="min-w-0 max-w-full rounded-sm bg-brand-blue-soft px-2 py-0.5 font-mono text-[9px] font-bold uppercase text-brand-blue">
+                          {{ formatModuleFileType(module.file_type || module.content_type) }}
                         </span>
                       </div>
 
@@ -243,7 +261,7 @@
                         {{ module.description || 'No description provided.' }}
                       </p>
 
-                      <div class="mt-3 flex items-center gap-3 font-mono text-[11px] text-ink-soft">
+                      <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-ink-soft">
                         <span class="inline-flex items-center gap-1"><svg class="h-3.5 w-3.5 text-brand-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 19.5V5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2" /><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h6" /></svg> {{ module.topics.length }} topics</span>
                         <span v-if="module.assessments.length > 0" class="inline-flex items-center gap-1"><svg class="h-3.5 w-3.5 text-brand-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11a3 3 0 1 1 3 3v1" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 19h.01" /><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4z" /></svg> {{ module.assessments.length }} quizzes</span>
                       </div>
@@ -605,6 +623,18 @@ function openDeadline(deadline: typeof content.deadlines[number]) {
 
 function formatDeadline(value: string) {
   return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatModuleFileType(value: string | null | undefined) {
+  const raw = String(value ?? '').trim()
+  const normalized = raw.toLowerCase()
+  if (!raw) return 'File'
+  if (normalized.includes('presentation') || normalized.includes('powerpoint') || normalized.includes('ppt')) return 'PPT'
+  if (normalized.includes('wordprocessing') || normalized.includes('msword') || normalized.includes('doc')) return 'DOCX'
+  if (normalized.includes('pdf')) return 'PDF'
+  if (normalized.includes('video')) return 'Video'
+  if (normalized.includes('image')) return 'Image'
+  return raw.length > 16 ? raw.slice(0, 16) : raw
 }
 
 function getEmptyStateTitle() {
