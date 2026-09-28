@@ -838,7 +838,6 @@ export const useTeacherStore = defineStore('teacher', () => {
         }),
       })
       activities.value.unshift(mapActivityResponse(saved))
-      await fetchDashboardSummary()
       return saved
     } catch (err) {
       activityError.value = err instanceof Error ? err.message : 'Unable to create activity'
