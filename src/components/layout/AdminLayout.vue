@@ -104,7 +104,7 @@
         <span class="min-w-0 flex-1 truncate font-display text-[18px] font-semibold text-ink">{{ currentTitle }}</span>
       </header>
 
-      <main class="safe-area-bottom scrollbar-thin min-w-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-7">
+      <main class="safe-area-bottom scrollbar-thin min-w-0 flex-1 overflow-visible p-4 sm:p-6 lg:overflow-y-auto lg:overscroll-contain lg:p-7">
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
             <component :is="Component" :key="route.fullPath" />

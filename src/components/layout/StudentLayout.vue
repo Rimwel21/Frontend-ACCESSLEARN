@@ -156,7 +156,7 @@
         </button>
       </nav>
 
-      <main class="safe-area-bottom scrollbar-thin min-w-0 flex-1 overflow-y-auto overscroll-contain">
+      <main class="safe-area-bottom scrollbar-thin min-w-0 flex-1 overflow-visible lg:overflow-y-auto lg:overscroll-contain">
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
             <component :is="Component" :key="route.fullPath" />
