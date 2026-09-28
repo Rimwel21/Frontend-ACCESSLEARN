@@ -121,7 +121,7 @@
       <button class="btn-primary mt-5" @click="openForm()">Add {{ title }}</button>
     </div>
 
-    <div v-else class="card overflow-hidden">
+    <div v-else class="card min-w-0 overflow-hidden">
       <div class="hidden grid-cols-[minmax(240px,1.35fr)_minmax(160px,0.9fr)_90px_110px_110px_120px] gap-4 border-b border-gray-100 bg-surface px-5 py-3 text-xs font-semibold uppercase tracking-wide text-ink-soft lg:grid">
         <div>{{ title }}</div>
         <div>{{ props.kind === 'quiz' ? 'Learning Material' : 'Type' }}</div>
@@ -133,11 +133,11 @@
       <article
         v-for="item in paginatedCards"
         :key="item.id"
-        class="grid gap-3 border-b border-gray-100 px-5 py-4 transition-colors last:border-b-0 hover:bg-gray-50/70 lg:grid-cols-[minmax(240px,1.35fr)_minmax(160px,0.9fr)_90px_110px_110px_120px] lg:items-center"
+        class="grid min-w-0 gap-3 border-b border-gray-100 px-4 py-4 transition-colors last:border-b-0 hover:bg-gray-50/70 sm:px-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(140px,0.9fr)_80px_100px_100px_120px] lg:items-center"
       >
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
-            <h2 class="truncate font-display text-base font-bold">{{ item.title }}</h2>
+            <h2 class="min-w-0 truncate font-display text-base font-bold">{{ item.title }}</h2>
             <span class="badge-blue badge">{{ item.badge }}</span>
           </div>
           <p class="mt-1 line-clamp-2 text-sm text-ink-soft">{{ item.description || 'No description' }}</p>
@@ -152,20 +152,20 @@
             </div>
           </div>
         </div>
-        <div class="text-sm text-ink-soft">
+        <div class="min-w-0 break-words text-sm text-ink-soft">
           <span class="font-semibold lg:hidden">{{ props.kind === 'quiz' ? 'Learning Material: ' : 'Type: ' }}</span>{{ item.module || 'Not set' }}
         </div>
-        <div class="text-sm text-ink-soft">
+        <div class="min-w-0 break-words text-sm text-ink-soft">
           <span class="font-semibold lg:hidden">Questions: </span>{{ item.questionCount }}
         </div>
-        <div class="text-sm text-ink-soft">
+        <div class="min-w-0 break-words text-sm text-ink-soft">
           <span class="font-semibold lg:hidden">Created: </span>{{ item.created }}
         </div>
-        <div class="text-sm text-ink-soft">
+        <div class="min-w-0 break-words text-sm text-ink-soft">
           <span class="font-semibold lg:hidden">{{ props.kind === 'quiz' ? 'Updated: ' : 'Due: ' }}</span>{{ item.updated }}
           <div v-if="props.kind === 'activity'" class="mt-1 text-xs">Submissions {{ item.submissionCount }}</div>
         </div>
-        <div class="flex justify-start gap-2 lg:justify-end">
+        <div class="flex min-w-0 flex-wrap justify-start gap-2 lg:justify-end">
           <button class="figma-button" type="button" @click="openForm(item.source)">Edit</button>
           <button class="figma-button" type="button" :disabled="deletingId === item.id" @click="deleteItem(item.source)">
             {{ deletingId === item.id ? 'Deleting...' : 'Delete' }}

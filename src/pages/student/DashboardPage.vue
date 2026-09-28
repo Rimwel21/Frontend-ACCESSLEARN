@@ -238,23 +238,23 @@
                   <div class="hidden h-[2px] flex-1 bg-brand-teal/30 sm:block" />
                 </div>
 
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <article
                     v-for="module in paginatedNewModules"
                     :key="`new-${module.id}`"
-                    class="group flex min-w-0 flex-col justify-between border-[3px] border-brand-teal bg-white p-3 shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover sm:p-4"
+                    class="group flex min-w-0 max-w-full flex-col justify-between overflow-hidden border-[3px] border-brand-teal bg-white p-3 shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover sm:p-4"
                   >
                     <div>
                       <div class="flex min-w-0 flex-wrap items-start gap-2">
                         <span class="shrink-0 border border-brand-teal bg-amber-100 px-2 py-0.5 font-mono text-[9px] font-black uppercase text-amber-900">
                           NEW UPLOAD
                         </span>
-                        <span v-if="module.file_type || module.content_type" class="min-w-0 max-w-full rounded-sm bg-brand-blue-soft px-2 py-0.5 font-mono text-[9px] font-bold uppercase text-brand-blue">
+                        <span v-if="module.file_type || module.content_type" class="min-w-0 max-w-full truncate rounded-sm bg-brand-blue-soft px-2 py-0.5 font-mono text-[9px] font-bold uppercase text-brand-blue">
                           {{ formatModuleFileType(module.file_type || module.content_type) }}
                         </span>
                       </div>
 
-                      <h4 class="mt-2 font-display text-base font-black leading-snug text-ink group-hover:text-brand-blue">
+                      <h4 class="mt-2 line-clamp-2 break-words font-display text-base font-black leading-snug text-ink group-hover:text-brand-blue">
                         {{ module.title }}
                       </h4>
                       <p class="mt-1 line-clamp-2 text-xs text-ink-soft">
@@ -299,15 +299,15 @@
                   <article
                     v-for="module in paginatedInProgressModules"
                     :key="`progress-${module.id}`"
-                    class="flex flex-wrap items-center gap-4 border-[3px] border-brand-teal bg-white p-4 shadow-card transition-all hover:-translate-y-1 hover:border-brand-blue hover:shadow-card-hover sm:flex-nowrap"
+                    class="flex min-w-0 max-w-full flex-wrap items-center gap-4 overflow-hidden border-[3px] border-brand-teal bg-white p-4 shadow-card transition-all hover:-translate-y-1 hover:border-brand-blue hover:shadow-card-hover sm:flex-nowrap"
                   >
                     <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center border-[3px] border-brand-teal bg-brand-blue-soft font-display text-sm font-black text-brand-blue">
                       {{ getModulePercent(module.id) }}%
                     </div>
 
-                    <div class="min-w-[200px] flex-1">
+                    <div class="min-w-0 flex-1">
                       <div class="flex items-center gap-2">
-                        <h4 class="font-display text-base font-black text-ink">{{ module.title }}</h4>
+                        <h4 class="line-clamp-2 break-words font-display text-base font-black text-ink">{{ module.title }}</h4>
                         <span v-if="module.behavior_required" class="border border-brand-teal bg-surface px-1.5 py-0.5 font-mono text-[9px] font-black uppercase text-brand-blue">Required</span>
                       </div>
                       <p class="mt-0.5 line-clamp-1 font-mono text-xs text-ink-soft">{{ module.description }}</p>
@@ -351,7 +351,7 @@
                   <article
                     v-for="module in paginatedFinishedModules"
                     :key="`finished-${module.id}`"
-                    class="group flex flex-col justify-between border-[3px] border-emerald-600 bg-emerald-50/40 p-4 shadow-card transition-all hover:-translate-y-1 hover:border-emerald-700 hover:shadow-card-hover"
+                    class="group flex min-w-0 max-w-full flex-col justify-between overflow-hidden border-[3px] border-emerald-600 bg-emerald-50/40 p-4 shadow-card transition-all hover:-translate-y-1 hover:border-emerald-700 hover:shadow-card-hover"
                   >
                     <div>
                       <div class="flex items-center justify-between">
@@ -361,7 +361,7 @@
                         <span class="font-mono text-[10px] font-bold text-emerald-700">100% DONE</span>
                       </div>
 
-                      <h4 class="mt-2 font-display text-base font-black text-ink group-hover:text-emerald-700">
+                      <h4 class="mt-2 line-clamp-2 break-words font-display text-base font-black text-ink group-hover:text-emerald-700">
                         {{ module.title }}
                       </h4>
                       <p class="mt-1 line-clamp-2 text-xs text-ink-soft">

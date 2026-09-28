@@ -1,14 +1,14 @@
 <template>
   <nav
     v-if="totalItems > pageSize"
-    class="flex flex-col gap-3 border-t border-brand-teal/20 bg-white px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+    class="flex min-w-0 flex-col gap-3 border-t border-brand-teal/20 bg-white px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-4"
     aria-label="Pagination"
   >
-    <p class="font-mono text-[11px] font-bold uppercase tracking-wider text-ink-soft">
+    <p class="min-w-0 text-center font-mono text-[11px] font-bold uppercase tracking-wider text-ink-soft sm:text-left">
       Showing {{ startItem }}-{{ endItem }} of {{ totalItems }}
     </p>
 
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex min-w-0 flex-wrap items-center justify-center gap-2 sm:justify-end">
       <button
         type="button"
         class="pagination-button"

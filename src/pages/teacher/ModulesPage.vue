@@ -48,7 +48,7 @@
       <p class="mx-auto mt-2 max-w-md text-sm text-ink-soft">Add PDFs, Word documents, or PowerPoint presentations for the selected module.</p>
       <button class="btn-primary mt-5" @click="openForm()">Add Learning Material</button>
     </div>
-    <div v-else class="card overflow-hidden">
+    <div v-else class="card min-w-0 overflow-hidden">
       <div class="hidden grid-cols-[minmax(240px,1.4fr)_minmax(170px,1fr)_110px_120px_minmax(180px,1fr)_220px] gap-4 border-b border-gray-100 bg-surface px-5 py-3 text-xs font-semibold uppercase tracking-wide text-ink-soft lg:grid">
         <div>Material</div>
         <div>Class</div>
@@ -60,29 +60,29 @@
       <article
         v-for="material in paginatedModules"
         :key="material.id"
-        class="grid gap-3 border-b border-gray-100 px-5 py-4 last:border-b-0 lg:grid-cols-[minmax(240px,1.4fr)_minmax(170px,1fr)_110px_120px_minmax(180px,1fr)_220px] lg:items-center"
+        class="grid min-w-0 gap-3 border-b border-gray-100 px-4 py-4 last:border-b-0 sm:px-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(150px,1fr)_100px_110px_minmax(0,1fr)_220px] lg:items-center"
       >
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
-            <h2 class="truncate font-display text-base font-bold">{{ material.title }}</h2>
+            <h2 class="min-w-0 truncate font-display text-base font-bold">{{ material.title }}</h2>
             <span :class="material.status === 'Published' ? 'badge-green' : 'badge-amber'" class="badge">{{ material.status }}</span>
           </div>
           <p class="mt-1 line-clamp-2 text-sm text-ink-soft">{{ material.description }}</p>
         </div>
-        <div class="text-sm font-semibold text-ink-soft">
+        <div class="min-w-0 break-words text-sm font-semibold text-ink-soft">
           <span class="lg:hidden">Class: </span>{{ classNameFor(material.classId) }}
         </div>
-        <div class="text-sm text-ink-soft">
+        <div class="min-w-0 break-words text-sm text-ink-soft">
           <span class="lg:hidden">Type: </span>{{ contentTypeLabel(material.contentType) || 'Material' }}
         </div>
-        <div class="text-sm text-ink-soft">
+        <div class="min-w-0 break-words text-sm text-ink-soft">
           <span class="lg:hidden">Week: </span>{{ material.week || 'Not set' }}
         </div>
         <div class="min-w-0 text-sm text-ink-soft">
-          <div class="truncate">{{ material.fileName || 'No file' }}</div>
+          <div class="truncate" :title="material.fileName || 'No file'">{{ material.fileName || 'No file' }}</div>
           <div class="mt-0.5 text-xs">{{ formatFileSize(material.fileSize) }}</div>
         </div>
-        <div class="flex flex-wrap justify-start gap-2 lg:justify-end">
+        <div class="flex min-w-0 flex-wrap justify-start gap-2 lg:justify-end">
           <button class="figma-button lg:hidden" type="button" @click="toggleMaterialDetails(material.id)">
             {{ expandedMaterialId === material.id ? 'Hide Details' : 'View More' }}
           </button>
