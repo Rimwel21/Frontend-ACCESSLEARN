@@ -1,5 +1,5 @@
 <template>
-  <div class="teacher-ui min-h-screen bg-surface lg:flex lg:h-screen lg:overflow-hidden">
+  <div class="teacher-ui min-h-[100dvh] bg-surface lg:flex lg:h-screen lg:overflow-hidden">
     <aside class="z-10 hidden w-[250px] min-w-[250px] flex-col border-r border-brand-teal/30 bg-surface/60 shadow-sm lg:flex">
       <div class="border-b border-brand-teal/30 bg-brand-blue-soft px-5 py-5">
         <div class="font-display text-2xl font-bold tracking-tight text-brand-blue">SIGNHEAR</div>
@@ -55,7 +55,7 @@
 
     <div v-if="menuOpen" class="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
       <button class="absolute inset-0 bg-ink/45" type="button" aria-label="Close navigation" @click="menuOpen = false"></button>
-      <aside class="relative flex h-full w-[min(84vw,290px)] flex-col border-r border-brand-teal/30 bg-surface shadow-2xl">
+      <aside class="safe-area-bottom safe-area-top relative flex h-[100dvh] max-h-[100dvh] w-[min(84vw,290px)] flex-col overflow-y-auto border-r border-brand-teal/30 bg-surface shadow-2xl">
         <div class="border-b border-brand-teal/30 bg-brand-blue-soft px-5 py-5">
           <div class="font-display text-2xl font-bold tracking-tight text-brand-blue">SIGNHEAR</div>
           <div class="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-ink-soft">Teacher</div>
@@ -110,7 +110,7 @@
     </div>
 
     <div class="flex min-w-0 flex-1 flex-col lg:h-screen lg:overflow-hidden">
-      <header class="flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-brand-teal/25 bg-white px-4 py-3.5 sm:px-6 lg:flex-nowrap lg:px-7">
+      <header class="safe-area-top flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-brand-teal/25 bg-white px-4 py-3.5 sm:px-6 lg:flex-nowrap lg:px-7">
         <button
           type="button"
           class="inline-flex h-10 w-10 flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-lg border border-brand-teal/40 bg-white text-brand-blue shadow-sm transition-all hover:border-brand-amber hover:bg-brand-blue/[0.08] lg:hidden"
@@ -129,7 +129,7 @@
         </div>
       </header>
 
-      <main class="scrollbar-thin flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">
+      <main class="safe-area-bottom scrollbar-thin min-w-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-7">
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
             <component :is="Component" :key="route.fullPath" />

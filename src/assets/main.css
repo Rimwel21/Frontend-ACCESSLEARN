@@ -5,14 +5,44 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    min-height: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   body {
     @apply font-body bg-surface text-ink;
+    min-height: 100dvh;
+    overflow-x: hidden;
     background-image:
       radial-gradient(circle at 85% 10%, rgba(245, 158, 91, 0.06), transparent 30rem),
       radial-gradient(circle at 78% 15%, rgba(45, 110, 97, 0.04), transparent 25rem);
     background-attachment: fixed;
   }
+  #app {
+    min-height: 100dvh;
+    min-width: 0;
+    overflow-x: hidden;
+  }
   * { @apply box-border; }
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+  input,
+  select,
+  textarea,
+  button {
+    min-width: 0;
+  }
+  @supports (-webkit-touch-callout: none) {
+    body {
+      background-attachment: scroll;
+    }
+  }
   .teacher-ui,
   .admin-ui,
   .teacher-ui .font-body,
@@ -75,6 +105,8 @@
   .gradient-violet { background: linear-gradient(135deg,#5a8d82,#DB767D); }
   .scrollbar-thin::-webkit-scrollbar { width:5px; }
   .scrollbar-thin::-webkit-scrollbar-thumb { @apply bg-brand-teal rounded-full; }
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-area-top { padding-top: env(safe-area-inset-top); }
 }
 
 @keyframes float {

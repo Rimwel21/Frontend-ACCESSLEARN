@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-surface lg:flex lg:h-screen lg:overflow-hidden">
+  <div class="min-h-[100dvh] bg-surface lg:flex lg:h-screen lg:overflow-hidden">
     <aside class="hidden w-[180px] min-w-[180px] flex-col border-r-[3px] border-brand-teal/30 bg-surface/60 lg:flex">
       <div class="border-b-[3px] border-brand-teal/30 bg-brand-blue-soft px-4 py-3.5">
         <div class="font-display text-2xl font-black leading-none tracking-tight text-brand-blue">SIGNHEAR</div>
@@ -59,7 +59,7 @@
 
     <div v-if="menuOpen" class="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
       <button class="absolute inset-0 bg-ink/45" type="button" aria-label="Close navigation" @click="menuOpen = false"></button>
-      <aside class="relative flex h-full w-[min(84vw,280px)] flex-col border-r-[3px] border-brand-teal/30 bg-surface shadow-2xl">
+      <aside class="safe-area-bottom safe-area-top relative flex h-[100dvh] max-h-[100dvh] w-[min(84vw,280px)] flex-col overflow-y-auto border-r-[3px] border-brand-teal/30 bg-surface shadow-2xl">
         <div class="border-b-[3px] border-brand-teal/30 bg-brand-blue-soft px-4 py-3.5">
           <div class="font-display text-2xl font-black leading-none tracking-tight text-brand-blue">SIGNHEAR</div>
           <div class="mt-0.5 font-mono text-[9px] uppercase tracking-[3px] text-ink-soft">Student</div>
@@ -119,7 +119,7 @@
     </div>
 
     <div class="flex min-w-0 flex-1 flex-col lg:h-screen lg:overflow-hidden">
-      <header class="flex items-center gap-3 border-b-[3px] border-brand-teal/25 bg-white px-4 py-3 lg:hidden">
+      <header class="safe-area-top flex items-center gap-3 border-b-[3px] border-brand-teal/25 bg-white px-4 py-3 lg:hidden">
         <button
           type="button"
           class="inline-flex h-10 w-10 flex-shrink-0 flex-col items-center justify-center gap-1.5 border-[2px] border-brand-teal/40 bg-white text-brand-blue shadow-sm transition-all hover:border-brand-amber hover:bg-brand-blue/[0.08]"
@@ -156,7 +156,7 @@
         </button>
       </nav>
 
-      <main class="scrollbar-thin flex-1 overflow-y-auto">
+      <main class="safe-area-bottom scrollbar-thin min-w-0 flex-1 overflow-y-auto overscroll-contain">
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
             <component :is="Component" :key="route.fullPath" />
