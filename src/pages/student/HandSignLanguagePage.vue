@@ -53,7 +53,7 @@
               type="button"
               :disabled="isActivityCompleted || !typedAnswersAllowed"
               :class="[
-                'flex min-h-[74px] items-center gap-3 border-[2.5px] border-brand-teal bg-white p-4 text-left font-black transition-all hover:-translate-y-0.5 hover:shadow-[4px_4px_0_rgba(0,0,0,0.12)]',
+                'flex min-h-[74px] items-center gap-3 border-[2.5px] border-brand-teal p-4 text-left font-black transition-all hover:-translate-y-0.5 hover:shadow-[4px_4px_0_rgba(0,0,0,0.12)]',
                 isSelectedChoice(choice)
                   ? 'bg-brand-blue text-white shadow-[2px_2px_0_#000]'
                   : 'bg-white text-ink hover:bg-brand-blue-soft',
@@ -562,7 +562,30 @@ const isAlphabetOnly = computed(() => !activityId.value)
 const activeActivity = computed(() => content.currentActivity)
 const activeQuestion = computed(() => activeActivity.value?.questions[activeQuestionIndex.value] ?? null)
 
-function parseQuestionOptions(rawAnswer?: string | null) {
+function parseQuestionOptions(question?: typeof activeQuestion.value) {
+  const rawAnswer = question?.answer ?? ''
+  const savedOptions = question?.options ?? []
+  const optionChoices = savedOptions
+    .map((text, index) => ({
+      letter: String.fromCharCode(65 + index),
+      text: String(text ?? '').trim(),
+    }))
+    .filter(choice => choice.text)
+
+  if (question?.question_type === 'true_false') {
+    return {
+      type: 'true_false',
+      choices: [
+        { letter: 'T', text: 'True' },
+        { letter: 'F', text: 'False' },
+      ],
+    }
+  }
+
+  if (question?.question_type === 'multiple_choice' && optionChoices.length >= 2) {
+    return { type: 'multiple_choice', choices: optionChoices }
+  }
+
   if (!rawAnswer) return { type: 'identification', choices: [] as { letter: string; text: string }[] }
   const up = rawAnswer.trim().toUpperCase()
   if (up === 'TRUE' || up === 'FALSE' || up === 'T' || up === 'F') {
@@ -583,7 +606,8 @@ function parseQuestionOptions(rawAnswer?: string | null) {
         const k = part.slice(0, colonIdx).trim()
         const v = part.slice(colonIdx + 1).trim()
         if (k !== 'CORRECT' && k) {
-          choices.push({ letter: k, text: v })
+          const optionIndex = k.toUpperCase().charCodeAt(0) - 65
+          choices.push({ letter: k, text: v || savedOptions[optionIndex] || '' })
         }
       }
     }
@@ -594,7 +618,7 @@ function parseQuestionOptions(rawAnswer?: string | null) {
   return { type: 'identification', choices: [] as { letter: string; text: string }[] }
 }
 
-const activeQuestionParsed = computed(() => parseQuestionOptions(activeQuestion.value?.answer))
+const activeQuestionParsed = computed(() => parseQuestionOptions(activeQuestion.value))
 const selectedAlphabetImage = computed(() => {
   if (!selectedAlphabet.value) return ''
   return aslLetterImages[selectedAlphabet.value.letter] ?? ''
@@ -892,10 +916,10 @@ function normalizeAnswerForQuestion(value?: string | null) {
 }
 
 function choiceDisplayText(choice: { letter: string; text: string }) {
-  if (choice.text) return choice.text
+  if (choice.text.trim()) return choice.text
   if (choice.letter.toUpperCase() === 'TRUE') return 'True'
   if (choice.letter.toUpperCase() === 'FALSE') return 'False'
-  return choice.letter
+  return `Choice ${choice.letter}`
 }
 
 </script>
