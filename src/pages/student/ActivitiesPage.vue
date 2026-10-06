@@ -29,14 +29,14 @@
           <div v-else-if="content.error" class="border-[3px] border-brand-rose bg-brand-rose/10 p-6 text-sm font-black text-brand-rose shadow-card">
             {{ content.error }}
           </div>
-          <div v-else-if="activities.length === 0" class="border-[3px] border-brand-teal bg-white p-8 text-center shadow-card">
-            <h2 class="font-display text-lg font-black">No activities assigned yet.</h2>
-            <p class="mt-2 text-sm text-ink-soft">Activities created by your teacher will appear here when they belong to your enrolled class.</p>
+          <div v-else-if="activeActivities.length === 0" class="border-[3px] border-brand-teal bg-white p-8 text-center shadow-card">
+            <h2 class="font-display text-lg font-black">No active activities.</h2>
+            <p class="mt-2 text-sm text-ink-soft">New activities from your teacher will appear here. Completed activities are kept in Activity Storage.</p>
           </div>
 
           <div v-else class="scrollbar-thin space-y-3 xl:max-h-[calc(100vh-11rem)] xl:overflow-y-auto xl:pr-2">
             <div
-              v-for="act in paginatedActivities"
+              v-for="act in paginatedActiveActivities"
               :key="act.id"
               :class="[
                 'flex cursor-pointer flex-wrap items-center gap-3 border-[3px] bg-white p-4 shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover sm:flex-nowrap sm:gap-4',
@@ -66,7 +66,7 @@
             </div>
             <PaginationControls
               v-model:current-page="activityPage"
-              :total-items="activities.length"
+              :total-items="activeActivities.length"
               :page-size="activityPageSize"
             />
           </div>
@@ -95,9 +95,30 @@
               <span class="font-display text-[12px] font-black uppercase tracking-wide text-white">Assigned</span>
             </div>
             <div class="scrollbar-thin max-h-52 overflow-y-auto p-3">
-              <div class="text-xs font-bold text-ink-soft">{{ activities.length }} activity{{ activities.length === 1 ? '' : 'ies' }}</div>
-              <button v-for="act in activities.filter(activity => activity.status === 'Not Started')" :key="`assigned-${act.id}`" class="mt-2 block w-full truncate border-[2px] border-brand-teal bg-white px-2 py-1.5 text-left text-[11px] font-black text-brand-blue hover:bg-brand-blue-soft" @click="openActivity(act)">
+              <div class="text-xs font-bold text-ink-soft">{{ assignedActivities.length }} activity{{ assignedActivities.length === 1 ? '' : 'ies' }}</div>
+              <button v-for="act in assignedActivities" :key="`assigned-${act.id}`" class="mt-2 block w-full truncate border-[2px] border-brand-teal bg-white px-2 py-1.5 text-left text-[11px] font-black text-brand-blue hover:bg-brand-blue-soft" @click="openActivity(act)">
                 {{ act.title }}
+              </button>
+            </div>
+          </div>
+
+          <div class="border-[3px] border-brand-teal bg-white shadow-card">
+            <div class="flex items-center justify-between gap-2 border-b-[3px] border-brand-teal/30 bg-brand-teal px-3.5 py-2.5">
+              <span class="font-display text-[12px] font-black uppercase tracking-wide text-white">Activity Storage</span>
+              <span class="border border-white/50 px-1.5 py-0.5 font-mono text-[10px] font-black text-white">{{ storedActivities.length }}</span>
+            </div>
+            <div class="scrollbar-thin max-h-60 space-y-2 overflow-y-auto p-3">
+              <div v-if="storedActivities.length === 0" class="text-xs font-bold text-ink-soft">Completed activities will appear here.</div>
+              <button
+                v-for="act in storedActivities"
+                :key="`stored-${act.id}`"
+                class="block w-full border-[2px] border-brand-teal bg-surface px-2 py-2 text-left transition hover:bg-brand-blue-soft"
+                @click="openActivity(act)"
+              >
+                <span class="block truncate text-[11px] font-black text-brand-blue">{{ act.title }}</span>
+                <span class="mt-1 block font-mono text-[10px] font-bold text-ink-soft">
+                  {{ scoreLabel(act) }}{{ act.completedAt ? ` | ${formatCompletedAt(act.completedAt)}` : '' }}
+                </span>
               </button>
             </div>
           </div>
@@ -122,6 +143,9 @@ interface ActivityRow {
   category?: string | null
   timeLimit?: string | null
   startedAt?: string | null
+  completedAt?: string | null
+  score?: number | null
+  total?: number | null
   status: ActivityStatus
 }
 
@@ -139,15 +163,21 @@ const activities = computed<ActivityRow[]>(() => content.activities.map(assessme
   category: assessment.category,
   timeLimit: assessment.time_limit,
   startedAt: assessment.student_started_at,
+  completedAt: assessment.student_completed_at,
+  score: assessment.student_score,
+  total: assessment.student_total,
   status: assessment.student_status === 'completed'
     ? 'Finished'
     : (assessment.student_status === 'in_progress' || assessment.student_started_at ? 'In Progress' : 'Not Started'),
 })))
 
 const inProgress = computed(() => activities.value.filter(activity => activity.status === 'In Progress'))
-const paginatedActivities = computed(() => {
+const assignedActivities = computed(() => activities.value.filter(activity => activity.status === 'Not Started'))
+const storedActivities = computed(() => activities.value.filter(activity => activity.status === 'Finished'))
+const activeActivities = computed(() => activities.value.filter(activity => activity.status !== 'Finished'))
+const paginatedActiveActivities = computed(() => {
   const start = (activityPage.value - 1) * activityPageSize
-  return activities.value.slice(start, start + activityPageSize)
+  return activeActivities.value.slice(start, start + activityPageSize)
 })
 
 watch(() => activities.value.length, () => {
@@ -174,5 +204,13 @@ function statusStyle(status: ActivityStatus) {
     case 'Not Started': return 'bg-surface text-ink-soft'
     default: return 'bg-white'
   }
+}
+
+function scoreLabel(activity: ActivityRow) {
+  return activity.total ? `Score ${activity.score ?? 0}/${activity.total}` : 'Completed'
+}
+
+function formatCompletedAt(value: string) {
+  return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 </script>

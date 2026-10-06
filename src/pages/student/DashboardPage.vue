@@ -141,18 +141,18 @@
                 <svg class="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M5 5h14v16H5z" /></svg>
                 <h2 class="font-display text-sm font-black uppercase tracking-widest text-white">Upcoming Deadlines</h2>
               </div>
-              <div class="scrollbar-thin flex gap-3 overflow-x-auto p-3 xl:block xl:space-y-2">
+              <div class="scrollbar-thin max-h-72 space-y-2 overflow-y-auto p-3 pr-2 sm:grid sm:max-h-none sm:grid-cols-2 sm:gap-3 sm:space-y-0 lg:grid-cols-3">
                 <button
                   v-for="deadline in filteredDeadlines"
                   :key="deadline.id"
                   type="button"
-                  class="min-w-[210px] border-[2px] border-brand-teal bg-surface p-3 text-left transition hover:border-brand-amber xl:w-full xl:min-w-0"
+                  class="w-full min-w-0 border-[2px] border-brand-teal bg-surface p-3 text-left transition hover:border-brand-amber"
                   @click="openDeadline(deadline)"
                 >
-                  <div class="text-xs font-black">{{ deadline.title }}</div>
-                  <div class="mt-1 font-mono text-[10px] font-bold text-ink-soft">{{ deadline.item_type }} | {{ formatDeadline(deadline.due_at) }}</div>
+                  <div class="break-words text-xs font-black">{{ deadline.title }}</div>
+                  <div class="mt-1 break-words font-mono text-[10px] font-bold text-ink-soft">{{ deadline.item_type }} | {{ formatDeadline(deadline.due_at) }}</div>
                 </button>
-                <div v-if="filteredDeadlines.length === 0" class="text-xs font-bold text-ink-soft">No upcoming deadlines.</div>
+                <div v-if="filteredDeadlines.length === 0" class="text-xs font-bold text-ink-soft sm:col-span-full">No upcoming deadlines.</div>
               </div>
             </section>
           </div>
@@ -622,7 +622,13 @@ function openDeadline(deadline: typeof content.deadlines[number]) {
 }
 
 function formatDeadline(value: string) {
-  return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(value).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 }
 
 function formatModuleFileType(value: string | null | undefined) {

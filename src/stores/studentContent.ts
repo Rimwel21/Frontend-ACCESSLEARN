@@ -483,7 +483,7 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   async function fetchDeadlines() {
     const now = Date.now()
     const moduleDeadlines = modules.value
-      .filter(module => module.due_at && new Date(module.due_at).getTime() >= now)
+      .filter(module => module.due_at && new Date(module.due_at).getTime() >= now && !isModuleCompleted(module.id))
       .map(module => ({
         id: `module-${module.id}`,
         title: module.title,
@@ -495,7 +495,7 @@ export const useStudentContentStore = defineStore('studentContent', () => {
 
     const moduleAssessmentDeadlines = modules.value.flatMap(module =>
       module.assessments
-        .filter(assessment => assessment.due_at && new Date(assessment.due_at).getTime() >= now)
+        .filter(assessment => assessment.due_at && new Date(assessment.due_at).getTime() >= now && !isAssessmentCompleted(assessment))
         .map(assessment => ({
           id: `${assessment.assessment_type}-${assessment.id}`,
           title: assessment.title,
@@ -507,7 +507,7 @@ export const useStudentContentStore = defineStore('studentContent', () => {
     )
 
     const activityDeadlines = activities.value
-      .filter(activity => activity.due_at && new Date(activity.due_at).getTime() >= now)
+      .filter(activity => activity.due_at && new Date(activity.due_at).getTime() >= now && !isAssessmentCompleted(activity))
       .map(activity => ({
         id: `activity-${activity.id}`,
         title: activity.title,
@@ -522,19 +522,35 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   }
 
   function markModuleAssessmentCompleted(moduleId: string | number, assessmentId: number, score: number, total: number) {
-    if (currentModule.value?.id !== Number(moduleId)) return
-    currentModule.value = {
-      ...currentModule.value,
-      assessments: currentModule.value.assessments.map(assessment => assessment.id === assessmentId
+    const completedAt = new Date().toISOString()
+    const markCompleted = (assessment: StudentAssessment) => assessment.id === assessmentId
         ? {
             ...assessment,
             student_status: 'completed',
             student_score: score,
             student_total: total,
-            student_completed_at: new Date().toISOString(),
+            student_completed_at: completedAt,
           }
-        : assessment),
+        : assessment
+
+    modules.value = modules.value.map(module => module.id === Number(moduleId)
+      ? { ...module, assessments: module.assessments.map(markCompleted) }
+      : module)
+
+    if (currentModule.value?.id === Number(moduleId)) {
+      currentModule.value = {
+        ...currentModule.value,
+        assessments: currentModule.value.assessments.map(markCompleted),
+      }
     }
+  }
+
+  function isModuleCompleted(moduleId: number): boolean {
+    return (progressByModule.value[moduleId]?.percent ?? 0) >= 100
+  }
+
+  function isAssessmentCompleted(assessment: StudentAssessment): boolean {
+    return assessment.student_status?.toLowerCase() === 'completed'
   }
 
   return {
