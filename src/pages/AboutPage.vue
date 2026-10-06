@@ -265,6 +265,32 @@
           </section>
         </div>
 
+        <!-- Privacy & Data Protection Section -->
+        <section class="interactive-panel rounded-2xl border border-[#a5d8cc]/60 bg-white p-6 shadow-sm">
+          <div class="mb-4 flex items-center gap-3">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e2f3ee] text-xl">🔒</span>
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-[#5a8d82]">Data Protection</p>
+              <h2 class="font-display text-xl font-bold text-[#2b7668]">Privacy & Responsible Data Use</h2>
+            </div>
+          </div>
+
+          <p class="max-w-4xl text-xs leading-relaxed text-[#4a6b63] sm:text-sm">
+            SIGNHEAR handles learner, teacher, class, assessment, and progress records with privacy in mind. The system is guided by the Philippine Data Privacy Act and uses role-based access, audit records, and limited data collection to help protect personal information used for learning and classroom management.
+          </p>
+
+          <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div
+              v-for="privacyItem in privacyTerms"
+              :key="privacyItem.term"
+              class="rounded-xl border border-[#a5d8cc]/60 bg-[#f7fcfa] p-4 transition-all hover:-translate-y-1 hover:border-[#f59e5b] hover:shadow-md"
+            >
+              <h3 class="text-sm font-bold text-[#2b7668]">{{ privacyItem.term }}</h3>
+              <p class="mt-2 text-xs leading-relaxed text-[#5a8d82]">{{ privacyItem.meaning }}</p>
+            </div>
+          </div>
+        </section>
+
         <!-- Technology & Accessibility Section -->
         <section class="space-y-4">
           <div class="flex items-center gap-2">
@@ -378,6 +404,21 @@ const audienceCards = [
   { title: 'Learners', label: 'Students' },
   { title: 'Science Teachers', label: 'Teachers' },
   { title: 'Administrators', label: 'Administrators' },
+]
+
+const privacyTerms = [
+  {
+    term: 'Data Privacy Act',
+    meaning: 'The law referenced in the cybersecurity plan for protecting personal and sensitive personal information.',
+  },
+  {
+    term: 'Privacy Notice or Policy',
+    meaning: 'Information that explains how SIGNHEAR collects, uses, stores, and protects personal data.',
+  },
+  {
+    term: 'Privacy Compliance',
+    meaning: 'Meeting applicable privacy obligations through actual practices, access controls, audit records, and supporting documentation.',
+  },
 ]
 
 const selectedFeature = computed(() =>
