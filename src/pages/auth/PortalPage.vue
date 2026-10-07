@@ -3,26 +3,26 @@
 
     <!-- Top Navbar -->
     <header class="bg-white border-b border-gray-100 px-5 sm:px-8 py-3.5 flex items-center justify-between shadow-[0_1px_12px_rgba(0,0,0,0.04)]">
-      <div class="flex items-center gap-3 group">
-        <button
-          type="button"
-          class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-brand-teal/20 transition-transform hover:scale-105 sm:h-16 sm:w-16"
-          @click="handleLogoClick"
-          title="Admin login"
-          aria-label="Open admin login"
-        >
+      <RouterLink
+        to="/admin/login"
+        class="admin-login-link group relative z-10 flex min-h-14 items-center gap-3 rounded-2xl pr-2 sm:min-h-16"
+        title="Admin login"
+        aria-label="Open SIGNHEAR admin login"
+      >
+        <span class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-brand-teal/20 transition-transform group-hover:scale-105 sm:h-16 sm:w-16">
           <img
             src="@/assets/signhear_icon_logo.png"
             alt=""
-            class="h-full w-full object-contain"
+            class="pointer-events-none h-full w-full select-none object-contain"
+            draggable="false"
             style="transform: scale(1.85)"
           />
-        </button>
-        <RouterLink to="/" class="leading-none">
+        </span>
+        <span class="pointer-events-none leading-none">
           <p class="font-display font-bold text-sm text-ink">SIGNHEAR</p>
           <p class="text-[9px] font-extrabold text-brand-blue uppercase tracking-widest">Inclusive E-Learning</p>
-        </RouterLink>
-      </div>
+        </span>
+      </RouterLink>
       <nav class="hidden items-center gap-2 sm:flex" aria-label="Public navigation">
         <RouterLink to="/" class="portal-nav-link">Home</RouterLink>
         <RouterLink to="/about" class="portal-nav-link">About Us</RouterLink>
@@ -119,16 +119,21 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink, useRouter } from 'vue-router'
-
-const router = useRouter()
-
-function handleLogoClick() {
-  router.push('/admin/login')
-}
+import { RouterLink } from 'vue-router'
 </script>
 
 <style scoped>
+.admin-login-link {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+.admin-login-link:focus-visible {
+  outline: 3px solid #f59e5b;
+  outline-offset: 3px;
+}
+
 .portal-nav-link {
   border: 1px solid transparent;
   border-radius: 9999px;

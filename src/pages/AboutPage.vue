@@ -29,7 +29,7 @@
     </div>
 
     <!-- Desktop Sidebar -->
-    <aside class="sticky top-0 z-20 hidden h-screen w-[240px] shrink-0 flex-col justify-between border-r border-[#a5d8cc]/80 bg-[#e2f3ee] shadow-[4px_0_24px_rgba(45,110,97,0.06)] lg:flex">
+    <aside class="fixed inset-y-0 left-0 z-20 hidden h-screen w-[240px] flex-col justify-between overflow-y-auto border-r border-[#a5d8cc]/80 bg-[#e2f3ee] shadow-[4px_0_24px_rgba(45,110,97,0.06)] lg:flex">
       <div>
         <div class="flex flex-col items-center px-6 pb-6 pt-8 text-center">
           <RouterLink to="/">
@@ -81,7 +81,7 @@
     </aside>
 
     <!-- Main Content Grid -->
-    <main class="grid-bg relative flex h-full flex-1 flex-col overflow-x-hidden lg:min-h-screen">
+    <main class="grid-bg relative flex h-full flex-1 flex-col overflow-x-hidden lg:ml-[240px] lg:min-h-screen">
       <div class="mx-auto flex w-full max-w-[1350px] flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8">
 
         <!-- Hero Title Banner -->
