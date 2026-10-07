@@ -1,19 +1,42 @@
 <template>
   <main class="auth-page bg-surface-2/30">
     <section class="auth-card border-t-4 border-brand-blue animate-scale-in">
-      <RouterLink to="/" class="auth-back flex items-center gap-2">
-        <span class="text-lg">←</span> Back home
+      <RouterLink
+        to="/"
+        class="auth-back group inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand-teal/30 bg-white px-4 py-2.5 font-semibold text-brand-blue shadow-sm transition hover:-translate-y-0.5 hover:border-brand-teal hover:bg-brand-teal/10 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2"
+        aria-label="Back to SIGNHEAR homepage"
+      >
+        <svg
+          class="h-5 w-5 transition-transform group-hover:-translate-x-1"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m15 18-6-6 6-6" />
+          <path d="M9 12h10" />
+        </svg>
+        <span>Back to homepage</span>
       </RouterLink>
       
       <div class="mb-8 mt-4 flex items-center gap-3">
-        <div class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-brand-teal/20">
+        <button
+          type="button"
+          class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-brand-teal/20 transition hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2"
+          aria-label="Go to SIGNHEAR homepage"
+          title="Go to homepage"
+          @click="goToHomepage"
+        >
           <img
             src="@/assets/signhear_icon_logo.png"
-            alt="SIGNHEAR"
+            alt=""
             class="h-full w-full object-contain"
             style="transform: scale(1.85)"
           />
-        </div>
+        </button>
         <div>
           <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-blue">Security Gateway</p>
           <h1 class="font-display text-2xl font-bold text-ink">SIGNHEAR Admin Login</h1>
@@ -129,6 +152,10 @@ import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const auth = useAuthStore()
+
+function goToHomepage() {
+  void router.push('/')
+}
 
 const email = ref('')
 const password = ref('')

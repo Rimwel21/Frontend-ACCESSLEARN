@@ -3,26 +3,27 @@
 
     <!-- Top Navbar -->
     <header class="bg-white border-b border-gray-100 px-5 sm:px-8 py-3.5 flex items-center justify-between shadow-[0_1px_12px_rgba(0,0,0,0.04)]">
-      <RouterLink
-        to="/admin/login"
-        class="admin-login-link group relative z-10 flex min-h-14 items-center gap-3 rounded-2xl pr-2 sm:min-h-16"
-        title="Admin login"
-        aria-label="Open SIGNHEAR admin login"
-      >
-        <span class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-brand-teal/20 transition-transform group-hover:scale-105 sm:h-16 sm:w-16">
+      <div class="relative z-10 flex min-h-14 items-center gap-3 sm:min-h-16">
+        <button
+          type="button"
+          class="home-logo-link group flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-brand-teal/20 bg-white shadow-md transition hover:-translate-y-0.5 hover:border-brand-teal/50 hover:shadow-lg sm:h-[4.5rem] sm:w-[4.5rem]"
+          aria-label="SIGNHEAR logo: tap once for Home"
+          title="Tap once for Home"
+          @click="handleLogoTap"
+        >
           <img
             src="@/assets/signhear_icon_logo.png"
             alt=""
             class="pointer-events-none h-full w-full select-none object-contain"
             draggable="false"
-            style="transform: scale(1.85)"
+            style="transform: scale(1.7)"
           />
-        </span>
-        <span class="pointer-events-none leading-none">
+        </button>
+        <RouterLink to="/" class="rounded-md leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">
           <p class="font-display font-bold text-sm text-ink">SIGNHEAR</p>
           <p class="text-[9px] font-extrabold text-brand-blue uppercase tracking-widest">Inclusive E-Learning</p>
-        </span>
-      </RouterLink>
+        </RouterLink>
+      </div>
       <nav class="hidden items-center gap-2 sm:flex" aria-label="Public navigation">
         <RouterLink to="/" class="portal-nav-link">Home</RouterLink>
         <RouterLink to="/about" class="portal-nav-link">About Us</RouterLink>
@@ -119,17 +120,54 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { onBeforeUnmount, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+
+const ADMIN_TAPS_REQUIRED = 7
+const TAP_RESET_DELAY_MS = 1200
+
+const router = useRouter()
+const logoTapCount = ref(0)
+let tapResetTimer: ReturnType<typeof setTimeout> | undefined
+
+function handleLogoTap() {
+  logoTapCount.value += 1
+
+  if (tapResetTimer) clearTimeout(tapResetTimer)
+
+  if (logoTapCount.value >= ADMIN_TAPS_REQUIRED) {
+    if (tapResetTimer) clearTimeout(tapResetTimer)
+    tapResetTimer = undefined
+    logoTapCount.value = 0
+    void router.push('/admin/login')
+    return
+  }
+
+  tapResetTimer = setTimeout(() => {
+    const shouldGoHome = logoTapCount.value > 0
+    logoTapCount.value = 0
+    tapResetTimer = undefined
+    if (shouldGoHome) void router.push('/')
+  }, TAP_RESET_DELAY_MS)
+}
+
+onBeforeUnmount(() => {
+  if (tapResetTimer) clearTimeout(tapResetTimer)
+})
 </script>
 
 <style scoped>
-.admin-login-link {
+.home-logo-link {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home-logo-link {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
 }
 
-.admin-login-link:focus-visible {
+.home-logo-link:focus-visible {
   outline: 3px solid #f59e5b;
   outline-offset: 3px;
 }
