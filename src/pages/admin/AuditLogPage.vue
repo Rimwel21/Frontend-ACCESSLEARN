@@ -17,7 +17,7 @@
 
     <section class="card p-4 sm:p-5">
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
-        <input v-model.trim="filters.search" class="input-field sm:col-span-2 xl:col-span-2" placeholder="Search user, role, activity" @input="debouncedFetch" />
+        <input v-model.trim="filters.search" class="input-field sm:col-span-2 xl:col-span-2" placeholder="Search user, activity, or IP address" @input="debouncedFetch" />
         <select v-model="filters.role" class="input-field" @change="applyFilters">
           <option value="">All Roles</option>
           <option value="admin">Administrator</option>
@@ -46,43 +46,59 @@
       </div>
     </section>
 
-    <section class="card overflow-hidden">
+    <section ref="auditTable" class="card overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[720px] border-collapse">
+        <table class="w-full min-w-[860px] border-collapse">
           <thead>
             <tr class="bg-surface">
               <th class="table-th">Date & Time</th>
               <th class="table-th">User</th>
+              <th class="table-th">IP Address</th>
               <th class="table-th">Role</th>
               <th class="table-th">Activity</th>
               <th class="table-th">Status</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="log in filteredLogs" :key="log.id" class="transition-colors hover:bg-surface/70">
-              <td class="table-td">
-                <div class="font-mono text-xs font-bold text-ink">{{ formatDate(log.created_at) }}</div>
-                <div class="font-mono text-[11px] text-ink-soft">{{ formatTime(log.created_at) }}</div>
-              </td>
-              <td class="table-td font-bold text-ink">{{ logUser(log) }}</td>
-              <td class="table-td"><span class="badge badge-blue">{{ roleLabel(log.role) }}</span></td>
-              <td class="table-td">
-                <div class="text-sm font-bold text-ink">{{ activityLabel(log) }}</div>
-                <div class="mt-0.5 text-[11px] font-semibold text-ink-soft">{{ log.module }}</div>
-              </td>
-              <td class="table-td"><span :class="['badge', log.status === 'success' ? 'badge-green' : 'badge-red']">{{ log.status }}</span></td>
-            </tr>
+          <tbody :key="filters.page" class="divide-y divide-gray-50">
+            <template v-if="!loading">
+              <tr v-for="log in filteredLogs" :key="log.id" class="transition-colors hover:bg-surface/70">
+                <td class="table-td">
+                  <div class="font-mono text-xs font-bold text-ink">{{ formatDate(log.created_at) }}</div>
+                  <div class="font-mono text-[11px] text-ink-soft">{{ formatTime(log.created_at) }}</div>
+                </td>
+                <td class="table-td font-bold text-ink">{{ logUser(log) }}</td>
+                <td class="table-td">
+                  <span v-if="log.ip_address" class="font-mono text-xs font-semibold text-ink" :title="`Recorded client IP: ${log.ip_address}`">
+                    {{ log.ip_address }}
+                  </span>
+                  <span v-else class="text-xs font-semibold text-ink-soft">Unavailable</span>
+                </td>
+                <td class="table-td"><span class="badge badge-blue">{{ roleLabel(log.role) }}</span></td>
+                <td class="table-td">
+                  <div class="text-sm font-bold text-ink">{{ activityLabel(log) }}</div>
+                  <div class="mt-0.5 text-[11px] font-semibold text-ink-soft">{{ log.module }}</div>
+                </td>
+                <td class="table-td"><span :class="['badge', log.status === 'success' ? 'badge-green' : 'badge-red']">{{ log.status }}</span></td>
+              </tr>
+            </template>
             <tr v-if="!loading && filteredLogs.length === 0">
-              <td colspan="5" class="px-6 py-16 text-center text-sm font-bold text-ink-soft">No audit log records yet. New admin actions will appear here.</td>
+              <td colspan="6" class="px-6 py-16 text-center text-sm font-bold text-ink-soft">No audit log records yet. New admin actions will appear here.</td>
             </tr>
             <tr v-if="loading">
-              <td colspan="5" class="px-6 py-16 text-center text-sm font-bold text-ink-soft">Loading audit records...</td>
+              <td colspan="6" class="px-6 py-16 text-center text-sm font-bold text-ink-soft">Loading audit records...</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div class="flex flex-col gap-3 border-t border-gray-50 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <label class="flex items-center justify-between gap-2 text-xs font-bold text-ink sm:justify-start">
+          <span>Rows per page</span>
+          <select v-model.number="filters.per_page" class="input-field !min-h-9 !w-20 !px-2 !py-1 text-sm" @change="changePageSize">
+            <option :value="10">10</option>
+            <option :value="20">20</option>
+          </select>
+        </label>
         <div class="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
           Showing {{ pageStart }}-{{ pageEnd }} of {{ totalLogs }} records · Page {{ filters.page }} of {{ totalPages }}
         </div>
@@ -96,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { ApiError } from '@/lib/api'
 import { adminService } from '@/services/adminService'
 
@@ -104,6 +120,7 @@ const logs = ref<any[]>([])
 const totalLogs = ref(0)
 const loading = ref(false)
 const errorMsg = ref('')
+const auditTable = ref<HTMLElement | null>(null)
 const filters = ref({
   search: '',
   role: '',
@@ -112,7 +129,7 @@ const filters = ref({
   date_from: '',
   date_to: '',
   page: 1,
-  per_page: 25,
+  per_page: 10,
 })
 
 const activityTypes = [
@@ -173,10 +190,18 @@ async function fetchLogs() {
   }
 }
 
-function changePage(delta: number) {
+async function changePage(delta: number) {
+  if (loading.value) return
   const nextPage = Math.min(totalPages.value, Math.max(1, filters.value.page + delta))
   if (nextPage === filters.value.page) return
   filters.value.page = nextPage
+  await fetchLogs()
+  await nextTick()
+  auditTable.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function changePageSize() {
+  filters.value.page = 1
   fetchLogs()
 }
 
