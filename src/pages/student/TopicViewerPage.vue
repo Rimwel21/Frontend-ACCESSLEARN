@@ -128,6 +128,9 @@
       <section class="min-h-0 flex-1 overflow-y-auto bg-white p-4 sm:p-7">
         <div v-if="content.loading" class="border-[3px] border-brand-teal bg-white p-8 text-center font-black">Loading learning content...</div>
         <div v-else-if="content.error" class="border-[3px] border-brand-teal bg-red-50 p-8 text-center font-black text-red-700">{{ content.error }}</div>
+        <div v-else-if="isPresentationProcessing" class="mb-4 border-[3px] border-brand-amber bg-brand-amber/15 px-4 py-3 text-sm font-black text-ink">
+          Preparing the presentation slides. This page will update automatically when they are ready.
+        </div>
         <div v-else-if="topics.length === 0 && !isIntroActive" class="border-[3px] border-brand-teal bg-white p-10 text-center">
           <h2 class="font-display text-xl font-black">No learning materials are available for this module yet.</h2>
           <p class="mt-2 text-sm text-gray-500">Please check again after your teacher publishes content.</p>
@@ -444,6 +447,10 @@ const quizRemainingSeconds = ref<number | null>(null)
 const quizSubmitting = ref(false)
 const quizTimeExpired = ref(false)
 let quizTimer: number | null = null
+let presentationRefreshTimer: number | null = null
+let presentationRefreshAttempts = 0
+let presentationRefreshInFlight = false
+const presentationRefreshLimit = 24
 
 const moduleId = computed(() => String(route.params.moduleId))
 const moduleData = computed(() => content.currentModule)
@@ -493,6 +500,17 @@ const quizTimerLabel = computed(() => {
   if (quizRemainingSeconds.value === null) return ''
   return formatQuizTime(quizRemainingSeconds.value)
 })
+const isPresentationProcessing = computed(() => {
+  const module = moduleData.value
+  if (!module) return false
+  const isPresentation = /\.(ppt|pptx)$/i.test(module.file_name ?? '')
+    || /presentation|powerpoint/i.test(module.file_type ?? '')
+    || /pptx?/i.test(module.content_type ?? '')
+  const hasRenderedSlide = module.topics.some(topic =>
+    (topic.page_image_urls ?? []).some(url => /\/static\/presentation_slides\/.*\.png$/i.test(url))
+  )
+  return isPresentation && !hasRenderedSlide
+})
 
 onMounted(async () => {
   await content.fetchModule(moduleId.value)
@@ -502,15 +520,50 @@ onMounted(async () => {
     return
   }
   activeTopicId.value = hasAutoIntro.value ? null : topics.value[0]?.id ?? null
+  startPresentationRefresh()
 })
 
 onBeforeUnmount(() => {
   clearQuizTimer()
+  stopPresentationRefresh()
 })
 
 watch(topics, value => {
-  if (!isIntroActive.value && !activeTopicId.value && value.length) activeTopicId.value = value[0].id
+  if (!isIntroActive.value && value.length && (!activeTopicId.value || !value.some(topic => topic.id === activeTopicId.value))) {
+    activeTopicId.value = value[0].id
+  }
 })
+
+watch(isPresentationProcessing, processing => {
+  if (processing) startPresentationRefresh()
+  else stopPresentationRefresh()
+})
+
+function startPresentationRefresh() {
+  if (!isPresentationProcessing.value || presentationRefreshTimer !== null) return
+  presentationRefreshAttempts = 0
+  presentationRefreshTimer = window.setInterval(async () => {
+    if (presentationRefreshInFlight || document.visibilityState !== 'visible') return
+    presentationRefreshInFlight = true
+    try {
+      await content.fetchModule(moduleId.value, { background: true })
+      presentationRefreshAttempts += 1
+    } finally {
+      presentationRefreshInFlight = false
+    }
+    if (!isPresentationProcessing.value || presentationRefreshAttempts >= presentationRefreshLimit) {
+      stopPresentationRefresh()
+    }
+  }, 5000)
+}
+
+function stopPresentationRefresh() {
+  if (presentationRefreshTimer !== null) {
+    window.clearInterval(presentationRefreshTimer)
+    presentationRefreshTimer = null
+  }
+  presentationRefreshInFlight = false
+}
 
 async function selectTopic(topicId: number) {
   const index = topics.value.findIndex(topic => topic.id === topicId)
