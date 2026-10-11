@@ -402,7 +402,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PaginationControls from '@/components/common/PaginationControls.vue'
 import { useProfileStore } from '@/stores/profile'
@@ -430,6 +430,7 @@ const dashboardPageSize = 6
 const newModulesPage = ref(1)
 const inProgressModulesPage = ref(1)
 const finishedModulesPage = ref(1)
+let dashboardRefreshInFlight = false
 
 const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const viewedDate = computed(() => {
@@ -548,6 +549,13 @@ onMounted(() => {
     profile.fetchProfile().catch(() => null)
   }
   loadDashboard()
+  window.addEventListener('focus', refreshDashboardWhenVisible)
+  document.addEventListener('visibilitychange', refreshDashboardWhenVisible)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('focus', refreshDashboardWhenVisible)
+  document.removeEventListener('visibilitychange', refreshDashboardWhenVisible)
 })
 
 function isToday(day: number) {
@@ -562,6 +570,18 @@ function loadDashboard() {
     .then(() => content.fetchActivities())
     .then(() => content.fetchDeadlines())
     .catch(() => null)
+}
+
+function refreshDashboardWhenVisible() {
+  if (document.visibilityState !== 'visible' || dashboardRefreshInFlight) return
+  dashboardRefreshInFlight = true
+  content.fetchModules({ background: true })
+    .then(() => content.fetchActivities())
+    .then(() => content.fetchDeadlines())
+    .catch(() => null)
+    .finally(() => {
+      dashboardRefreshInFlight = false
+    })
 }
 
 function matchesModule(module: typeof content.modules[number]) {

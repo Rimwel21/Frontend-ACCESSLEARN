@@ -118,37 +118,43 @@ export const useStudentContentStore = defineStore('studentContent', () => {
 
   const sortedTopics = computed(() => [...(currentModule.value?.topics ?? [])].sort((a, b) => a.sort_order - b.sort_order))
 
-  async function fetchModules() {
+  async function fetchModules(options: { background?: boolean } = {}) {
     const auth = useAuthStore()
     if (!auth.token) return
-    loading.value = true
-    error.value = ''
-    modules.value = []
-    progressByModule.value = {}
+    const background = options.background === true
+    if (!background) {
+      loading.value = true
+      error.value = ''
+      modules.value = []
+      progressByModule.value = {}
+    }
     try {
       modules.value = await apiFetch<StudentModule[]>('/student/modules/', { token: auth.token })
       await fetchAllProgress()
       await fetchDeadlines()
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Unable to load modules'
+      if (!background) error.value = err instanceof Error ? err.message : 'Unable to load modules'
     } finally {
-      loading.value = false
+      if (!background) loading.value = false
     }
   }
 
-  async function fetchModule(id: string | number) {
+  async function fetchModule(id: string | number, options: { background?: boolean } = {}) {
     const auth = useAuthStore()
     if (!auth.token) return
-    loading.value = true
-    error.value = ''
-    currentModule.value = null
+    const background = options.background === true
+    if (!background) {
+      loading.value = true
+      error.value = ''
+      currentModule.value = null
+    }
     try {
       currentModule.value = await apiFetch<StudentModule>(`/student/modules/${id}`, { token: auth.token })
-      await fetchProgress(id)
+      if (!background) await fetchProgress(id)
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Unable to load module'
+      if (!background) error.value = err instanceof Error ? err.message : 'Unable to load module'
     } finally {
-      loading.value = false
+      if (!background) loading.value = false
     }
   }
 
