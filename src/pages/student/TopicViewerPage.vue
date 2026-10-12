@@ -41,19 +41,6 @@
 
       <div class="flex-1 space-y-2 overflow-y-auto px-3 py-2">
         <button
-          v-if="hasAutoIntro"
-          :class="[
-            'flex w-full items-center gap-2.5 border-[2px] border-brand-teal px-3 py-2.5 text-left text-[13px] font-bold transition-all',
-            isIntroActive ? 'bg-brand-blue text-white' : 'bg-white hover:bg-brand-blue-soft'
-          ]"
-         
-          @click="selectIntro"
-        >
-          <span class="grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-current bg-white" />
-          <span class="truncate">Introduction</span>
-        </button>
-
-        <button
           v-for="(topic, index) in topics"
           :key="topic.id"
           :disabled="!isTopicUnlocked(index)"
@@ -131,26 +118,10 @@
         <div v-else-if="isPresentationProcessing" class="mb-4 border-[3px] border-brand-amber bg-brand-amber/15 px-4 py-3 text-sm font-black text-ink">
           Preparing the presentation slides. This page will update automatically when they are ready.
         </div>
-        <div v-else-if="topics.length === 0 && !isIntroActive" class="border-[3px] border-brand-teal bg-white p-10 text-center">
+        <div v-else-if="topics.length === 0" class="border-[3px] border-brand-teal bg-white p-10 text-center">
           <h2 class="font-display text-xl font-black">No learning materials are available for this module yet.</h2>
           <p class="mt-2 text-sm text-gray-500">Please check again after your teacher publishes content.</p>
         </div>
-
-        <article v-else-if="isIntroActive" class="space-y-6">
-          <div class="rounded-lg border-[2px] border-gray-200 bg-white p-6 text-sm leading-7 text-gray-700">
-            {{ moduleData?.description || 'Introduction content will be available here.' }}
-          </div>
-          <div class="flex justify-end pt-4">
-            <button
-              class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white transition-all hover:-translate-x-[2px] hover:-translate-y-[2px] disabled:opacity-50"
-             
-              :disabled="topics.length === 0"
-              @click="goNext"
-            >
-              Start Topic 1
-            </button>
-          </div>
-        </article>
 
         <article v-else-if="activeQuiz" class="space-y-5">
           <div class="border-[3px] border-brand-teal bg-brand-amber p-5">
@@ -486,9 +457,6 @@ const quizzes = computed(() => (moduleData.value?.assessments ?? []).filter(item
 const activeQuiz = computed(() => quizzes.value.find(quiz => quiz.id === activeQuizId.value) ?? null)
 const activeIndex = computed(() => activeTopic.value ? topics.value.findIndex(topic => topic.id === activeTopic.value?.id) : 0)
 const quizUnlocked = computed(() => topics.value.length > 0 && progress.value.completed_topics >= topics.value.length)
-const hasTopicIntro = computed(() => topics.value.some(topic => isIntroductionTitle(topic.title)))
-const hasAutoIntro = computed(() => !isPagedMaterial(moduleData.value?.content_type) && !hasTopicIntro.value)
-const isIntroActive = computed(() => hasAutoIntro.value && !activeTopicId.value && !activeQuizId.value)
 const headerTitle = computed(() => activeQuiz.value?.title || moduleData.value?.title || 'Learning Content')
 const headerDescription = computed(() => {
   if (activeQuiz.value) return activeQuiz.value.description || 'Quiz'
@@ -519,7 +487,7 @@ onMounted(async () => {
     await selectQuiz(requestedQuizId)
     return
   }
-  activeTopicId.value = hasAutoIntro.value ? null : topics.value[0]?.id ?? null
+  activeTopicId.value = topics.value[0]?.id ?? null
   startPresentationRefresh()
 })
 
@@ -529,7 +497,7 @@ onBeforeUnmount(() => {
 })
 
 watch(topics, value => {
-  if (!isIntroActive.value && value.length && (!activeTopicId.value || !value.some(topic => topic.id === activeTopicId.value))) {
+  if (value.length && (!activeTopicId.value || !value.some(topic => topic.id === activeTopicId.value))) {
     activeTopicId.value = value[0].id
   }
 })
@@ -585,15 +553,6 @@ function isTopicUnlocked(index: number) {
   return Boolean(previous && completedIds.value.has(previous.id))
 }
 
-function selectIntro() {
-  clearQuizTimer()
-  quizTimeExpired.value = false
-  pendingQuizId.value = null
-  activeTopicId.value = hasAutoIntro.value ? null : topics.value[0]?.id ?? null
-  activeQuizId.value = null
-  quizResult.value = null
-}
-
 async function selectQuiz(quizId: number) {
   if (!quizUnlocked.value) return
   const quiz = quizzes.value.find(item => item.id === quizId)
@@ -637,20 +596,12 @@ async function openQuiz(quizId: number) {
 }
 
 async function goPrevious() {
-  if (activeIndex.value <= 0) {
-    if (hasAutoIntro.value) selectIntro()
-    return
-  }
+  if (activeIndex.value <= 0) return
   const previous = topics.value[activeIndex.value - 1]
   await selectTopic(previous.id)
 }
 
 async function goNext() {
-  if (isIntroActive.value) {
-    const first = topics.value[0]
-    if (first) await selectTopic(first.id)
-    return
-  }
   if (!activeTopic.value) return
   await content.markTopic(moduleId.value, activeTopic.value.id, 'completed')
   if (activeIndex.value >= topics.value.length - 1) {
@@ -686,15 +637,6 @@ function assetUrl(url?: string | null) {
   if (!url) return ''
   if (url.startsWith('http')) return url
   return `${API_BASE_URL}${url}`
-}
-
-function isPagedMaterial(contentType?: string | null) {
-  // PDF uses page-image rendering; PPTX/PPT now uses structured JSON viewer
-  return contentType === 'PDF'
-}
-
-function isIntroductionTitle(title?: string | null) {
-  return String(title ?? '').trim().toLowerCase() === 'introduction'
 }
 
 function startQuizTimer(initialRemainingSeconds: number) {
