@@ -11,7 +11,6 @@
           <p class="mt-2 text-sm font-semibold">{{ activity.activity_description }}</p>
           <p class="mt-2 text-xs font-bold text-ink-soft">Assigned review: Topics {{ activity.start_sort_order }}–{{ activity.end_sort_order }}<span v-if="activity.is_late"> · Submitted work will be marked late</span></p>
         </header>
-        <article v-if="activity.video_url" class="fixed bottom-4 right-4 z-20 w-72 overflow-hidden border-[3px] border-brand-teal bg-black shadow-2xl"><video :src="assetUrl(activity.video_url)" controls class="w-full" /></article>
         <section v-if="step === 'review'" class="mt-5 space-y-5">
           <article v-if="activeTopic" class="card p-5">
             <div class="mb-4 flex justify-between gap-3"><h2 class="font-display text-xl font-bold">{{ activeTopic.title }}</h2><span class="text-xs font-bold text-ink-soft">Topic {{ topicIndex + 1 }} of {{ activity.topics.length }}</span></div>
@@ -48,7 +47,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL, apiFetch } from '@/lib/api'
 
 interface Topic { id: number; title: string; content: string; page_image_urls?: string[] }
-interface Activity { activity_title: string; activity_description: string; start_sort_order: number; end_sort_order: number; video_url?: string | null; status: string; score?: number | null; total?: number | null; is_late: boolean; topics: Topic[]; questions: Array<{ prompt?: string; prompt_type?: 'text' | 'sign_video'; sign_video_url?: string | null; question_type?: string; options?: string[] }> }
+interface Activity { activity_title: string; activity_description: string; start_sort_order: number; end_sort_order: number; status: string; score?: number | null; total?: number | null; is_late: boolean; topics: Topic[]; questions: Array<{ prompt?: string; prompt_type?: 'text' | 'sign_video'; sign_video_url?: string | null; question_type?: string; options?: string[] }> }
 const route = useRoute(); const router = useRouter()
 const activity = ref<Activity | null>(null); const loading = ref(true); const error = ref(''); const saving = ref(false)
 const step = ref<'review' | 'questions'>('review'); const topicIndex = ref(0); const answers = ref<Record<string, string>>({}); const result = ref<{ score: number; total: number } | null>(null)
