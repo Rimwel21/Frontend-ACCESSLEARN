@@ -34,21 +34,16 @@
 
       <section v-for="draft in drafts" :key="draft.checkpointId" class="card p-5">
         <div class="flex flex-wrap items-start justify-between gap-3">
-          <div><h2 class="font-display text-lg font-bold">Topics {{ draft.start }}–{{ draft.end }}</h2><p class="text-xs font-semibold text-ink-soft">Select students, missed questions, and one teacher explanation video for this group.</p></div>
+          <div><h2 class="font-display text-lg font-bold">Topics {{ draft.start }}–{{ draft.end }}</h2><p class="text-xs font-semibold text-ink-soft">Select students and turn their missed questions into signed questions for this group.</p></div>
           <span class="badge badge-amber">{{ selectedStudents(draft).length }} selected</span>
         </div>
-        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="mt-4">
           <div>
             <span class="figma-label">Hearing-impaired students needing support</span>
             <label v-for="student in draft.students" :key="student.student_id" class="mt-2 flex items-center gap-2 rounded border border-gray-200 p-2 text-sm font-semibold">
               <input v-model="draft.studentIds" type="checkbox" :value="student.student_id" />
               <span>{{ student.student_name }} — {{ student.score }}/{{ student.total }}</span>
             </label>
-          </div>
-          <div>
-            <span class="figma-label">Teacher sign-language explanation video</span>
-            <input class="figma-input" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-msvideo" @change="setVideo(draft, $event)" />
-            <p class="mt-2 text-xs font-semibold text-ink-soft">Optional. The student sees this in the lower-right while reviewing the assigned topic range.</p>
           </div>
         </div>
         <div class="mt-4">
@@ -98,14 +93,14 @@ interface Student { student_id: number; student_name: string; score: number; tot
 interface Checkpoint { id: number; start_sort_order: number; end_sort_order: number; title: string; questions: Question[]; struggling_students: Student[] }
 interface Summary { module_id: number; module_title: string; checkpoints: Checkpoint[] }
 interface SignQuestionDraft extends Question { index: number; selected: boolean; question_type: 'identification' | 'multiple_choice'; options: string[]; video: File | null }
-interface Draft { checkpointId: number; start: number; end: number; students: Student[]; studentIds: number[]; questions: SignQuestionDraft[]; video: File | null }
+interface Draft { checkpointId: number; start: number; end: number; students: Student[]; studentIds: number[]; questions: SignQuestionDraft[] }
 
 const modules = ref<Array<{ id: number; title: string }>>([])
 const selectedModuleId = ref('')
 const summary = ref<Summary | null>(null)
 const drafts = ref<Draft[]>([])
 const title = ref('Targeted Learning Support')
-const description = ref('Review the assigned topics, watch the teacher explanation, and answer the follow-up questions.')
+const description = ref('Review the assigned topics and answer the follow-up questions.')
 const dueAt = ref('')
 const loading = ref(false)
 const saving = ref(false)
@@ -142,7 +137,6 @@ async function loadSummary() {
           students: checkpoint.struggling_students,
           studentIds: checkpoint.struggling_students.map(student => student.student_id),
           questions,
-          video: null,
         }
       })
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to load checkpoint reports.' }
@@ -150,7 +144,6 @@ async function loadSummary() {
 }
 
 function selectedStudents(draft: Draft) { return draft.studentIds }
-function setVideo(draft: Draft, event: Event) { draft.video = (event.target as HTMLInputElement).files?.[0] ?? null }
 function setQuestionVideo(question: SignQuestionDraft, event: Event) { question.video = (event.target as HTMLInputElement).files?.[0] ?? null }
 function selectedQuestions(draft: Draft) { return draft.questions.filter(question => question.selected) }
 function readableAnswer(answer: string) {
@@ -185,7 +178,7 @@ async function save() {
         due_at: dueAt.value ? new Date(dueAt.value).toISOString() : null,
         interventions: active.map(draft => ({
           checkpoint_id: draft.checkpointId, start_sort_order: draft.start, end_sort_order: draft.end,
-          title: `Topics ${draft.start}–${draft.end} support`, instructions: 'Review the assigned topics and teacher explanation before answering.',
+          title: `Topics ${draft.start}–${draft.end} support`, instructions: 'Review the assigned topics before answering the signed follow-up questions.',
           student_ids: draft.studentIds,
           questions: selectedQuestions(draft).map(question => ({
             prompt: question.prompt,
@@ -201,10 +194,6 @@ async function save() {
     await Promise.all(active.map(async (draft, index) => {
       const interventionId = created.interventions[index].id
       const uploads: Promise<void>[] = []
-      if (draft.video) {
-        const form = new FormData(); form.append('video', draft.video)
-        uploads.push(uploadVideo(`/teacher/remediation-activities/${created.id}/interventions/${interventionId}/video`, form, 'explanation video'))
-      }
       selectedQuestions(draft).forEach((question, questionIndex) => {
         const form = new FormData(); form.append('video', question.video as File)
         uploads.push(uploadVideo(`/teacher/remediation-activities/${created.id}/interventions/${interventionId}/questions/${questionIndex}/video`, form, `sign-language video for question ${question.index + 1}`))
