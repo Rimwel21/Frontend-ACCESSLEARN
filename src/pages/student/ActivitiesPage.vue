@@ -36,6 +36,16 @@
 
           <div v-else class="scrollbar-thin space-y-3 xl:max-h-[calc(100vh-11rem)] xl:overflow-y-auto xl:pr-2">
             <div
+              v-for="support in supportActivities"
+              :key="`support-${support.id}`"
+              class="flex cursor-pointer flex-wrap items-center gap-3 border-[3px] border-brand-amber bg-brand-amber/10 p-4 shadow-card transition-all hover:-translate-y-1"
+              @click="router.push({ name: 'StudentSupportActivity', params: { targetId: support.id } })"
+            >
+              <div class="flex h-10 w-10 items-center justify-center border-[3px] border-brand-teal bg-brand-amber text-xs font-black">S</div>
+              <div class="min-w-0 flex-1"><div class="text-[14px] font-black">{{ support.activity_title }}</div><div class="mt-1 text-xs font-bold">Topics {{ support.start_sort_order }}–{{ support.end_sort_order }} support</div></div>
+              <span class="badge badge-amber">Support</span>
+            </div>
+            <div
               v-for="act in paginatedActiveActivities"
               :key="act.id"
               :class="[
@@ -133,6 +143,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PaginationControls from '@/components/common/PaginationControls.vue'
 import { useStudentContentStore } from '@/stores/studentContent'
+import { apiFetch } from '@/lib/api'
 
 type ActivityStatus = 'In Progress' | 'Not Started' | 'Finished'
 
@@ -155,6 +166,7 @@ const content = useStudentContentStore()
 const selectedActivityId = computed(() => route.query.deadlineId ? Number(route.query.deadlineId) : null)
 const activityPage = ref(1)
 const activityPageSize = 6
+const supportActivities = ref<Array<{ id: number; activity_title: string; start_sort_order: number; end_sort_order: number }>>([])
 
 const activities = computed<ActivityRow[]>(() => content.activities.map(assessment => ({
   id: assessment.id,
@@ -184,8 +196,9 @@ watch(() => activities.value.length, () => {
   activityPage.value = 1
 })
 
-onMounted(() => {
-  content.fetchActivities()
+onMounted(async () => {
+  await content.fetchActivities()
+  supportActivities.value = await apiFetch<Array<{ id: number; activity_title: string; start_sort_order: number; end_sort_order: number }>>('/student/remediation-activities/').catch(() => [])
 })
 
 function openActivity(activity: ActivityRow) {
