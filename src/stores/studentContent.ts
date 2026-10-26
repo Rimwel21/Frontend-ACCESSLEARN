@@ -13,6 +13,12 @@ export interface LearningTopic {
   image_url?: string | null
   page_image_urls: string[]
   sort_order: number
+  sign_videos?: Array<{
+    id: number
+    focus_area: string
+    title: string
+    video_url: string
+  }>
 }
 
 export interface StudentModule {
@@ -28,7 +34,25 @@ export interface StudentModule {
   behavior_required?: boolean
   updated_at: string
   topics: LearningTopic[]
+  checkpoints: ModuleCheckpoint[]
   assessments: StudentAssessment[]
+}
+
+export interface ModuleCheckpoint {
+  id: number
+  module_id: number
+  start_sort_order: number
+  end_sort_order: number
+  title: string
+  questions: Array<{
+    prompt: string
+    question_type?: 'identification' | 'multiple_choice' | 'true_false'
+    options?: string[]
+  }>
+  student_status?: string | null
+  student_score?: number | null
+  student_total?: number | null
+  student_completed_at?: string | null
 }
 
 export interface StudentAssessment {
@@ -77,10 +101,13 @@ export interface StudentDeadline {
 interface ProgressResponse {
   completed_topic_ids: number[]
   completed_quiz_ids: number[]
+  completed_checkpoint_ids: number[]
   total_topics: number
   completed_topics: number
   total_quizzes: number
   completed_quizzes: number
+  total_checkpoints: number
+  completed_checkpoints: number
   percent: number
 }
 
@@ -107,10 +134,13 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   const progress = ref<ProgressResponse>({
     completed_topic_ids: [],
     completed_quiz_ids: [],
+    completed_checkpoint_ids: [],
     total_topics: 0,
     completed_topics: 0,
     total_quizzes: 0,
     completed_quizzes: 0,
+    total_checkpoints: 0,
+    completed_checkpoints: 0,
     percent: 0,
   })
   const loading = ref(false)
@@ -203,6 +233,24 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       progressByModule.value[Number(moduleId)] = progress.value
       await fetchDeadlines()
     }
+  }
+
+  async function submitCheckpoint(moduleId: string | number, checkpointId: number, answers: Record<string, string>) {
+    const auth = useAuthStore()
+    if (!auth.token) return null
+    const result = await apiFetch<{ score: number; total: number; checkpoint: ModuleCheckpoint }>(
+      `/student/modules/${moduleId}/checkpoints/${checkpointId}/submit`,
+      { method: 'POST', token: auth.token, body: JSON.stringify({ answers }) },
+    )
+    const markCheckpoint = (checkpoint: ModuleCheckpoint) => checkpoint.id === checkpointId ? result.checkpoint : checkpoint
+    if (currentModule.value?.id === Number(moduleId)) {
+      currentModule.value = { ...currentModule.value, checkpoints: currentModule.value.checkpoints.map(markCheckpoint) }
+    }
+    modules.value = modules.value.map(module => module.id === Number(moduleId)
+      ? { ...module, checkpoints: module.checkpoints.map(markCheckpoint) }
+      : module)
+    await fetchProgress(moduleId)
+    return result
   }
 
   async function submitQuiz(moduleId: string | number, quizId: number, answers: Record<string, string>) {
@@ -410,10 +458,13 @@ export const useStudentContentStore = defineStore('studentContent', () => {
     return {
       completed_topic_ids: [],
       completed_quiz_ids: [],
+      completed_checkpoint_ids: [],
       total_topics: module?.topics.length ?? 0,
       completed_topics: 0,
       total_quizzes: module?.assessments.filter(item => item.assessment_type === 'quiz').length ?? 0,
       completed_quizzes: 0,
+      total_checkpoints: module?.checkpoints?.length ?? 0,
+      completed_checkpoints: 0,
       percent: 0,
     }
   }
@@ -451,10 +502,10 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   }
 
   function normalizeProgress(item: ProgressResponse): ProgressResponse {
-    const total = item.total_topics + item.total_quizzes
+    const total = item.total_topics + item.total_quizzes + item.total_checkpoints
     const completedTopics = item.completed_topic_ids.length
     const completedQuizzes = item.completed_quiz_ids.length
-    const completed = completedTopics + completedQuizzes
+    const completed = completedTopics + completedQuizzes + item.completed_checkpoint_ids.length
     return {
       ...item,
       completed_topics: completedTopics,
@@ -563,5 +614,6 @@ export const useStudentContentStore = defineStore('studentContent', () => {
     modules, activities, currentActivity, currentModule, deadlines, progress, progressByModule, sortedTopics, loading, error,
     fetchModules, fetchModule, fetchActivities, fetchActivity, fetchProgress, fetchAllProgress,
     fetchDeadlines, markTopic, startQuiz, saveQuizAnswers, requestQuizRetake, submitQuiz, submitAssessment, submitActivity, requestActivityRetake,
+    submitCheckpoint,
   }
 })

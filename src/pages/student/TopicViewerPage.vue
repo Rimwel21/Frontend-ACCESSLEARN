@@ -59,6 +59,21 @@
         </button>
 
         <button
+          v-for="checkpoint in moduleData?.checkpoints ?? []"
+          :key="`checkpoint-${checkpoint.id}`"
+          :disabled="!isCheckpointReady(checkpoint) || checkpoint.student_status === 'completed'"
+          :class="[
+            'flex w-full items-center gap-2.5 border-[2px] border-brand-amber px-3 py-2.5 text-left text-[12px] font-bold uppercase tracking-wide transition-all',
+            activeCheckpoint?.id === checkpoint.id ? 'bg-brand-amber text-ink' : 'bg-white hover:bg-brand-amber/20',
+            !isCheckpointReady(checkpoint) || checkpoint.student_status === 'completed' ? 'cursor-not-allowed opacity-50' : ''
+          ]"
+          @click="openCheckpoint(checkpoint.id)"
+        >
+          <span class="grid h-[20px] w-[20px] place-items-center rounded-full border-[2px] border-brand-teal text-[10px] font-black">{{ checkpoint.student_status === 'completed' ? 'OK' : '?' }}</span>
+          <span class="truncate">Topics {{ checkpoint.start_sort_order }}–{{ checkpoint.end_sort_order }} check</span>
+        </button>
+
+        <button
           v-for="quiz in quizzes"
           :key="`quiz-${quiz.id}`"
           :disabled="!quizUnlocked"
@@ -122,6 +137,34 @@
           <h2 class="font-display text-xl font-black">No learning materials are available for this module yet.</h2>
           <p class="mt-2 text-sm text-gray-500">Please check again after your teacher publishes content.</p>
         </div>
+
+        <article v-else-if="activeCheckpoint" class="mx-auto max-w-3xl space-y-5">
+          <section class="border-[3px] border-brand-teal bg-brand-amber p-5">
+            <div class="font-mono text-[10px] font-black uppercase tracking-widest">Learning Checkpoint</div>
+            <h2 class="mt-1 font-display text-xl font-black">{{ activeCheckpoint.title }}</h2>
+            <p class="mt-2 text-sm font-semibold text-ink">You have completed Topics {{ activeCheckpoint.start_sort_order }}–{{ activeCheckpoint.end_sort_order }}. Submit these five questions to continue. Your score will not stop you from moving on.</p>
+          </section>
+          <section v-if="checkpointResult" class="border-[3px] border-brand-teal bg-green-50 p-4 font-black text-green-800">
+            Submitted: {{ checkpointResult.score }} / {{ checkpointResult.total }}. You can now continue to the next topics.
+          </section>
+          <section v-for="(question, index) in activeCheckpoint.questions" :key="index" class="border-[3px] border-brand-teal bg-white p-5">
+            <label class="block text-sm font-black">Question {{ index + 1 }}</label>
+            <p class="mt-2 text-sm font-semibold text-ink">{{ question.prompt }}</p>
+            <div v-if="question.question_type === 'multiple_choice'" class="mt-3 grid gap-2">
+              <button v-for="(option, optionIndex) in question.options ?? []" :key="option" type="button" :disabled="Boolean(checkpointResult)" :class="['border-[2px] border-brand-teal px-3 py-2 text-left text-sm font-bold', checkpointAnswers[String(index)] === String.fromCharCode(65 + optionIndex) ? 'bg-brand-blue text-white' : 'bg-white']" @click="checkpointAnswers[String(index)] = String.fromCharCode(65 + optionIndex)">
+                {{ String.fromCharCode(65 + optionIndex) }}. {{ option }}
+              </button>
+            </div>
+            <div v-else-if="question.question_type === 'true_false'" class="mt-3 flex gap-2">
+              <button v-for="choice in ['True', 'False']" :key="choice" type="button" :disabled="Boolean(checkpointResult)" :class="['flex-1 border-[2px] border-brand-teal px-3 py-2 text-sm font-bold', checkpointAnswers[String(index)] === choice ? 'bg-brand-blue text-white' : 'bg-white']" @click="checkpointAnswers[String(index)] = choice">{{ choice }}</button>
+            </div>
+            <input v-else v-model="checkpointAnswers[String(index)]" :disabled="Boolean(checkpointResult)" class="mt-3 w-full border-[2px] border-brand-teal px-3 py-2 text-sm" placeholder="Your answer" />
+          </section>
+          <div class="flex justify-end">
+            <button v-if="!checkpointResult" class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white disabled:opacity-60" :disabled="checkpointSubmitting" @click="submitActiveCheckpoint">{{ checkpointSubmitting ? 'Submitting…' : 'Submit Checkpoint' }}</button>
+            <button v-else class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white" @click="continueAfterCheckpoint">Continue to next topics</button>
+          </div>
+        </article>
 
         <article v-else-if="activeQuiz" class="space-y-5">
           <div class="border-[3px] border-brand-teal bg-brand-amber p-5">
@@ -360,6 +403,17 @@
               {{ activeIndex === topics.length - 1 ? 'Finish Module' : 'Next Topic' }}
             </button>
           </div>
+
+          <aside v-if="activeSignVideo" class="fixed bottom-4 right-4 z-40 w-72 overflow-hidden border-[3px] border-brand-teal bg-white shadow-2xl sm:w-80">
+            <div class="flex items-center justify-between gap-2 bg-brand-amber px-3 py-2">
+              <span class="font-mono text-[10px] font-black uppercase tracking-wide">Sign-language support</span>
+              <span class="max-w-36 truncate text-[10px] font-bold">{{ activeSignVideo.title }}</span>
+            </div>
+            <select v-if="(activeTopic?.sign_videos?.length ?? 0) > 1" v-model="activeSignVideoId" class="m-2 w-[calc(100%-1rem)] rounded border border-brand-teal p-1 text-xs font-bold">
+              <option v-for="video in activeTopic?.sign_videos" :key="video.id" :value="video.id">{{ video.title }}</option>
+            </select>
+            <video :src="assetUrl(activeSignVideo.video_url)" controls playsinline class="aspect-video w-full bg-black" />
+          </aside>
         </article>
       </section>
     </main>
@@ -410,8 +464,13 @@ const router = useRouter()
 const content = useStudentContentStore()
 const sidebarOpen = ref(false)
 const activeTopicId = ref<number | null>(null)
+const activeSignVideoId = ref<number | null>(null)
 const activeQuizId = ref<number | null>(null)
+const activeCheckpointId = ref<number | null>(null)
 const pendingQuizId = ref<number | null>(null)
+const checkpointAnswers = ref<Record<string, string>>({})
+const checkpointResult = ref<{ score: number; total: number } | null>(null)
+const checkpointSubmitting = ref(false)
 const quizAnswers = ref<Record<string, string>>({})
 const quizResult = ref<{ score: number; total: number } | null>(null)
 const quizRemainingSeconds = ref<number | null>(null)
@@ -452,14 +511,21 @@ const parsedPptxContent = computed(() => {
 const progress = computed(() => content.progress)
 const completedIds = computed(() => new Set(progress.value.completed_topic_ids))
 const completedQuizIds = computed(() => new Set(progress.value.completed_quiz_ids))
+const completedCheckpointIds = computed(() => new Set(progress.value.completed_checkpoint_ids))
 const activeTopic = computed(() => activeTopicId.value ? topics.value.find(topic => topic.id === activeTopicId.value) ?? null : null)
+const activeSignVideo = computed(() => {
+  const videos = activeTopic.value?.sign_videos ?? []
+  return videos.find(video => video.id === activeSignVideoId.value) ?? videos[0] ?? null
+})
 const quizzes = computed(() => (moduleData.value?.assessments ?? []).filter(item => item.assessment_type === 'quiz'))
 const activeQuiz = computed(() => quizzes.value.find(quiz => quiz.id === activeQuizId.value) ?? null)
+const activeCheckpoint = computed(() => (moduleData.value?.checkpoints ?? []).find(checkpoint => checkpoint.id === activeCheckpointId.value) ?? null)
 const activeIndex = computed(() => activeTopic.value ? topics.value.findIndex(topic => topic.id === activeTopic.value?.id) : 0)
 const quizUnlocked = computed(() => topics.value.length > 0 && progress.value.completed_topics >= topics.value.length)
-const headerTitle = computed(() => activeQuiz.value?.title || moduleData.value?.title || 'Learning Content')
+const headerTitle = computed(() => activeCheckpoint.value?.title || activeQuiz.value?.title || moduleData.value?.title || 'Learning Content')
 const headerDescription = computed(() => {
   if (activeQuiz.value) return activeQuiz.value.description || 'Quiz'
+  if (activeCheckpoint.value) return `Topics ${activeCheckpoint.value.start_sort_order}–${activeCheckpoint.value.end_sort_order} checkpoint`
   if (activeTopic.value) return `Topic ${activeIndex.value + 1} of ${topics.value.length}`
   return moduleData.value?.description || 'Module description'
 })
@@ -474,10 +540,11 @@ const isPresentationProcessing = computed(() => {
   const isPresentation = /\.(ppt|pptx)$/i.test(module.file_name ?? '')
     || /presentation|powerpoint/i.test(module.file_type ?? '')
     || /pptx?/i.test(module.content_type ?? '')
-  const hasRenderedSlide = module.topics.some(topic =>
+  const hasPresentationTopic = module.topics.some(topic =>
     (topic.page_image_urls ?? []).some(url => /\/static\/presentation_slides\/.*\.png$/i.test(url))
+    || isStructuredPptxTopic(topic.content)
   )
-  return isPresentation && !hasRenderedSlide
+  return isPresentation && !hasPresentationTopic
 })
 
 onMounted(async () => {
@@ -500,6 +567,10 @@ watch(topics, value => {
   if (value.length && (!activeTopicId.value || !value.some(topic => topic.id === activeTopicId.value))) {
     activeTopicId.value = value[0].id
   }
+})
+
+watch(activeTopic, topic => {
+  activeSignVideoId.value = topic?.sign_videos?.[0]?.id ?? null
 })
 
 watch(isPresentationProcessing, processing => {
@@ -533,6 +604,10 @@ function stopPresentationRefresh() {
   presentationRefreshInFlight = false
 }
 
+function isStructuredPptxTopic(content?: string | null) {
+  try { return JSON.parse(content ?? '').type === 'pptx_slide' } catch { return false }
+}
+
 async function selectTopic(topicId: number) {
   const index = topics.value.findIndex(topic => topic.id === topicId)
   if (index < 0 || !isTopicUnlocked(index)) return
@@ -540,6 +615,7 @@ async function selectTopic(topicId: number) {
   quizTimeExpired.value = false
   pendingQuizId.value = null
   activeQuizId.value = null
+  activeCheckpointId.value = null
   quizResult.value = null
   activeTopicId.value = topicId
   if (!completedIds.value.has(topicId)) {
@@ -550,7 +626,29 @@ async function selectTopic(topicId: number) {
 function isTopicUnlocked(index: number) {
   if (index <= 0) return true
   const previous = topics.value[index - 1]
-  return Boolean(previous && completedIds.value.has(previous.id))
+  const topic = topics.value[index]
+  const requiredCheckpoint = (moduleData.value?.checkpoints ?? []).find(checkpoint => checkpoint.end_sort_order === topic?.sort_order - 1)
+  return Boolean(
+    previous
+    && completedIds.value.has(previous.id)
+    && (!requiredCheckpoint || completedCheckpointIds.value.has(requiredCheckpoint.id)),
+  )
+}
+
+function isCheckpointReady(checkpoint: { start_sort_order: number; end_sort_order: number }) {
+  return topics.value
+    .filter(topic => topic.sort_order >= checkpoint.start_sort_order && topic.sort_order <= checkpoint.end_sort_order)
+    .every(topic => completedIds.value.has(topic.id))
+}
+
+function openCheckpoint(checkpointId: number) {
+  const checkpoint = (moduleData.value?.checkpoints ?? []).find(item => item.id === checkpointId)
+  if (!checkpoint || !isCheckpointReady(checkpoint) || checkpoint.student_status === 'completed') return
+  clearQuizTimer()
+  activeQuizId.value = null
+  activeCheckpointId.value = checkpointId
+  checkpointAnswers.value = {}
+  checkpointResult.value = null
 }
 
 async function selectQuiz(quizId: number) {
@@ -579,6 +677,7 @@ async function openQuiz(quizId: number) {
   clearQuizTimer()
   quizTimeExpired.value = false
   activeQuizId.value = quizId
+  activeCheckpointId.value = null
   activeTopicId.value = null
   const selectedQuiz = quizzes.value.find(quiz => quiz.id === quizId)
   quizAnswers.value = { ...(selectedQuiz?.student_answers ?? {}) }
@@ -604,12 +703,43 @@ async function goPrevious() {
 async function goNext() {
   if (!activeTopic.value) return
   await content.markTopic(moduleId.value, activeTopic.value.id, 'completed')
+  const checkpoint = (moduleData.value?.checkpoints ?? []).find(item =>
+    item.end_sort_order === activeTopic.value?.sort_order && item.student_status !== 'completed',
+  )
+  if (checkpoint) {
+    activeCheckpointId.value = checkpoint.id
+    activeQuizId.value = null
+    checkpointAnswers.value = {}
+    checkpointResult.value = null
+    return
+  }
   if (activeIndex.value >= topics.value.length - 1) {
     if (quizzes.value.length) await selectQuiz(quizzes.value[0].id)
     return
   }
   const next = topics.value[activeIndex.value + 1]
   await selectTopic(next.id)
+}
+
+async function submitActiveCheckpoint() {
+  if (!activeCheckpoint.value || checkpointSubmitting.value) return
+  if (Object.keys(checkpointAnswers.value).length < activeCheckpoint.value.questions.length) return
+  checkpointSubmitting.value = true
+  try {
+    const result = await content.submitCheckpoint(moduleId.value, activeCheckpoint.value.id, checkpointAnswers.value)
+    if (result) checkpointResult.value = { score: result.score, total: result.total }
+  } finally {
+    checkpointSubmitting.value = false
+  }
+}
+
+async function continueAfterCheckpoint() {
+  if (!activeCheckpoint.value) return
+  const next = topics.value.find(topic => topic.sort_order === activeCheckpoint.value!.end_sort_order + 1)
+  activeCheckpointId.value = null
+  checkpointResult.value = null
+  if (next) await selectTopic(next.id)
+  else if (quizzes.value.length) await selectQuiz(quizzes.value[0].id)
 }
 
 async function submitActiveQuiz(autoSubmit = false) {

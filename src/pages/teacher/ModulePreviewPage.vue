@@ -41,14 +41,66 @@
       <main class="min-h-0 overflow-y-auto p-7">
         <div v-if="loading" class="border-[3px] border-brand-teal p-8 text-center font-black">Loading preview...</div>
         <div v-else-if="error" class="border-[3px] border-brand-teal bg-red-50 p-8 text-center font-black text-red-700">{{ error }}</div>
-        <article v-else-if="isIntroActive" class="rounded-lg border-[2px] border-gray-200 bg-white p-6 text-sm leading-7 text-gray-700">
+        <section v-if="!loading && !error && isPresentationProcessing" class="mb-6 overflow-hidden border-[3px] border-brand-amber bg-brand-amber/10">
+          <div class="flex flex-wrap items-center justify-between gap-4 p-5">
+            <div class="flex items-start gap-4">
+              <div class="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full border-[3px] border-brand-teal bg-white"><span class="h-4 w-4 animate-spin rounded-full border-[3px] border-brand-teal border-t-transparent" /></div>
+              <div><div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Preparing presentation</div><h2 class="mt-1 font-display text-lg font-black text-ink">Your PowerPoint slides are being generated</h2><p class="mt-1 max-w-2xl text-sm font-semibold text-ink-soft">The preview checks automatically while LibreOffice converts the file. You can keep this page open.</p></div>
+            </div>
+            <button class="figma-button shrink-0" type="button" @click="refreshPresentationNow">Refresh now</button>
+          </div>
+          <div class="grid border-t border-brand-amber/60 bg-white/60 text-xs font-bold text-ink-soft sm:grid-cols-3"><div class="border-b border-brand-amber/40 px-5 py-3 sm:border-b-0 sm:border-r">1. Reading slides</div><div class="border-b border-brand-amber/40 px-5 py-3 sm:border-b-0 sm:border-r">2. Creating preview images</div><div class="px-5 py-3">3. Opening teacher preview</div></div>
+        </section>
+        <section v-if="!loading && !error && checkpointBlocks.length" class="mb-6 border-[3px] border-brand-teal bg-brand-blue-soft p-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Formative checkpoints</div>
+              <h2 class="mt-1 font-display text-lg font-black">Five questions after every 10 topics</h2>
+              <p class="mt-1 max-w-3xl text-xs font-semibold text-ink-soft">Students submit each checkpoint to continue, regardless of their score. You are notified only after they complete every checkpoint in this material.</p>
+            </div>
+            <button class="figma-button" type="button" @click="checkpointsOpen = !checkpointsOpen">{{ checkpointsOpen ? 'Hide setup' : 'Set up checkpoints' }}</button>
+          </div>
+          <div v-if="checkpointsOpen" class="mt-4 grid gap-4">
+            <article v-for="block in checkpointBlocks" :key="block.start" class="border-[2px] border-brand-teal bg-white p-4">
+              <label class="figma-label">Topics {{ block.start }}–{{ block.end }} checkpoint title</label>
+              <input v-model.trim="block.title" class="figma-input" />
+              <div v-for="(question, questionIndex) in block.questions" :key="questionIndex" class="mt-3 grid gap-2 rounded border border-gray-200 p-3">
+                <span class="text-xs font-black">Question {{ questionIndex + 1 }}</span>
+                <input v-model.trim="question.prompt" class="figma-input" :placeholder="`Question ${questionIndex + 1} prompt`" />
+                <input v-model.trim="question.answer" class="figma-input" placeholder="Correct answer" />
+              </div>
+            </article>
+            <p v-if="checkpointError" class="status-error">{{ checkpointError }}</p>
+            <div class="flex justify-end"><button class="figma-primary" type="button" :disabled="savingCheckpoints" @click="saveCheckpoints">{{ savingCheckpoints ? 'Saving…' : 'Save checkpoints' }}</button></div>
+          </div>
+        </section>
+        <article v-if="!loading && !error && isIntroActive" class="rounded-lg border-[2px] border-gray-200 bg-white p-6 text-sm leading-7 text-gray-700">
           {{ moduleData?.description || 'Introduction content will be available here.' }}
         </article>
-        <div v-else-if="!activeTopic" class="border-[3px] border-brand-teal p-8 text-center">
+        <div v-else-if="!loading && !error && !activeTopic" class="border-[3px] border-brand-teal p-8 text-center">
           <h2 class="font-display text-xl font-black">No generated topics yet.</h2>
           <p class="mt-2 text-sm text-gray-500">Upload or replace the learning material file to generate student content.</p>
         </div>
-        <article v-else class="space-y-6">
+        <article v-else-if="!loading && !error && activeTopic" class="space-y-6">
+          <section class="mx-auto max-w-6xl border-[3px] border-brand-teal bg-brand-blue-soft p-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Sign-language learning support</div>
+                <h2 class="mt-1 font-display text-lg font-black">Add support for this topic</h2>
+                <p class="mt-1 text-xs font-semibold text-ink-soft">This adds a separate lower-right video for students. It does not change the PPT slide or its content.</p>
+              </div>
+              <span class="badge badge-amber">{{ activeTopic.sign_videos?.length ?? 0 }} video{{ (activeTopic.sign_videos?.length ?? 0) === 1 ? '' : 's' }}</span>
+            </div>
+            <div class="mt-4 grid gap-3 md:grid-cols-3">
+              <label><span class="figma-label">Focus area</span><select v-model="signFocusArea" class="figma-input"><option value="">Select focus area...</option><option v-for="focus in focusAreas" :key="focus.value" :value="focus.value">{{ focus.label }}</option></select></label>
+              <label><span class="figma-label">Video title (optional)</span><input v-model.trim="signVideoTitle" class="figma-input" placeholder="Teacher sign explanation" /></label>
+              <label><span class="figma-label">Record or upload video</span><input class="figma-input" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-msvideo" capture="user" @change="setSignVideoFile" /></label>
+            </div>
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-3"><p v-if="signVideoError" class="status-error">{{ signVideoError }}</p><span v-else class="text-xs font-semibold text-ink-soft">Supported: Change in Matter, Photosynthesis, Force and Motion, and Water Cycle.</span><button class="figma-primary" type="button" :disabled="signVideoSaving" @click="uploadSignVideo">{{ signVideoSaving ? 'Saving…' : 'Save sign-language video' }}</button></div>
+            <div v-if="activeTopic.sign_videos?.length" class="mt-4 grid gap-3 md:grid-cols-2">
+              <article v-for="video in activeTopic.sign_videos" :key="video.id" class="border border-brand-teal bg-white p-3"><div class="flex items-start justify-between gap-3"><div><strong class="text-sm">{{ video.title }}</strong><p class="mt-1 text-xs font-semibold text-ink-soft">{{ focusLabel(video.focus_area) }}</p></div><button class="figma-button text-xs" type="button" @click="removeSignVideo(video.id)">Remove</button></div><video :src="assetUrl(video.video_url)" controls class="mt-3 aspect-video w-full bg-black" /></article>
+            </div>
+          </section>
           <!-- ===== PPTX Presentation-Card Layout ===== -->
           <template v-if="parsedPptxContent">
             <div class="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm md:p-8">
@@ -151,7 +203,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL, apiFetch } from '@/lib/api'
 
@@ -162,6 +214,7 @@ interface Topic {
   content: string
   page_image_urls: string[]
   sort_order: number
+  sign_videos?: Array<{ id: number; focus_area: string; title: string; video_url: string }>
 }
 
 interface ModuleDetail {
@@ -169,7 +222,16 @@ interface ModuleDetail {
   title: string
   description: string
   content_type?: string | null
+  file_name?: string | null
+  file_type?: string | null
   topics: Topic[]
+  checkpoints: Array<{
+    id: number
+    start_sort_order: number
+    end_sort_order: number
+    title: string
+    questions: Array<{ prompt: string; answer?: string | null; question_type?: string; options?: string[] }>
+  }>
   assessments: Array<{ id: number; assessment_type: string; title: string; description: string }>
 }
 
@@ -179,6 +241,26 @@ const moduleData = ref<ModuleDetail | null>(null)
 const activeTopicId = ref<number | null>(null)
 const loading = ref(false)
 const error = ref('')
+const checkpointsOpen = ref(false)
+const savingCheckpoints = ref(false)
+const checkpointError = ref('')
+const checkpointBlocks = ref<Array<{ start: number; end: number; title: string; questions: Array<{ prompt: string; answer: string }> }>>([])
+const signFocusArea = ref('')
+const signVideoTitle = ref('')
+const signVideoFile = ref<File | null>(null)
+const signVideoSaving = ref(false)
+const signVideoError = ref('')
+let presentationRefreshTimer: number | null = null
+let presentationRefreshAttempts = 0
+let presentationRefreshInFlight = false
+const presentationRefreshLimit = 24
+
+const focusAreas = [
+  { value: 'change_in_matter', label: 'Change in Matter' },
+  { value: 'photosynthesis', label: 'Plant Processes / Photosynthesis' },
+  { value: 'force_and_motion', label: 'Force and Motion' },
+  { value: 'water_cycle', label: 'Water Cycle' },
+]
 
 const SLIDE_MARKER = /^-{2,}\s*Slide\s*\d+\s*-{2,}$/i
 const topics = computed(() => {
@@ -201,6 +283,18 @@ const activeIndex = computed(() => activeTopic.value ? topics.value.findIndex(t 
 const isIntroActive = computed(() => hasAutoIntro.value && !activeTopicId.value)
 const headerTitle = computed(() => activeTopic.value?.title || moduleData.value?.title || 'Module Preview')
 const headerDescription = computed(() => activeTopic.value?.description || moduleData.value?.description || '')
+const isPresentationProcessing = computed(() => {
+  const module = moduleData.value
+  if (!module) return false
+  const isPresentation = /\.(ppt|pptx)$/i.test(module.file_name ?? '')
+    || /presentation|powerpoint/i.test(module.file_type ?? '')
+    || /pptx?/i.test(module.content_type ?? '')
+  const hasPresentationTopic = (module.topics ?? []).some(topic =>
+    (topic.page_image_urls ?? []).some(url => /\/static\/presentation_slides\/.*\.png$/i.test(url))
+    || isStructuredPptxTopic(topic.content)
+  )
+  return isPresentation && !hasPresentationTopic
+})
 
 // Parse PPTX JSON slide content — same logic as TopicViewerPage
 const parsedPptxContent = computed(() => {
@@ -217,6 +311,8 @@ onMounted(async () => {
   try {
     moduleData.value = await apiFetch<ModuleDetail>(`/teacher/modules/${route.params.moduleId}`)
     activeTopicId.value = hasAutoIntro.value ? null : topics.value[0]?.id ?? null
+    hydrateCheckpoints()
+    startPresentationRefresh()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Unable to load preview.'
   } finally {
@@ -224,10 +320,150 @@ onMounted(async () => {
   }
 })
 
+onBeforeUnmount(() => stopPresentationRefresh())
+
+watch(isPresentationProcessing, processing => {
+  if (processing) startPresentationRefresh()
+  else {
+    stopPresentationRefresh()
+    if (!activeTopicId.value && topics.value.length) activeTopicId.value = topics.value[0].id
+  }
+})
+
+function startPresentationRefresh() {
+  if (!isPresentationProcessing.value || presentationRefreshTimer !== null) return
+  presentationRefreshAttempts = 0
+  presentationRefreshTimer = window.setInterval(async () => {
+    if (presentationRefreshInFlight || document.visibilityState !== 'visible') return
+    presentationRefreshInFlight = true
+    try {
+      const previousTopicId = activeTopicId.value
+      moduleData.value = await apiFetch<ModuleDetail>(`/teacher/modules/${route.params.moduleId}`)
+      if (previousTopicId && topics.value.some(topic => topic.id === previousTopicId)) activeTopicId.value = previousTopicId
+      presentationRefreshAttempts += 1
+    } catch {
+      // Keep the existing preview visible; the next refresh can recover from a transient request error.
+    } finally {
+      presentationRefreshInFlight = false
+    }
+    if (!isPresentationProcessing.value || presentationRefreshAttempts >= presentationRefreshLimit) {
+      stopPresentationRefresh()
+      if (!activeTopicId.value && topics.value.length) activeTopicId.value = topics.value[0].id
+    }
+  }, 5000)
+}
+
+function stopPresentationRefresh() {
+  if (presentationRefreshTimer !== null) {
+    window.clearInterval(presentationRefreshTimer)
+    presentationRefreshTimer = null
+  }
+  presentationRefreshInFlight = false
+}
+
+async function refreshPresentationNow() {
+  if (presentationRefreshInFlight) return
+  presentationRefreshInFlight = true
+  try {
+    moduleData.value = await apiFetch<ModuleDetail>(`/teacher/modules/${route.params.moduleId}`)
+    if (!isPresentationProcessing.value && !activeTopicId.value && topics.value.length) activeTopicId.value = topics.value[0].id
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Unable to refresh the presentation preview.'
+  } finally { presentationRefreshInFlight = false }
+}
+
+function isStructuredPptxTopic(content?: string | null) {
+  try { return JSON.parse(content ?? '').type === 'pptx_slide' } catch { return false }
+}
+
 function assetUrl(url?: string | null) {
   if (!url) return ''
   if (url.startsWith('http')) return url
   return `${API_BASE_URL}${url}`
+}
+
+function focusLabel(value: string) { return focusAreas.find(item => item.value === value)?.label ?? value }
+function setSignVideoFile(event: Event) { signVideoFile.value = (event.target as HTMLInputElement).files?.[0] ?? null }
+
+async function uploadSignVideo() {
+  if (!activeTopic.value || !signFocusArea.value || !signVideoFile.value) {
+    signVideoError.value = 'Choose a focus area and a sign-language video first.'
+    return
+  }
+  signVideoError.value = ''
+  signVideoSaving.value = true
+  try {
+    const form = new FormData()
+    form.append('focus_area', signFocusArea.value)
+    if (signVideoTitle.value) form.append('title', signVideoTitle.value)
+    form.append('video', signVideoFile.value)
+    const response = await fetch(`${API_BASE_URL}/teacher/modules/${route.params.moduleId}/topics/${activeTopic.value.id}/sign-videos`, {
+      method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('access_token') ?? ''}` }, body: form,
+    })
+    const payload = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(payload.detail || 'Unable to save the sign-language video.')
+    const current = activeTopic.value.sign_videos ?? []
+    activeTopic.value.sign_videos = [...current.filter(video => video.focus_area !== payload.focus_area), payload]
+    signVideoTitle.value = ''
+    signVideoFile.value = null
+  } catch (err) {
+    signVideoError.value = err instanceof Error ? err.message : 'Unable to save the sign-language video.'
+  } finally { signVideoSaving.value = false }
+}
+
+async function removeSignVideo(signVideoId: number) {
+  if (!activeTopic.value || !confirm('Remove this sign-language video?')) return
+  signVideoError.value = ''
+  try {
+    await apiFetch(`/teacher/modules/${route.params.moduleId}/topics/${activeTopic.value.id}/sign-videos/${signVideoId}`, { method: 'DELETE' })
+    activeTopic.value.sign_videos = (activeTopic.value.sign_videos ?? []).filter(video => video.id !== signVideoId)
+  } catch (err) { signVideoError.value = err instanceof Error ? err.message : 'Unable to remove the sign-language video.' }
+}
+
+function hydrateCheckpoints() {
+  const existing = new Map((moduleData.value?.checkpoints ?? []).map(item => [item.start_sort_order, item]))
+  const highestTopic = Math.max(0, ...topics.value.map(topic => topic.sort_order))
+  checkpointBlocks.value = Array.from({ length: Math.floor(highestTopic / 10) }, (_, index) => {
+    const start = index * 10 + 1
+    const end = start + 9
+    const saved = existing.get(start)
+    return {
+      start,
+      end,
+      title: saved?.title ?? `Topics ${start}–${end} Checkpoint`,
+      questions: Array.from({ length: 5 }, (_, questionIndex) => ({
+        prompt: saved?.questions[questionIndex]?.prompt ?? '',
+        answer: saved?.questions[questionIndex]?.answer ?? '',
+      })),
+    }
+  })
+}
+
+async function saveCheckpoints() {
+  checkpointError.value = ''
+  if (checkpointBlocks.value.some(block => !block.title || block.questions.some(question => !question.prompt || !question.answer))) {
+    checkpointError.value = 'Each checkpoint needs a title and five complete questions with correct answers.'
+    return
+  }
+  savingCheckpoints.value = true
+  try {
+    await apiFetch(`/teacher/modules/${route.params.moduleId}/checkpoints`, {
+      method: 'PUT',
+      body: JSON.stringify(checkpointBlocks.value.map(block => ({
+        start_sort_order: block.start,
+        end_sort_order: block.end,
+        title: block.title,
+        questions: block.questions.map(question => ({ prompt: question.prompt, answer: question.answer, question_type: 'identification', options: [] })),
+      }))),
+    })
+    moduleData.value = await apiFetch<ModuleDetail>(`/teacher/modules/${route.params.moduleId}`)
+    hydrateCheckpoints()
+    checkpointsOpen.value = false
+  } catch (err) {
+    checkpointError.value = err instanceof Error ? err.message : 'Unable to save checkpoints.'
+  } finally {
+    savingCheckpoints.value = false
+  }
 }
 
 function isPagedMaterial(contentType?: string | null) {

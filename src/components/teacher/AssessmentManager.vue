@@ -6,6 +6,7 @@
         <h1 class="font-display text-2xl font-bold">{{ listTitle }}</h1>
       </div>
       <button class="btn-primary" @click="openForm()">Add {{ title }}</button>
+      <RouterLink v-if="props.kind === 'activity'" class="figma-button no-underline" to="/teacher/support-activities">Targeted Support</RouterLink>
     </div>
 
     <div class="grid gap-3 md:grid-cols-3">
