@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { ApiError, apiFetch } from '@/lib/api'
+import { API_BASE_URL, ApiError, apiFetch } from '@/lib/api'
 
 type Role = 'student' | 'teacher' | 'admin'
 
@@ -81,6 +81,11 @@ function roleLabel(value: Role) {
 
 const OFFLINE_LOGIN_KEY = 'offline_login_records_v1'
 const OFFLINE_HASH_ITERATIONS = 120_000
+const OFFLINE_LOGIN_ENABLED = import.meta.env.VITE_ENABLE_OFFLINE_LOGIN === 'true'
+
+if (!OFFLINE_LOGIN_ENABLED) {
+  localStorage.removeItem(OFFLINE_LOGIN_KEY)
+}
 
 function normalizeIdentity(identity?: string | null) {
   return (identity ?? '').trim().toLowerCase()
@@ -149,6 +154,10 @@ function randomSalt() {
 }
 
 function readOfflineLoginRecords() {
+  if (!OFFLINE_LOGIN_ENABLED) {
+    localStorage.removeItem(OFFLINE_LOGIN_KEY)
+    return {} as Record<string, OfflineLoginRecord>
+  }
   const raw = localStorage.getItem(OFFLINE_LOGIN_KEY)
   if (!raw) return {} as Record<string, OfflineLoginRecord>
   try {
@@ -454,6 +463,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    if (token.value && !token.value.startsWith('offline-session:')) {
+      void fetch(`${API_BASE_URL}/api/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      }).catch(() => null)
+    }
     token.value = null
     tokenType.value = 'bearer'
     role.value = null
@@ -561,7 +576,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function cacheOfflineLogin(password: string, identity: string, user: CurrentUserResponse | null) {
-    if (!user || !identity || user.role === 'admin') return
+    if (!OFFLINE_LOGIN_ENABLED || !user || !identity || user.role === 'admin') return
 
     try {
       const existing = findOfflineLoginRecord(user.role, identity)
@@ -591,6 +606,7 @@ export const useAuthStore = defineStore('auth', () => {
     selectedRole: Role,
     originalError: unknown,
   ) {
+    if (!OFFLINE_LOGIN_ENABLED) return null
     const canUseOfflineFallback = !navigator.onLine || (originalError instanceof ApiError && originalError.status === 0)
     if (!canUseOfflineFallback || !identity || selectedRole === 'admin') return null
 

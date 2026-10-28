@@ -49,6 +49,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}) {
       ...options,
       headers,
       cache: options.cache ?? 'no-store',
+      credentials: options.credentials ?? 'include',
     })
   } catch (err) {
     const fallbackResponse = await retryLocalApiBase(path, options, headers)
@@ -94,6 +95,7 @@ async function retryLocalApiBase(path: string, options: ApiOptions, headers: Hea
       ...options,
       headers: new Headers(headers),
       cache: options.cache ?? 'no-store',
+      credentials: options.credentials ?? 'include',
     })
   } catch {
     return null

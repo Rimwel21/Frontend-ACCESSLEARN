@@ -50,10 +50,12 @@
           <label class="figma-label" for="records-status">Status</label>
           <select id="records-status" v-model="filters.status" class="input-field h-10" @change="loadRecords">
             <option value="">All</option>
+            <option value="Not Started">Not Started</option>
             <option value="Needs Guidance">Needs Guidance</option>
             <option value="Keep Improving">Keep Improving</option>
             <option value="Good Progress">Good Progress</option>
             <option value="Excellent">Excellent</option>
+            <option value="No Tasks">No Tasks</option>
           </select>
         </div>
         <div>
@@ -75,9 +77,9 @@
             <tr>
               <th class="table-th">Student</th>
               <th class="table-th">Class</th>
-              <th class="table-th">Learning Materials</th>
+              <th class="table-th">Overall / Materials</th>
               <th class="table-th">Activities</th>
-              <th class="table-th">Latest Quiz</th>
+              <th class="table-th">Quizzes / Latest</th>
               <th class="table-th">Handsign</th>
               <th class="table-th">Status</th>
               <th class="table-th">Action</th>
@@ -102,13 +104,18 @@
                   </div>
                   <span class="min-w-[34px] text-right font-mono text-[11px] text-ink-soft">{{ record.overallPercent }}%</span>
                 </div>
-                <div class="mt-1 font-mono text-[11px] text-ink-soft">{{ record.learningMaterialsCompleted }}/{{ record.learningMaterialsTotal }}</div>
+                <div class="mt-1 font-mono text-[11px] text-ink-soft">Materials {{ record.learningMaterialsCompleted }}/{{ record.learningMaterialsTotal }}</div>
+                <div class="mt-1 font-mono text-[11px] text-ink-soft">Tasks {{ record.completedTasks }}/{{ record.totalTasks }} · {{ record.incompleteTasks }} incomplete</div>
               </td>
               <td class="table-td font-mono text-xs">
                 <div>{{ record.activitiesCompleted }}/{{ record.activitiesTotal }}</div>
                 <div class="mt-1 text-[11px] text-ink-soft">{{ record.activityPercent }}%</div>
               </td>
-              <td class="table-td text-xs">{{ record.quizActivity }}</td>
+              <td class="table-td text-xs">
+                <div>{{ record.quizzesCompleted }}/{{ record.quizzesTotal }} · {{ record.quizAveragePercent }}%</div>
+                <div class="mt-1 font-semibold">{{ record.latestAssessmentTitle || 'No result yet' }}</div>
+                <div class="mt-1 text-[11px] text-ink-soft">{{ latestAssessmentResult(record) }}</div>
+              </td>
               <td class="table-td font-mono text-xs">
                 <div>{{ record.handsignPractice.length }} practice{{ record.handsignPractice.length === 1 ? '' : 's' }}</div>
                 <div class="mt-1 text-[11px] text-ink-soft">Best {{ bestPracticeScore(record) }}</div>
@@ -162,7 +169,15 @@
                     <div><span class="font-semibold text-ink">Submitted:</span> {{ formatAnswers(item.answers) }}</div>
                     <div><span class="font-semibold text-ink">Completed:</span> {{ formatDate(item.completedAt) }}</div>
                     <div><span class="font-semibold text-ink">Submission:</span> {{ item.submissionType || 'Manual' }}</div>
+                    <div><span class="font-semibold text-ink">Attempts:</span> {{ item.attemptCount }}</div>
+                    <div><span class="font-semibold text-ink">Retake:</span> {{ retakeAccessLabel(item.retakeStatus) }}</div>
                   </div>
+                  <details v-if="item.attemptHistory.length" class="mt-3 rounded-lg border border-gray-100 bg-white p-3 text-xs">
+                    <summary class="cursor-pointer font-semibold text-ink">Attempt history</summary>
+                    <div v-for="attempt in item.attemptHistory" :key="attempt.attempt_number" class="mt-2 text-ink-soft">
+                      Attempt {{ attempt.attempt_number }}: {{ scoreText(attempt.score, attempt.total) }} · {{ formatDate(attempt.completed_at) }}
+                    </div>
+                  </details>
                   <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
                     <span class="text-xs font-semibold text-ink-soft">Retake access: {{ retakeAccessLabel(item.retakeStatus) }}</span>
                     <button
@@ -276,6 +291,14 @@ function bestPracticeScore(record: StudentRecord) {
 function scoreText(score?: number | null, total?: number | null) {
   if (score === null || score === undefined || total === null || total === undefined) return 'No score'
   return `${score}/${total}`
+}
+
+function latestAssessmentResult(record: StudentRecord) {
+  if (!record.latestAssessmentTitle) return 'Not started'
+  const score = record.latestAssessmentScore === null || record.latestAssessmentScore === undefined
+    ? record.latestAssessmentStatus || 'In progress'
+    : String(record.latestAssessmentScore) + '/' + String(record.latestAssessmentTotal ?? 0)
+  return (record.latestAssessmentType || 'Assessment') + ' · ' + score
 }
 
 function formatAnswers(answers: Record<string, string>) {

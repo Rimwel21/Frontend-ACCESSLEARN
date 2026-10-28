@@ -55,6 +55,20 @@ interface StudentRow {
   learningMaterialsCompleted: number
   learningMaterialsInProgress: number
   learningMaterialsTotal: number
+  quizzesCompleted: number
+  quizzesTotal: number
+  quizAveragePercent: number
+  completedTasks: number
+  incompleteTasks: number
+  totalTasks: number
+  handsignPracticeCount: number
+  handsignBestScore?: number | null
+  latestAssessmentTitle?: string | null
+  latestAssessmentType?: string | null
+  latestAssessmentStatus?: string | null
+  latestAssessmentScore?: number | null
+  latestAssessmentTotal?: number | null
+  latestAssessmentCompletedAt?: string | null
   status: string
   lastActivity: string
   quizActivity: string
@@ -200,6 +214,20 @@ interface DashboardStudentProgressResponse {
   learning_materials_completed?: number
   learning_materials_in_progress?: number
   learning_materials_total?: number
+  quizzes_completed?: number
+  quizzes_total?: number
+  quiz_average_percent?: number
+  completed_tasks?: number
+  incomplete_tasks?: number
+  total_tasks?: number
+  handsign_practice_count?: number
+  handsign_best_score?: number | null
+  latest_assessment_title?: string | null
+  latest_assessment_type?: string | null
+  latest_assessment_status?: string | null
+  latest_assessment_score?: number | null
+  latest_assessment_total?: number | null
+  latest_assessment_completed_at?: string | null
   status: string
   last_activity: string | null
   quiz_activity: string | null
@@ -264,6 +292,8 @@ interface TeacherStudentRecordAssessmentResponse {
   completed_at?: string | null
   submission_type?: string | null
   retake_status?: string | null
+  attempt_count?: number
+  attempt_history?: AssessmentAttempt[]
 }
 
 interface TeacherStudentRecordHandsignResponse {
@@ -286,6 +316,20 @@ interface TeacherStudentRecordResponse {
   learning_materials_completed: number
   learning_materials_in_progress: number
   learning_materials_total: number
+  quizzes_completed: number
+  quizzes_total: number
+  quiz_average_percent: number
+  completed_tasks: number
+  incomplete_tasks: number
+  total_tasks: number
+  handsign_practice_count: number
+  handsign_best_score?: number | null
+  latest_assessment_title?: string | null
+  latest_assessment_type?: string | null
+  latest_assessment_status?: string | null
+  latest_assessment_score?: number | null
+  latest_assessment_total?: number | null
+  latest_assessment_completed_at?: string | null
   activities_completed: number
   activities_total: number
   status: 'Complete' | 'In Progress' | 'Needs Help' | string
@@ -335,6 +379,17 @@ export interface StudentAssessmentRecord {
   completedAt?: string | null
   submissionType?: string | null
   retakeStatus?: string | null
+  attemptCount: number
+  attemptHistory: AssessmentAttempt[]
+}
+
+export interface AssessmentAttempt {
+  attempt_number: number
+  score?: number | null
+  total?: number | null
+  answers?: Record<string, string>
+  submission_type?: string | null
+  completed_at?: string | null
 }
 
 export interface StudentHandsignRecord {
@@ -359,6 +414,20 @@ export interface StudentRecord {
   learningMaterialsCompleted: number
   learningMaterialsInProgress: number
   learningMaterialsTotal: number
+  quizzesCompleted: number
+  quizzesTotal: number
+  quizAveragePercent: number
+  completedTasks: number
+  incompleteTasks: number
+  totalTasks: number
+  handsignPracticeCount: number
+  handsignBestScore?: number | null
+  latestAssessmentTitle?: string | null
+  latestAssessmentType?: string | null
+  latestAssessmentStatus?: string | null
+  latestAssessmentScore?: number | null
+  latestAssessmentTotal?: number | null
+  latestAssessmentCompletedAt?: string | null
   activitiesCompleted: number
   activitiesTotal: number
   status: string
@@ -1182,6 +1251,20 @@ function mapDashboardStudentResponse(student: DashboardStudentProgressResponse):
     learningMaterialsCompleted: student.learning_materials_completed ?? 0,
     learningMaterialsInProgress: student.learning_materials_in_progress ?? 0,
     learningMaterialsTotal: student.learning_materials_total ?? 0,
+    quizzesCompleted: student.quizzes_completed ?? 0,
+    quizzesTotal: student.quizzes_total ?? 0,
+    quizAveragePercent: student.quiz_average_percent ?? 0,
+    completedTasks: student.completed_tasks ?? 0,
+    incompleteTasks: student.incomplete_tasks ?? 0,
+    totalTasks: student.total_tasks ?? 0,
+    handsignPracticeCount: student.handsign_practice_count ?? 0,
+    handsignBestScore: student.handsign_best_score ?? null,
+    latestAssessmentTitle: student.latest_assessment_title ?? null,
+    latestAssessmentType: student.latest_assessment_type ?? null,
+    latestAssessmentStatus: student.latest_assessment_status ?? null,
+    latestAssessmentScore: student.latest_assessment_score ?? null,
+    latestAssessmentTotal: student.latest_assessment_total ?? null,
+    latestAssessmentCompletedAt: student.latest_assessment_completed_at ?? null,
     status: student.status,
     lastActivity: student.last_activity ? new Date(student.last_activity).toLocaleDateString() : 'No activity',
     quizActivity: student.quiz_activity ?? 'No quiz yet',
@@ -1213,6 +1296,20 @@ function mapStudentRecordResponse(record: TeacherStudentRecordResponse): Student
     learningMaterialsCompleted: record.learning_materials_completed ?? 0,
     learningMaterialsInProgress: record.learning_materials_in_progress ?? 0,
     learningMaterialsTotal: record.learning_materials_total ?? 0,
+    quizzesCompleted: record.quizzes_completed ?? 0,
+    quizzesTotal: record.quizzes_total ?? 0,
+    quizAveragePercent: record.quiz_average_percent ?? 0,
+    completedTasks: record.completed_tasks ?? 0,
+    incompleteTasks: record.incomplete_tasks ?? 0,
+    totalTasks: record.total_tasks ?? 0,
+    handsignPracticeCount: record.handsign_practice_count ?? 0,
+    handsignBestScore: record.handsign_best_score ?? null,
+    latestAssessmentTitle: record.latest_assessment_title ?? null,
+    latestAssessmentType: record.latest_assessment_type ?? null,
+    latestAssessmentStatus: record.latest_assessment_status ?? null,
+    latestAssessmentScore: record.latest_assessment_score ?? null,
+    latestAssessmentTotal: record.latest_assessment_total ?? null,
+    latestAssessmentCompletedAt: record.latest_assessment_completed_at ?? null,
     activitiesCompleted: record.activities_completed,
     activitiesTotal: record.activities_total,
     status: record.status,
@@ -1230,6 +1327,8 @@ function mapStudentRecordResponse(record: TeacherStudentRecordResponse): Student
       completedAt: item.completed_at ?? null,
       submissionType: item.submission_type ?? null,
       retakeStatus: item.retake_status ?? null,
+      attemptCount: item.attempt_count ?? 0,
+      attemptHistory: item.attempt_history ?? [],
     })),
     handsignPractice: (record.handsign_practice ?? []).map(item => ({
       id: item.id,

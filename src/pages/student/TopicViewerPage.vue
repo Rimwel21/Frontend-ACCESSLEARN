@@ -488,6 +488,7 @@ onMounted(async () => {
     return
   }
   activeTopicId.value = topics.value[0]?.id ?? null
+  await recordOpenedTopic()
   startPresentationRefresh()
 })
 
@@ -496,9 +497,10 @@ onBeforeUnmount(() => {
   stopPresentationRefresh()
 })
 
-watch(topics, value => {
+watch(topics, async value => {
   if (value.length && (!activeTopicId.value || !value.some(topic => topic.id === activeTopicId.value))) {
     activeTopicId.value = value[0].id
+    await recordOpenedTopic()
   }
 })
 
@@ -545,6 +547,12 @@ async function selectTopic(topicId: number) {
   if (!completedIds.value.has(topicId)) {
     await content.markTopic(moduleId.value, topicId, 'in_progress')
   }
+}
+
+async function recordOpenedTopic() {
+  const topicId = activeTopicId.value
+  if (!topicId || completedIds.value.has(topicId)) return
+  await content.markTopic(moduleId.value, topicId, 'in_progress')
 }
 
 function isTopicUnlocked(index: number) {

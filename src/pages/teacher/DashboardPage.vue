@@ -130,7 +130,7 @@
             <thead class="sticky top-0 z-10 bg-surface shadow-sm">
               <tr>
                 <th class="table-th">Student</th>
-                <th class="table-th">Learning Material Progress</th>
+                <th class="table-th">Overall Progress</th>
                 <th class="table-th">Activity</th>
                 <th class="table-th">Quiz</th>
                 <th class="table-th">Status</th>
@@ -152,19 +152,23 @@
                     <span class="min-w-[34px] text-right font-mono text-xs font-bold text-ink">{{ s.overallPercent }}%</span>
                   </div>
                   <div v-if="s.learningMaterialsTotal" class="mt-1 font-mono text-xs font-semibold text-ink-soft">
-                    {{ s.learningMaterialsCompleted }}/{{ s.learningMaterialsTotal }}
+                    Materials {{ s.learningMaterialsCompleted }}/{{ s.learningMaterialsTotal }}
                     <span v-if="s.learningMaterialsInProgress">, {{ s.learningMaterialsInProgress }} in progress</span>
                   </div>
+                  <div class="mt-1 font-mono text-xs font-semibold text-ink-soft">Tasks {{ s.completedTasks }}/{{ s.totalTasks }}</div>
                 </td>
                 <td class="table-td font-mono text-sm font-bold text-ink">
                   <div>{{ s.activitiesCompleted }}/{{ s.activitiesTotal }}</div>
                   <div class="mt-1 text-xs font-semibold text-ink-soft">{{ s.activityPercent }}%</div>
                 </td>
-                <td class="table-td font-mono text-sm font-bold text-ink">{{ s.quizActivity }}</td>
+                <td class="table-td font-mono text-sm font-bold text-ink">
+                  <div>{{ s.quizzesCompleted }}/{{ s.quizzesTotal }} · {{ s.quizAveragePercent }}%</div>
+                  <div class="mt-1 text-xs font-semibold text-ink-soft">{{ s.quizActivity }}</div>
+                </td>
                 <td class="table-td"><span :class="statusBadge(s.status)">{{ statusLabel(s.status) }}</span></td>
               </tr>
               <tr v-if="store.students.length === 0">
-                <td colspan="5" class="table-td text-center text-ink-soft">No enrolled students yet.</td>
+                <td colspan="5" class="table-td text-center text-ink-soft">No enrolled students yet. New learners will appear here with a Not Started status.</td>
               </tr>
             </tbody>
           </table>
