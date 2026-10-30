@@ -12,6 +12,7 @@ export interface LearningTopic {
   content: string
   image_url?: string | null
   page_image_urls: string[]
+  student_visible?: boolean
   sort_order: number
   sign_videos?: Array<{
     id: number
@@ -32,7 +33,9 @@ export interface StudentModule {
   file_type?: string | null
   file_size?: number | null
   behavior_required?: boolean
+  material_processing_status?: string
   updated_at: string
+  topic_count?: number
   topics: LearningTopic[]
   checkpoints: ModuleCheckpoint[]
   assessments: StudentAssessment[]
@@ -159,9 +162,19 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       progressByModule.value = {}
     }
     try {
-      modules.value = await apiFetch<StudentModule[]>('/student/modules/', { token: auth.token })
-      await fetchAllProgress()
-      await fetchDeadlines()
+      const loadedModules = await apiFetch<StudentModule[]>('/student/modules/', { token: auth.token })
+      modules.value = loadedModules.map(module => ({
+        ...module,
+        topics: module.topics ?? [],
+        checkpoints: module.checkpoints ?? [],
+        assessments: (module.assessments ?? []).map(assessment => ({
+          ...assessment,
+          questions: assessment.questions ?? [],
+        })),
+      }))
+      // Show learning materials as soon as their lightweight list arrives.
+      // Progress continues to refresh in the background for every material.
+      void fetchAllProgress().then(fetchDeadlines).catch(() => null)
     } catch (err) {
       if (!background) error.value = err instanceof Error ? err.message : 'Unable to load modules'
     } finally {
@@ -233,6 +246,20 @@ export const useStudentContentStore = defineStore('studentContent', () => {
       progressByModule.value[Number(moduleId)] = progress.value
       await fetchDeadlines()
     }
+  }
+
+  async function completeTopicBlock(moduleId: string | number, topicIds: number[]) {
+    const auth = useAuthStore()
+    if (!auth.token || !topicIds.length) return progress.value
+    const updated = await apiFetch<ProgressResponse>(`/student/modules/${moduleId}/topics/complete-block`, {
+      method: 'POST',
+      token: auth.token,
+      body: JSON.stringify({ topic_ids: topicIds }),
+    })
+    progress.value = updated
+    progressByModule.value[Number(moduleId)] = updated
+    await fetchDeadlines()
+    return updated
   }
 
   async function submitCheckpoint(moduleId: string | number, checkpointId: number, answers: Record<string, string>) {
@@ -612,7 +639,7 @@ export const useStudentContentStore = defineStore('studentContent', () => {
 
   return {
     modules, activities, currentActivity, currentModule, deadlines, progress, progressByModule, sortedTopics, loading, error,
-    fetchModules, fetchModule, fetchActivities, fetchActivity, fetchProgress, fetchAllProgress,
+    fetchModules, fetchModule, fetchActivities, fetchActivity, fetchProgress, fetchAllProgress, completeTopicBlock,
     fetchDeadlines, markTopic, startQuiz, saveQuizAnswers, requestQuizRetake, submitQuiz, submitAssessment, submitActivity, requestActivityRetake,
     submitCheckpoint,
   }

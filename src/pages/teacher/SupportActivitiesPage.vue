@@ -39,7 +39,8 @@
         </div>
         <div class="mt-4">
           <div>
-            <span class="figma-label">Hearing-impaired students needing support</span>
+            <span class="figma-label">Suggested hearing-impaired students</span>
+            <p class="mb-2 text-xs font-semibold text-ink-soft">Students are suggested only when they missed one of the selected questions.</p>
             <label v-for="student in draft.students" :key="student.student_id" class="mt-2 flex items-center gap-2 rounded border border-gray-200 p-2 text-sm font-semibold">
               <input v-model="draft.studentIds" type="checkbox" :value="student.student_id" />
               <span>{{ student.student_name }} — {{ student.score }}/{{ student.total }}</span>
@@ -50,7 +51,7 @@
           <span class="figma-label">Missed questions to present through sign language</span>
           <article v-for="question in draft.questions" :key="question.index" class="mt-2 rounded border border-gray-200 p-3 text-sm">
             <label class="flex gap-3">
-              <input v-model="question.selected" type="checkbox" />
+              <input v-model="question.selected" type="checkbox" @change="syncSuggestedStudents(draft)" />
               <span><strong>Question {{ question.index + 1 }}.</strong> {{ question.prompt }}</span>
             </label>
             <div v-if="question.selected" class="mt-3 grid gap-3 border-t border-gray-100 pt-3 md:grid-cols-2">
@@ -146,6 +147,12 @@ async function loadSummary() {
 function selectedStudents(draft: Draft) { return draft.studentIds }
 function setQuestionVideo(question: SignQuestionDraft, event: Event) { question.video = (event.target as HTMLInputElement).files?.[0] ?? null }
 function selectedQuestions(draft: Draft) { return draft.questions.filter(question => question.selected) }
+function syncSuggestedStudents(draft: Draft) {
+  const selectedIndexes = new Set(selectedQuestions(draft).map(question => question.index))
+  draft.studentIds = draft.students
+    .filter(student => student.missed_question_indexes.some(index => selectedIndexes.has(index)))
+    .map(student => student.student_id)
+}
 function readableAnswer(answer: string) {
   if (!answer.includes('CORRECT:') || !answer.includes('|')) return answer
   const parts = answer.split('|').map(part => part.trim())

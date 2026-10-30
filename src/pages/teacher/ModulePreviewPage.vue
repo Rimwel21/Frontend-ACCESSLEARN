@@ -81,7 +81,7 @@
           <h2 class="font-display text-xl font-black">No generated topics yet.</h2>
           <p class="mt-2 text-sm text-gray-500">Upload or replace the learning material file to generate student content.</p>
         </div>
-        <article v-else-if="!loading && !error && activeTopic" class="space-y-6">
+        <article v-else-if="!loading && !error && !isPresentationProcessing && activeTopic" class="space-y-6">
           <section class="mx-auto max-w-6xl border-[3px] border-brand-teal bg-brand-blue-soft p-4">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -94,7 +94,14 @@
             <div class="mt-4 grid gap-3 md:grid-cols-3">
               <label><span class="figma-label">Focus area</span><select v-model="signFocusArea" class="figma-input"><option value="">Select focus area...</option><option v-for="focus in focusAreas" :key="focus.value" :value="focus.value">{{ focus.label }}</option></select></label>
               <label><span class="figma-label">Video title (optional)</span><input v-model.trim="signVideoTitle" class="figma-input" placeholder="Teacher sign explanation" /></label>
-              <label><span class="figma-label">Record or upload video</span><input class="figma-input" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-msvideo" capture="user" @change="setSignVideoFile" /></label>
+              <div>
+                <span class="figma-label">Sign-language video</span>
+                <div class="flex flex-wrap gap-2">
+                  <label class="figma-button cursor-pointer"><span>Upload video</span><input class="sr-only" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-msvideo" @change="setSignVideoFile" /></label>
+                  <button class="figma-button" type="button" @click="openSignVideoRecorder">Take video</button>
+                </div>
+                <p v-if="signVideoFile" class="mt-1 truncate text-xs font-semibold text-ink-soft">{{ signVideoFile.name }}</p>
+              </div>
             </div>
             <div class="mt-3 flex flex-wrap items-center justify-between gap-3"><p v-if="signVideoError" class="status-error">{{ signVideoError }}</p><span v-else class="text-xs font-semibold text-ink-soft">Supported: Change in Matter, Photosynthesis, Force and Motion, and Water Cycle.</span><button class="figma-primary" type="button" :disabled="signVideoSaving" @click="uploadSignVideo">{{ signVideoSaving ? 'Saving…' : 'Save sign-language video' }}</button></div>
             <div v-if="activeTopic.sign_videos?.length" class="mt-4 grid gap-3 md:grid-cols-2">
@@ -124,8 +131,11 @@
                     <div
                       v-for="(imgUrl, i) in parsedPptxContent.image_urls"
                       :key="i"
-                      class="flex items-center justify-center overflow-hidden rounded-xl border border-teal-100 bg-white p-2 shadow-sm"
+                      :class="['relative flex items-center justify-center overflow-hidden rounded-xl border border-teal-100 bg-white p-2 shadow-sm', isImageHidden(imgUrl) ? 'opacity-45' : '']"
                     >
+                      <button type="button" class="absolute right-3 top-3 z-10 border-2 border-brand-teal bg-white px-2 py-1 text-[10px] font-black" @click="setImageVisibility(imgUrl, !isImageHidden(imgUrl))">
+                        {{ isImageHidden(imgUrl) ? 'Show to students' : 'Hide from students' }}
+                      </button>
                       <img
                         :src="assetUrl(imgUrl)"
                         alt="Slide graphic"
@@ -164,13 +174,16 @@
                 <p class="mt-1 text-sm text-gray-500">{{ activeTopic.description }}</p>
               </div>
               <div v-if="activeTopic.page_image_urls?.length" class="mx-auto grid max-w-4xl gap-6">
-                <img
+                <div
                   v-for="(pageUrl, index) in activeTopic.page_image_urls"
                   :key="`${activeTopic.id}-${index}`"
-                  :src="assetUrl(pageUrl)"
-                  alt=""
-                  class="w-full rounded-lg border border-slate-200 bg-white shadow-sm"
-                />
+                  :class="['relative', isImageHidden(pageUrl) ? 'opacity-45' : '']"
+                >
+                  <button type="button" class="absolute right-3 top-3 z-10 border-2 border-brand-teal bg-white px-2 py-1 text-[10px] font-black" @click="setImageVisibility(pageUrl, !isImageHidden(pageUrl))">
+                    {{ isImageHidden(pageUrl) ? 'Show to students' : 'Hide from students' }}
+                  </button>
+                  <img :src="assetUrl(pageUrl)" alt="" class="w-full rounded-lg border border-slate-200 bg-white shadow-sm" />
+                </div>
               </div>
               <div v-else class="whitespace-pre-line rounded-lg border-[2px] border-gray-200 bg-white p-5 text-sm leading-7 text-gray-700">
                 {{ activeTopic.content }}
@@ -199,11 +212,28 @@
         </article>
       </main>
     </div>
+    <Teleport to="body">
+      <div v-if="signVideoRecorderOpen" class="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" role="dialog" aria-modal="true">
+        <section class="w-full max-w-2xl border-[3px] border-brand-teal bg-white p-5 shadow-2xl">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div><div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Camera recording</div><h2 class="mt-1 font-display text-xl font-black">Take sign-language video</h2></div>
+            <button class="figma-button" type="button" @click="closeSignVideoRecorder">Close</button>
+          </div>
+          <div class="mt-4 overflow-hidden border-2 border-brand-teal bg-black"><video ref="signVideoCameraRef" class="aspect-video w-full object-cover" autoplay muted playsinline /></div>
+          <p v-if="signVideoRecordingError" class="status-error mt-3">{{ signVideoRecordingError }}</p>
+          <p v-else class="mt-3 text-xs font-semibold text-ink-soft">{{ signVideoRecording ? 'Recording now. Stop when your explanation is complete.' : 'Camera is ready. Start recording when you are ready.' }}</p>
+          <div class="mt-4 flex flex-wrap justify-end gap-2">
+            <button class="figma-button" type="button" :disabled="!signVideoCameraReady || signVideoRecording" @click="startSignVideoRecording">Start recording</button>
+            <button class="figma-primary" type="button" :disabled="!signVideoRecording" @click="stopSignVideoRecording">Stop and use video</button>
+          </div>
+        </section>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL, apiFetch } from '@/lib/api'
 
@@ -213,6 +243,7 @@ interface Topic {
   description?: string | null
   content: string
   page_image_urls: string[]
+  hidden_image_urls?: string[]
   sort_order: number
   sign_videos?: Array<{ id: number; focus_area: string; title: string; video_url: string }>
 }
@@ -224,6 +255,7 @@ interface ModuleDetail {
   content_type?: string | null
   file_name?: string | null
   file_type?: string | null
+  material_processing_status?: string
   topics: Topic[]
   checkpoints: Array<{
     id: number
@@ -250,6 +282,15 @@ const signVideoTitle = ref('')
 const signVideoFile = ref<File | null>(null)
 const signVideoSaving = ref(false)
 const signVideoError = ref('')
+const signVideoRecorderOpen = ref(false)
+const signVideoCameraRef = ref<HTMLVideoElement | null>(null)
+const signVideoCameraReady = ref(false)
+const signVideoRecording = ref(false)
+const signVideoRecordingError = ref('')
+let signVideoStream: MediaStream | null = null
+let signVideoRecorder: MediaRecorder | null = null
+let signVideoChunks: Blob[] = []
+let discardSignVideoRecording = false
 let presentationRefreshTimer: number | null = null
 let presentationRefreshAttempts = 0
 let presentationRefreshInFlight = false
@@ -286,6 +327,7 @@ const headerDescription = computed(() => activeTopic.value?.description || modul
 const isPresentationProcessing = computed(() => {
   const module = moduleData.value
   if (!module) return false
+  if (module.material_processing_status === 'processing') return true
   const isPresentation = /\.(ppt|pptx)$/i.test(module.file_name ?? '')
     || /presentation|powerpoint/i.test(module.file_type ?? '')
     || /pptx?/i.test(module.content_type ?? '')
@@ -320,7 +362,10 @@ onMounted(async () => {
   }
 })
 
-onBeforeUnmount(() => stopPresentationRefresh())
+onBeforeUnmount(() => {
+  stopPresentationRefresh()
+  closeSignVideoRecorder()
+})
 
 watch(isPresentationProcessing, processing => {
   if (processing) startPresentationRefresh()
@@ -382,8 +427,98 @@ function assetUrl(url?: string | null) {
   return `${API_BASE_URL}${url}`
 }
 
+function isImageHidden(url: string) {
+  return Boolean(activeTopic.value?.hidden_image_urls?.includes(url))
+}
+
+async function setImageVisibility(imageUrl: string, hidden: boolean) {
+  if (!activeTopic.value) return
+  try {
+    const updated = await apiFetch<Topic>(`/teacher/modules/${route.params.moduleId}/topics/${activeTopic.value.id}/image-visibility`, {
+      method: 'PATCH',
+      body: JSON.stringify({ image_url: imageUrl, hidden }),
+    })
+    const index = moduleData.value?.topics.findIndex(topic => topic.id === updated.id) ?? -1
+    if (moduleData.value && index >= 0) moduleData.value.topics[index] = { ...moduleData.value.topics[index], ...updated }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Unable to update image visibility.'
+  }
+}
+
 function focusLabel(value: string) { return focusAreas.find(item => item.value === value)?.label ?? value }
 function setSignVideoFile(event: Event) { signVideoFile.value = (event.target as HTMLInputElement).files?.[0] ?? null }
+
+async function openSignVideoRecorder() {
+  if (!signFocusArea.value) {
+    signVideoError.value = 'Select a focus area before taking a sign-language video.'
+    return
+  }
+  signVideoRecordingError.value = ''
+  signVideoCameraReady.value = false
+  signVideoRecorderOpen.value = true
+  await nextTick()
+  try {
+    signVideoStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false,
+    })
+    if (!signVideoCameraRef.value) throw new Error('Camera preview is unavailable.')
+    signVideoCameraRef.value.srcObject = signVideoStream
+    await signVideoCameraRef.value.play()
+    signVideoCameraReady.value = true
+  } catch {
+    signVideoRecordingError.value = 'Camera permission is required to take a sign-language video.'
+    stopSignVideoCamera()
+  }
+}
+
+function startSignVideoRecording() {
+  if (!signVideoStream || signVideoRecording.value) return
+  try {
+    signVideoChunks = []
+    discardSignVideoRecording = false
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ? 'video/webm;codecs=vp8' : 'video/webm'
+    signVideoRecorder = new MediaRecorder(signVideoStream, { mimeType })
+    signVideoRecorder.ondataavailable = event => { if (event.data.size) signVideoChunks.push(event.data) }
+    signVideoRecorder.onstop = () => {
+      if (!discardSignVideoRecording && signVideoChunks.length) {
+        const focus = signFocusArea.value.replace(/_/g, '-') || 'sign-language'
+        signVideoFile.value = new File([new Blob(signVideoChunks, { type: 'video/webm' })], `${focus}-explanation.webm`, { type: 'video/webm' })
+        signVideoError.value = ''
+      }
+      signVideoRecording.value = false
+      discardSignVideoRecording = false
+      signVideoRecorderOpen.value = false
+      stopSignVideoCamera()
+    }
+    signVideoRecorder.start()
+    signVideoRecording.value = true
+  } catch {
+    signVideoRecordingError.value = 'This browser could not start video recording.'
+  }
+}
+
+function stopSignVideoRecording() {
+  if (signVideoRecorder?.state === 'recording') signVideoRecorder.stop()
+}
+
+function closeSignVideoRecorder() {
+  if (signVideoRecorder?.state === 'recording') {
+    discardSignVideoRecording = true
+    signVideoRecorder.stop()
+    return
+  }
+  signVideoRecorderOpen.value = false
+  signVideoRecording.value = false
+  stopSignVideoCamera()
+}
+
+function stopSignVideoCamera() {
+  signVideoStream?.getTracks().forEach(track => track.stop())
+  signVideoStream = null
+  signVideoCameraReady.value = false
+  if (signVideoCameraRef.value) signVideoCameraRef.value.srcObject = null
+}
 
 async function uploadSignVideo() {
   if (!activeTopic.value || !signFocusArea.value || !signVideoFile.value) {

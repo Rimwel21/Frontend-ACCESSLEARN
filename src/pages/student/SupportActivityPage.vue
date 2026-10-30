@@ -16,7 +16,7 @@
             <div class="mb-4 flex justify-between gap-3"><h2 class="font-display text-xl font-bold">{{ activeTopic.title }}</h2><span class="text-xs font-bold text-ink-soft">Topic {{ topicIndex + 1 }} of {{ activity.topics.length }}</span></div>
             <div v-if="activeTopic.page_image_urls?.length" class="grid gap-4"><img v-for="url in activeTopic.page_image_urls" :key="url" :src="assetUrl(url)" class="w-full rounded border" /></div>
             <p v-else class="whitespace-pre-line text-sm leading-7">{{ activeTopic.content }}</p>
-            <div class="mt-5 flex justify-between"><button class="figma-button" :disabled="topicIndex === 0" @click="topicIndex--">Previous</button><button class="figma-primary" @click="nextTopic">{{ topicIndex === activity.topics.length - 1 ? 'Start activity questions' : 'Next topic' }}</button></div>
+            <div class="mt-5 flex justify-between"><button class="figma-button" :disabled="topicIndex === 0" @click="topicIndex--">Previous</button><button class="figma-primary" @click="nextTopic">{{ topicIndex === activity.topics.length - 1 ? 'Go to Activity' : 'Next topic' }}</button></div>
           </article>
           <article v-else class="card p-5">No review topics are available.</article>
         </section>
