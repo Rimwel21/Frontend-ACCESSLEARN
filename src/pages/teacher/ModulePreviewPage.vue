@@ -81,7 +81,7 @@
           <h2 class="font-display text-xl font-black">No generated topics yet.</h2>
           <p class="mt-2 text-sm text-gray-500">Upload or replace the learning material file to generate student content.</p>
         </div>
-        <article v-else-if="!loading && !error && activeTopic" class="space-y-6">
+        <article v-else-if="!loading && !error && !isPresentationProcessing && activeTopic" class="space-y-6">
           <section class="mx-auto max-w-6xl border-[3px] border-brand-teal bg-brand-blue-soft p-4">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -124,8 +124,11 @@
                     <div
                       v-for="(imgUrl, i) in parsedPptxContent.image_urls"
                       :key="i"
-                      class="flex items-center justify-center overflow-hidden rounded-xl border border-teal-100 bg-white p-2 shadow-sm"
+                      :class="['relative flex items-center justify-center overflow-hidden rounded-xl border border-teal-100 bg-white p-2 shadow-sm', isImageHidden(imgUrl) ? 'opacity-45' : '']"
                     >
+                      <button type="button" class="absolute right-3 top-3 z-10 border-2 border-brand-teal bg-white px-2 py-1 text-[10px] font-black" @click="setImageVisibility(imgUrl, !isImageHidden(imgUrl))">
+                        {{ isImageHidden(imgUrl) ? 'Show to students' : 'Hide from students' }}
+                      </button>
                       <img
                         :src="assetUrl(imgUrl)"
                         alt="Slide graphic"
@@ -164,13 +167,16 @@
                 <p class="mt-1 text-sm text-gray-500">{{ activeTopic.description }}</p>
               </div>
               <div v-if="activeTopic.page_image_urls?.length" class="mx-auto grid max-w-4xl gap-6">
-                <img
+                <div
                   v-for="(pageUrl, index) in activeTopic.page_image_urls"
                   :key="`${activeTopic.id}-${index}`"
-                  :src="assetUrl(pageUrl)"
-                  alt=""
-                  class="w-full rounded-lg border border-slate-200 bg-white shadow-sm"
-                />
+                  :class="['relative', isImageHidden(pageUrl) ? 'opacity-45' : '']"
+                >
+                  <button type="button" class="absolute right-3 top-3 z-10 border-2 border-brand-teal bg-white px-2 py-1 text-[10px] font-black" @click="setImageVisibility(pageUrl, !isImageHidden(pageUrl))">
+                    {{ isImageHidden(pageUrl) ? 'Show to students' : 'Hide from students' }}
+                  </button>
+                  <img :src="assetUrl(pageUrl)" alt="" class="w-full rounded-lg border border-slate-200 bg-white shadow-sm" />
+                </div>
               </div>
               <div v-else class="whitespace-pre-line rounded-lg border-[2px] border-gray-200 bg-white p-5 text-sm leading-7 text-gray-700">
                 {{ activeTopic.content }}
@@ -213,6 +219,7 @@ interface Topic {
   description?: string | null
   content: string
   page_image_urls: string[]
+  hidden_image_urls?: string[]
   sort_order: number
   sign_videos?: Array<{ id: number; focus_area: string; title: string; video_url: string }>
 }
@@ -224,6 +231,7 @@ interface ModuleDetail {
   content_type?: string | null
   file_name?: string | null
   file_type?: string | null
+  material_processing_status?: string
   topics: Topic[]
   checkpoints: Array<{
     id: number
@@ -286,6 +294,7 @@ const headerDescription = computed(() => activeTopic.value?.description || modul
 const isPresentationProcessing = computed(() => {
   const module = moduleData.value
   if (!module) return false
+  if (module.material_processing_status === 'processing') return true
   const isPresentation = /\.(ppt|pptx)$/i.test(module.file_name ?? '')
     || /presentation|powerpoint/i.test(module.file_type ?? '')
     || /pptx?/i.test(module.content_type ?? '')
@@ -380,6 +389,24 @@ function assetUrl(url?: string | null) {
   if (!url) return ''
   if (url.startsWith('http')) return url
   return `${API_BASE_URL}${url}`
+}
+
+function isImageHidden(url: string) {
+  return Boolean(activeTopic.value?.hidden_image_urls?.includes(url))
+}
+
+async function setImageVisibility(imageUrl: string, hidden: boolean) {
+  if (!activeTopic.value) return
+  try {
+    const updated = await apiFetch<Topic>(`/teacher/modules/${route.params.moduleId}/topics/${activeTopic.value.id}/image-visibility`, {
+      method: 'PATCH',
+      body: JSON.stringify({ image_url: imageUrl, hidden }),
+    })
+    const index = moduleData.value?.topics.findIndex(topic => topic.id === updated.id) ?? -1
+    if (moduleData.value && index >= 0) moduleData.value.topics[index] = { ...moduleData.value.topics[index], ...updated }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Unable to update image visibility.'
+  }
 }
 
 function focusLabel(value: string) { return focusAreas.find(item => item.value === value)?.label ?? value }

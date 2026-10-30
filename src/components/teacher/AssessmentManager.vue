@@ -122,7 +122,7 @@
       <button class="btn-primary mt-5" @click="openForm()">Add {{ title }}</button>
     </div>
 
-    <div v-else class="card overflow-hidden">
+    <div v-else class="card overflow-visible">
       <div class="hidden grid-cols-[minmax(240px,1.35fr)_minmax(160px,0.9fr)_90px_110px_110px_120px] gap-4 border-b border-gray-100 bg-surface px-5 py-3 text-xs font-semibold uppercase tracking-wide text-ink-soft lg:grid">
         <div>{{ title }}</div>
         <div>{{ props.kind === 'quiz' ? 'Learning Material' : 'Type' }}</div>
@@ -166,11 +166,19 @@
           <span class="font-semibold lg:hidden">{{ props.kind === 'quiz' ? 'Updated: ' : 'Due: ' }}</span>{{ item.updated }}
           <div v-if="props.kind === 'activity'" class="mt-1 text-xs">Submissions {{ item.submissionCount }}</div>
         </div>
-        <div class="flex justify-start gap-2 lg:justify-end">
-          <button class="figma-button" type="button" @click="openForm(item.source)">Edit</button>
-          <button class="figma-button" type="button" :disabled="deletingId === item.id" @click="deleteItem(item.source)">
-            {{ deletingId === item.id ? 'Deleting...' : 'Delete' }}
-          </button>
+        <div class="relative flex justify-start lg:justify-end">
+          <details class="group relative">
+            <summary class="figma-button flex cursor-pointer list-none items-center gap-2 select-none">
+              Actions
+              <svg class="h-3.5 w-3.5 transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6" /></svg>
+            </summary>
+            <div class="absolute right-0 z-20 mt-2 grid min-w-36 gap-1 border-2 border-brand-teal bg-white p-2 shadow-card">
+              <button class="dropdown-action" type="button" @click="openForm(item.source)">Edit {{ title.toLowerCase() }}</button>
+              <button class="dropdown-action text-red-700 hover:bg-red-50" type="button" :disabled="deletingId === item.id" @click="deleteItem(item.source)">
+                {{ deletingId === item.id ? 'Deleting...' : `Delete ${title.toLowerCase()}` }}
+              </button>
+            </div>
+          </details>
         </div>
       </article>
       <PaginationControls
@@ -353,4 +361,5 @@ function retakeReasonLabel(reason: string) {
 <style scoped>
 .modal-enter-active, .modal-leave-active { transition: opacity .2s; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
+.dropdown-action { @apply w-full px-3 py-2 text-left text-xs font-bold text-ink transition-colors hover:bg-brand-blue-soft disabled:cursor-not-allowed disabled:opacity-50; }
 </style>

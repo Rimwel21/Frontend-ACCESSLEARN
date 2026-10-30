@@ -48,7 +48,7 @@
       <p class="mx-auto mt-2 max-w-md text-sm text-ink-soft">Add PDFs, Word documents, or PowerPoint presentations for the selected module.</p>
       <button class="btn-primary mt-5" @click="openForm()">Add Learning Material</button>
     </div>
-    <div v-else class="card overflow-hidden">
+    <div v-else class="card overflow-visible">
       <div class="hidden grid-cols-[minmax(240px,1.4fr)_minmax(170px,1fr)_110px_120px_minmax(180px,1fr)_220px] gap-4 border-b border-gray-100 bg-surface px-5 py-3 text-xs font-semibold uppercase tracking-wide text-ink-soft lg:grid">
         <div>Material</div>
         <div>Class</div>
@@ -82,22 +82,19 @@
           <div class="truncate">{{ material.fileName || 'No file' }}</div>
           <div class="mt-0.5 text-xs">{{ formatFileSize(material.fileSize) }}</div>
         </div>
-        <div class="flex flex-wrap justify-start gap-2 lg:justify-end">
-          <button class="figma-button lg:hidden" type="button" @click="toggleMaterialDetails(material.id)">
-            {{ expandedMaterialId === material.id ? 'Hide Details' : 'View More' }}
-          </button>
-          <div class="hidden flex-wrap gap-2 lg:flex">
-            <button class="figma-button" @click="router.push(`/teacher/modules/${material.id}/preview`)">Preview</button>
-            <button class="figma-button" :disabled="!material.fileName" @click="downloadMaterial(material)">Download</button>
-            <button class="figma-button" @click="openForm(material)">Edit</button>
-            <button class="figma-button border-red-300 text-red-700" @click="deleteMaterial(material.id)">Delete</button>
-          </div>
-          <div v-if="expandedMaterialId === material.id" class="flex flex-wrap gap-2 lg:hidden">
-            <button class="figma-button" @click="router.push(`/teacher/modules/${material.id}/preview`)">Preview</button>
-            <button class="figma-button" :disabled="!material.fileName" @click="downloadMaterial(material)">Download</button>
-            <button class="figma-button" @click="openForm(material)">Edit</button>
-            <button class="figma-button border-red-300 text-red-700" @click="deleteMaterial(material.id)">Delete</button>
-          </div>
+        <div class="relative flex justify-start lg:justify-end">
+          <details class="group relative">
+            <summary class="figma-button flex cursor-pointer list-none items-center gap-2 select-none">
+              Actions
+              <svg class="h-3.5 w-3.5 transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6" /></svg>
+            </summary>
+            <div class="absolute right-0 z-20 mt-2 grid min-w-40 gap-1 border-2 border-brand-teal bg-white p-2 shadow-card">
+              <button class="dropdown-action" @click="router.push(`/teacher/modules/${material.id}/preview`)">Preview</button>
+              <button class="dropdown-action" :disabled="!material.fileName" @click="downloadMaterial(material)">Download</button>
+              <button class="dropdown-action" @click="openForm(material)">Edit material</button>
+              <button class="dropdown-action text-red-700 hover:bg-red-50" @click="deleteMaterial(material.id)">Delete material</button>
+            </div>
+          </details>
         </div>
       </article>
       <PaginationControls
@@ -320,7 +317,6 @@ const contentTypeConfig: Record<MaterialContentType, { extensions: string[]; mim
 }
 const store = useTeacherStore()
 const router = useRouter()
-const expandedMaterialId = ref<string | null>(null)
 const showForm = ref(false)
 const formError = ref('')
 const successMessage = ref('')
@@ -496,10 +492,6 @@ function contentTypeLabel(value?: string | null) {
   return option?.label ?? value ?? ''
 }
 
-function toggleMaterialDetails(id: string) {
-  expandedMaterialId.value = expandedMaterialId.value === id ? null : id
-}
-
 function isSupportedContentType(value?: string | null): value is MaterialContentType {
   return contentTypeOptions.some(type => type.value === value)
 }
@@ -563,3 +555,9 @@ watch(() => store.modules.length, () => {
   modulePage.value = 1
 })
 </script>
+
+<style scoped>
+.dropdown-action {
+  @apply w-full px-3 py-2 text-left text-xs font-bold text-ink transition-colors hover:bg-brand-blue-soft disabled:cursor-not-allowed disabled:opacity-50;
+}
+</style>

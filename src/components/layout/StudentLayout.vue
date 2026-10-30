@@ -136,7 +136,7 @@
         </div>
       </header>
 
-      <nav class="grid grid-cols-3 gap-2 border-b-[3px] border-brand-teal/20 bg-surface px-3 py-2 lg:hidden" aria-label="Quick student navigation">
+      <nav class="grid grid-cols-2 gap-2 border-b-[3px] border-brand-teal/20 bg-surface px-3 py-2 sm:grid-cols-4 lg:hidden" aria-label="Quick student navigation">
         <button
           v-for="item in navItems"
           :key="`quick-${item.label}`"
@@ -187,6 +187,11 @@ const navItems = [
     to: '/student/dashboard',
     label: 'Home',
     iconPaths: ['m3 10.5 9-7 9 7', 'M5 9.5V20h14V9.5', 'M9.5 20v-6h5v6'],
+  },
+  {
+    to: '/student/materials',
+    label: 'Materials',
+    iconPaths: ['M5 4h9l5 5v11H5z', 'M14 4v5h5', 'M8 13h8', 'M8 17h5'],
   },
   {
     to: '/student/quiz',

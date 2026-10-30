@@ -38,6 +38,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: '',           redirect: '/student/dashboard' },
       { path: 'dashboard',  name: 'StudentDashboard', component: () => import('@/pages/student/DashboardPage.vue') },
+      { path: 'materials',  name: 'StudentMaterials', component: () => import('@/pages/student/MaterialsPage.vue') },
       { path: 'quiz',       name: 'StudentQuiz',      component: () => import('@/pages/student/QuizPage.vue') },
       { path: 'activities', name: 'Activities',       component: () => import('@/pages/student/ActivitiesPage.vue') },
       { path: 'activities/support/:targetId', name: 'StudentSupportActivity', component: () => import('@/pages/student/SupportActivityPage.vue') },

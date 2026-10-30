@@ -40,38 +40,37 @@
       </div>
 
       <div class="flex-1 space-y-2 overflow-y-auto px-3 py-2">
-        <button
-          v-for="(topic, index) in topics"
-          :key="topic.id"
-          :disabled="!isTopicUnlocked(index)"
-          :class="[
-            'flex w-full items-center gap-2.5 border-[2px] border-brand-teal px-3 py-2.5 text-left text-[13px] font-bold transition-all',
-            activeTopic?.id === topic.id ? 'bg-brand-blue text-white' : 'bg-white hover:bg-brand-blue-soft',
-            !isTopicUnlocked(index) ? 'cursor-not-allowed opacity-50 hover:bg-white' : ''
-          ]"
-          :style="isTopicUnlocked(index) ? 'box-shadow:2px 2px 0 #000' : ''"
-          @click="selectTopic(topic.id)"
-        >
-          <span :class="['grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-brand-teal text-[10px] font-black', completedIds.has(topic.id) ? 'bg-green-500 text-white' : 'bg-white text-ink']">
-            {{ completedIds.has(topic.id) ? 'OK' : isTopicUnlocked(index) ? '' : 'L' }}
-          </span>
-          <span class="truncate">{{ topic.title || `Topic ${index + 1}` }}</span>
-        </button>
+        <template v-for="(block, index) in learningBlocks" :key="`progress-${block.start}`">
+          <button
+            :disabled="!isBlockUnlocked(index)"
+            :class="[
+              'flex w-full items-center gap-2.5 border-[2px] border-brand-teal px-3 py-2.5 text-left text-[13px] font-bold transition-all',
+              activeBlockIndex === index ? 'bg-brand-blue text-white' : 'bg-white hover:bg-brand-blue-soft',
+              !isBlockUnlocked(index) ? 'cursor-not-allowed opacity-50 hover:bg-white' : ''
+            ]"
+            :style="isBlockUnlocked(index) ? 'box-shadow:2px 2px 0 #000' : ''"
+            @click="selectBlock(index)"
+          >
+            <span :class="['grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-brand-teal text-[10px] font-black', isBlockCompleted(block) ? 'bg-green-500 text-white' : 'bg-white text-ink']">
+              {{ isBlockCompleted(block) ? 'OK' : isBlockUnlocked(index) ? '' : 'L' }}
+            </span>
+            <span class="truncate">Topic Progress {{ index + 1 }}</span>
+          </button>
 
-        <button
-          v-for="checkpoint in moduleData?.checkpoints ?? []"
-          :key="`checkpoint-${checkpoint.id}`"
-          :disabled="!isCheckpointReady(checkpoint) || checkpoint.student_status === 'completed'"
-          :class="[
-            'flex w-full items-center gap-2.5 border-[2px] border-brand-amber px-3 py-2.5 text-left text-[12px] font-bold uppercase tracking-wide transition-all',
-            activeCheckpoint?.id === checkpoint.id ? 'bg-brand-amber text-ink' : 'bg-white hover:bg-brand-amber/20',
-            !isCheckpointReady(checkpoint) || checkpoint.student_status === 'completed' ? 'cursor-not-allowed opacity-50' : ''
-          ]"
-          @click="openCheckpoint(checkpoint.id)"
-        >
-          <span class="grid h-[20px] w-[20px] place-items-center rounded-full border-[2px] border-brand-teal text-[10px] font-black">{{ checkpoint.student_status === 'completed' ? 'OK' : '?' }}</span>
-          <span class="truncate">Topics {{ checkpoint.start_sort_order }}–{{ checkpoint.end_sort_order }} check</span>
-        </button>
+          <button
+            v-if="checkpointForBlock(block)"
+            :disabled="!isCheckpointReady(checkpointForBlock(block)!) || checkpointForBlock(block)!.student_status === 'completed'"
+            :class="[
+              'flex w-full items-center gap-2.5 border-[2px] border-brand-amber px-3 py-2.5 text-left text-[12px] font-bold uppercase tracking-wide transition-all',
+              activeCheckpoint?.id === checkpointForBlock(block)!.id ? 'bg-brand-amber text-ink' : 'bg-white hover:bg-brand-amber/20',
+              !isCheckpointReady(checkpointForBlock(block)!) || checkpointForBlock(block)!.student_status === 'completed' ? 'cursor-not-allowed opacity-50' : ''
+            ]"
+            @click="openCheckpoint(checkpointForBlock(block)!.id)"
+          >
+            <span class="grid h-[20px] w-[20px] place-items-center rounded-full border-[2px] border-brand-teal text-[10px] font-black">{{ checkpointForBlock(block)!.student_status === 'completed' ? 'OK' : '?' }}</span>
+            <span class="truncate">Checkpoint {{ index + 1 }}</span>
+          </button>
+        </template>
 
         <button
           v-for="quiz in quizzes"
@@ -144,8 +143,9 @@
             <h2 class="mt-1 font-display text-xl font-black">{{ activeCheckpoint.title }}</h2>
             <p class="mt-2 text-sm font-semibold text-ink">You have completed Topics {{ activeCheckpoint.start_sort_order }}–{{ activeCheckpoint.end_sort_order }}. Submit these five questions to continue. Your score will not stop you from moving on.</p>
           </section>
-          <section v-if="checkpointResult" class="border-[3px] border-brand-teal bg-green-50 p-4 font-black text-green-800">
-            Submitted: {{ checkpointResult.score }} / {{ checkpointResult.total }}. You can now continue to the next topics.
+          <section v-if="checkpointResult" class="border-[3px] border-brand-teal bg-green-50 p-5 text-green-800">
+            <div class="font-display text-xl font-black">{{ checkpointEncouragement }}</div>
+            <p class="mt-2 text-sm font-bold">Submitted: {{ checkpointResult.score }} Correct Answer{{ checkpointResult.score === 1 ? '' : 's' }} / {{ checkpointResult.total }}. You can now continue to the next topics.</p>
           </section>
           <section v-for="(question, index) in activeCheckpoint.questions" :key="index" class="border-[3px] border-brand-teal bg-white p-5">
             <label class="block text-sm font-black">Question {{ index + 1 }}</label>
@@ -162,7 +162,7 @@
           </section>
           <div class="flex justify-end">
             <button v-if="!checkpointResult" class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white disabled:opacity-60" :disabled="checkpointSubmitting" @click="submitActiveCheckpoint">{{ checkpointSubmitting ? 'Submitting…' : 'Submit Checkpoint' }}</button>
-            <button v-else class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white" @click="continueAfterCheckpoint">Continue to next topics</button>
+            <button v-else class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white" @click="continueAfterCheckpoint">Continue to Next Topic</button>
           </div>
         </article>
 
@@ -288,135 +288,75 @@
           </div>
         </article>
 
-        <article v-else-if="activeTopic" class="space-y-6">
-          <!-- ===== PPTX Presentation-Card Layout ===== -->
-          <template v-if="parsedPptxContent">
-            <div class="mx-auto max-w-6xl rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm md:p-8">
-              <!-- Slide Title Pill Badge (Rendered ONCE cleanly) -->
-              <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-                <div class="inline-block rounded-lg bg-teal-700 px-4 py-1.5 text-lg font-bold text-white shadow-sm">
-                  {{ parsedPptxContent.badge || activeTopic.title }}
-                </div>
-                <div class="font-mono text-xs font-semibold text-slate-500">
-                  Slide {{ activeIndex + 1 }} of {{ topics.length }}
-                </div>
-              </div>
+        <article v-else-if="activeBlock" class="mx-auto max-w-6xl space-y-6 pb-8">
+          <header class="border-[3px] border-brand-teal bg-brand-blue-soft p-5">
+            <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Learning block</div>
+            <h2 class="mt-1 font-display text-2xl font-black">Topic Progress {{ activeBlockIndex + 1 }}</h2>
+            <p class="mt-2 text-sm font-semibold text-ink-soft">Read the learning content below. Continue when you are ready for the checkpoint questions.</p>
+          </header>
 
-              <!-- Content grid: 12-col layout on desktop -->
-              <div class="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
-                <!-- Media Column (5 cols) -->
-                <div
-                  v-if="parsedPptxContent.image_urls?.length"
-                  :class="[
-                    'flex flex-col gap-3',
-                    parsedPptxContent.paragraphs?.length ? 'lg:col-span-5' : 'lg:col-span-12'
-                  ]"
-                >
-                  <div
-                    :class="[
-                      parsedPptxContent.image_urls.length > 1
-                        ? 'grid grid-cols-2 gap-3'
-                        : 'flex flex-col gap-3'
-                    ]"
-                  >
-                    <div
-                      v-for="(imgUrl, i) in parsedPptxContent.image_urls"
-                      :key="i"
-                      class="flex items-center justify-center overflow-hidden rounded-xl border border-teal-100 bg-white p-2 shadow-sm"
-                    >
-                      <img
-                        :src="assetUrl(imgUrl)"
-                        alt="Slide graphic"
-                        class="max-h-[350px] w-full rounded-lg object-contain md:max-h-[420px]"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Text Paragraphs Column (7 cols) -->
-                <div
-                  :class="[
-                    'flex flex-col gap-4',
-                    parsedPptxContent.image_urls?.length ? 'lg:col-span-7' : 'lg:col-span-12'
-                  ]"
-                >
-                  <div
-                    v-for="(para, i) in parsedPptxContent.paragraphs"
-                    :key="i"
-                    class="rounded-xl border border-teal-100 border-l-4 border-l-teal-600 bg-white p-4 text-sm leading-relaxed text-slate-800 shadow-sm md:p-5 md:text-base"
-                  >
-                    {{ para }}
-                  </div>
-                  <div
-                    v-if="!parsedPptxContent.paragraphs?.length"
-                    class="rounded-xl border border-teal-100 bg-white p-6 text-center text-sm italic text-slate-500 shadow-sm"
-                  >
-                    No text content on this slide.
-                  </div>
-                </div>
-              </div>
+          <section v-for="topic in activeBlock.topics" v-show="topic.student_visible !== false" :key="topic.id" class="scroll-mt-5 border-[3px] border-brand-teal bg-white p-4 shadow-card sm:p-6">
+            <div v-if="topicDisplayTitle(topic)" class="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h3 class="font-display text-lg font-black">{{ topicDisplayTitle(topic) }}</h3>
             </div>
-          </template>
 
-          <!-- ===== Default Layout (PDF page images / plain text) ===== -->
-          <template v-else>
-            <div class="mx-auto max-w-6xl space-y-6">
-              <div v-if="activeTopic.page_image_urls?.length" class="mx-auto grid max-w-4xl gap-6">
-                <img
-                  v-for="(pageUrl, index) in activeTopic.page_image_urls"
-                  :key="`${activeTopic.id}-${index}`"
-                  :src="assetUrl(pageUrl)"
-                  alt=""
-                  class="w-full rounded-lg border border-slate-200 bg-white shadow-sm"
-                />
+            <template v-if="presentationFor(topic.content)">
+              <div v-if="presentationFor(topic.content)?.image_urls?.length" class="grid gap-4" :class="hasMultiplePresentationImages(topic.content) ? 'sm:grid-cols-2' : ''">
+                <img v-for="(imageUrl, imageIndex) in presentationFor(topic.content)?.image_urls" :key="imageIndex" :src="assetUrl(imageUrl)" alt="Slide graphic" class="mx-auto max-h-[560px] w-full rounded border border-slate-200 bg-white object-contain" />
               </div>
-              <div v-else class="prose max-w-none whitespace-pre-line text-sm leading-relaxed text-slate-800 md:text-base">
-                {{ activeTopic.content }}
+              <div v-if="presentationFor(topic.content)?.paragraphs?.length" class="mt-4 space-y-3">
+                <p v-for="(paragraph, paragraphIndex) in presentationFor(topic.content)?.paragraphs" :key="paragraphIndex" class="rounded border-l-4 border-brand-teal bg-surface p-4 text-sm leading-relaxed text-ink sm:text-base">{{ paragraph }}</p>
               </div>
+            </template>
+            <template v-else>
+              <div v-if="topic.page_image_urls?.length" class="grid gap-4">
+                <img v-for="(pageUrl, pageIndex) in topic.page_image_urls" :key="pageIndex" :src="assetUrl(pageUrl)" alt="Learning-material slide" class="mx-auto w-full rounded border border-slate-200 bg-white shadow-sm" />
+              </div>
+              <p v-else class="whitespace-pre-line text-sm leading-relaxed text-slate-800 sm:text-base">{{ topic.content }}</p>
+              <div v-if="topic.image_url && !topic.page_image_urls?.length" class="mt-4 flex flex-col gap-4 lg:flex-row">
+                <img :src="assetUrl(topic.image_url)" alt="" class="max-h-[350px] w-full rounded border border-teal-100 object-contain lg:w-[280px]" />
+                <p class="flex-1 rounded border-l-4 border-brand-teal bg-surface p-4 text-sm leading-relaxed text-ink">{{ topic.description }}</p>
+              </div>
+            </template>
 
-              <div v-if="activeTopic.image_url && !activeTopic.page_image_urls?.length" class="flex flex-col gap-5 lg:flex-row">
-                <img
-                  :src="assetUrl(activeTopic.image_url)"
-                  alt=""
-                  class="max-h-[350px] w-full rounded-lg border border-teal-100 object-contain shadow-sm md:max-h-[420px] lg:w-[280px]"
-                />
-                <div class="flex-1 rounded-xl border border-teal-100 border-l-4 border-l-teal-600 bg-white p-5 text-sm leading-relaxed text-slate-800 shadow-sm md:text-base">
-                  {{ activeTopic.description }}
-                </div>
-              </div>
-            </div>
-          </template>
+          </section>
 
-          <!-- ===== Navigation controls ===== -->
-          <div class="mx-auto flex max-w-6xl items-center justify-between pt-4">
-            <button
-              class="border-[3px] border-brand-teal bg-white px-4 py-2.5 text-xs font-black text-ink shadow-[2px_2px_0_#000] transition-all hover:-translate-x-[1px] hover:-translate-y-[1px] sm:px-5 sm:text-sm"
-              @click="goPrevious"
-            >
-              Previous
-            </button>
-            <span class="font-mono text-xs font-bold text-slate-500">Topic {{ activeIndex + 1 }} of {{ topics.length }}</span>
-            <button
-              class="border-[3px] border-brand-teal bg-brand-blue px-4 py-2.5 text-xs font-black text-white shadow-[2px_2px_0_#000] transition-all hover:-translate-x-[2px] hover:-translate-y-[2px] sm:px-5 sm:text-sm"
-              @click="goNext"
-            >
-              {{ activeIndex === topics.length - 1 ? 'Finish Module' : 'Next Topic' }}
-            </button>
+          <div class="flex flex-wrap items-center justify-between gap-3 border-[3px] border-brand-teal bg-white p-4 shadow-card">
+            <button class="border-[3px] border-brand-teal bg-white px-4 py-2.5 text-xs font-black text-ink shadow-[2px_2px_0_#000] disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:text-sm" :disabled="activeBlockIndex === 0" @click="goPreviousBlock">Previous progress</button>
+            <span class="font-mono text-xs font-bold text-slate-500">Topic Progress {{ activeBlockIndex + 1 }} of {{ learningBlocks.length }}</span>
+            <button class="border-[3px] border-brand-teal bg-brand-blue px-4 py-2.5 text-xs font-black text-white shadow-[2px_2px_0_#000] sm:px-5 sm:text-sm" @click="goNextBlock">{{ checkpointAfterActiveBlock ? 'Continue to checkpoint' : activeBlockIndex === learningBlocks.length - 1 ? 'Finish module' : 'Next progress' }}</button>
           </div>
-
-          <aside v-if="activeSignVideo" class="fixed bottom-4 right-4 z-40 w-72 overflow-hidden border-[3px] border-brand-teal bg-white shadow-2xl sm:w-80">
-            <div class="flex items-center justify-between gap-2 bg-brand-amber px-3 py-2">
-              <span class="font-mono text-[10px] font-black uppercase tracking-wide">Sign-language support</span>
-              <span class="max-w-36 truncate text-[10px] font-bold">{{ activeSignVideo.title }}</span>
-            </div>
-            <select v-if="(activeTopic?.sign_videos?.length ?? 0) > 1" v-model="activeSignVideoId" class="m-2 w-[calc(100%-1rem)] rounded border border-brand-teal p-1 text-xs font-bold">
-              <option v-for="video in activeTopic?.sign_videos" :key="video.id" :value="video.id">{{ video.title }}</option>
-            </select>
-            <video :src="assetUrl(activeSignVideo.video_url)" controls playsinline class="aspect-video w-full bg-black" />
-          </aside>
         </article>
       </section>
     </main>
+
+    <Teleport to="body">
+      <section
+        v-if="floatingVideo && activeBlock"
+        class="fixed z-40 w-[min(22rem,calc(100vw-2rem))] overflow-hidden border-[3px] border-brand-teal bg-white shadow-2xl"
+        :style="{ left: `${floatingVideoPosition.x}px`, top: `${floatingVideoPosition.y}px` }"
+      >
+        <div class="flex cursor-move touch-none items-center justify-between gap-2 bg-brand-amber px-3 py-2 select-none" @pointerdown="startFloatingVideoDrag">
+          <div class="min-w-0">
+            <div class="font-mono text-[9px] font-black uppercase tracking-wide">Movable sign-language video</div>
+            <div class="truncate text-xs font-bold">{{ floatingVideo.title }}</div>
+          </div>
+          <div class="flex shrink-0 gap-1">
+            <button type="button" class="grid h-7 w-7 place-items-center border-2 border-brand-teal bg-white text-sm font-black" :aria-label="floatingVideoMinimized ? 'Restore video' : 'Minimize video'" :title="floatingVideoMinimized ? 'Restore video' : 'Minimize video'" @pointerdown.stop @click="floatingVideoMinimized = !floatingVideoMinimized">
+              <svg v-if="floatingVideoMinimized" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="7" y="7" width="11" height="11" /><path d="M5 15V5h10" /></svg>
+              <span v-else aria-hidden="true">−</span>
+            </button>
+            <button type="button" class="grid h-7 w-7 place-items-center border-2 border-brand-teal bg-white text-lg font-black leading-none" aria-label="Close movable video" title="Close video" @pointerdown.stop @click="closeFloatingVideo">×</button>
+          </div>
+        </div>
+        <div v-if="!floatingVideoMinimized" class="bg-black">
+          <video ref="floatingVideoElement" :src="assetUrl(floatingVideo.video_url)" autoplay controls playsinline class="aspect-video w-full" />
+          <div class="flex justify-end bg-white p-2">
+            <button type="button" class="border-2 border-brand-teal px-3 py-1 text-xs font-black" @click="toggleFloatingVideoFullscreen">Full screen</button>
+          </div>
+        </div>
+      </section>
+    </Teleport>
 
     <Teleport to="body">
       <div
@@ -454,7 +394,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL } from '@/lib/api'
 import { useStudentContentStore } from '@/stores/studentContent'
@@ -463,14 +403,20 @@ const route = useRoute()
 const router = useRouter()
 const content = useStudentContentStore()
 const sidebarOpen = ref(false)
-const activeTopicId = ref<number | null>(null)
-const activeSignVideoId = ref<number | null>(null)
+const activeBlockIndex = ref(0)
 const activeQuizId = ref<number | null>(null)
 const activeCheckpointId = ref<number | null>(null)
 const pendingQuizId = ref<number | null>(null)
 const checkpointAnswers = ref<Record<string, string>>({})
 const checkpointResult = ref<{ score: number; total: number } | null>(null)
+const checkpointEncouragement = ref('Great work!')
 const checkpointSubmitting = ref(false)
+type FloatingVideo = { id: number; title: string; video_url: string }
+const floatingVideo = ref<FloatingVideo | null>(null)
+const floatingVideoMinimized = ref(false)
+const floatingVideoPosition = ref({ x: 24, y: 104 })
+const floatingVideoElement = ref<HTMLVideoElement | null>(null)
+let floatingVideoDragOffset: { x: number; y: number } | null = null
 const quizAnswers = ref<Record<string, string>>({})
 const quizResult = ref<{ score: number; total: number } | null>(null)
 const quizRemainingSeconds = ref<number | null>(null)
@@ -499,34 +445,48 @@ const topics = computed(() => {
   })
 })
 
-// Parse structured PPTX JSON content for the active topic
-const parsedPptxContent = computed(() => {
-  if (!activeTopic.value) return null
+const learningBlocks = computed(() => {
+  const blocks = []
+  for (let index = 0; index < topics.value.length; index += 10) {
+    const blockTopics = topics.value.slice(index, index + 10)
+    if (!blockTopics.length) continue
+    blocks.push({
+      topics: blockTopics,
+      start: blockTopics[0].sort_order,
+      end: blockTopics[blockTopics.length - 1].sort_order,
+    })
+  }
+  return blocks
+})
+const activeBlock = computed(() => learningBlocks.value[activeBlockIndex.value] ?? null)
+const checkpointAfterActiveBlock = computed(() => activeBlock.value
+  ? (moduleData.value?.checkpoints ?? []).find(checkpoint => checkpoint.end_sort_order === activeBlock.value?.end && checkpoint.student_status !== 'completed') ?? null
+  : null)
+
+function presentationFor(content?: string | null) {
   try {
-    const parsed = JSON.parse(activeTopic.value.content ?? '')
+    const parsed = JSON.parse(content ?? '')
     if (parsed?.type === 'pptx_slide') return parsed as { badge: string; paragraphs: string[]; image_urls: string[] }
   } catch {}
   return null
-})
+}
+
+function hasMultiplePresentationImages(content?: string | null) {
+  return (presentationFor(content)?.image_urls?.length ?? 0) > 1
+}
 const progress = computed(() => content.progress)
 const completedIds = computed(() => new Set(progress.value.completed_topic_ids))
 const completedQuizIds = computed(() => new Set(progress.value.completed_quiz_ids))
 const completedCheckpointIds = computed(() => new Set(progress.value.completed_checkpoint_ids))
-const activeTopic = computed(() => activeTopicId.value ? topics.value.find(topic => topic.id === activeTopicId.value) ?? null : null)
-const activeSignVideo = computed(() => {
-  const videos = activeTopic.value?.sign_videos ?? []
-  return videos.find(video => video.id === activeSignVideoId.value) ?? videos[0] ?? null
-})
 const quizzes = computed(() => (moduleData.value?.assessments ?? []).filter(item => item.assessment_type === 'quiz'))
 const activeQuiz = computed(() => quizzes.value.find(quiz => quiz.id === activeQuizId.value) ?? null)
 const activeCheckpoint = computed(() => (moduleData.value?.checkpoints ?? []).find(checkpoint => checkpoint.id === activeCheckpointId.value) ?? null)
-const activeIndex = computed(() => activeTopic.value ? topics.value.findIndex(topic => topic.id === activeTopic.value?.id) : 0)
 const quizUnlocked = computed(() => topics.value.length > 0 && progress.value.completed_topics >= topics.value.length)
 const headerTitle = computed(() => activeCheckpoint.value?.title || activeQuiz.value?.title || moduleData.value?.title || 'Learning Content')
 const headerDescription = computed(() => {
   if (activeQuiz.value) return activeQuiz.value.description || 'Quiz'
   if (activeCheckpoint.value) return `Topics ${activeCheckpoint.value.start_sort_order}–${activeCheckpoint.value.end_sort_order} checkpoint`
-  if (activeTopic.value) return `Topic ${activeIndex.value + 1} of ${topics.value.length}`
+  if (activeBlock.value) return `Topics ${activeBlock.value.start}–${activeBlock.value.end} of ${topics.value.length}`
   return moduleData.value?.description || 'Module description'
 })
 const quizLocked = computed(() => Boolean(quizResult.value) || quizTimeExpired.value || activeQuiz.value?.student_status === 'completed')
@@ -537,6 +497,7 @@ const quizTimerLabel = computed(() => {
 const isPresentationProcessing = computed(() => {
   const module = moduleData.value
   if (!module) return false
+  if (module.material_processing_status === 'processing') return true
   const isPresentation = /\.(ppt|pptx)$/i.test(module.file_name ?? '')
     || /presentation|powerpoint/i.test(module.file_type ?? '')
     || /pptx?/i.test(module.content_type ?? '')
@@ -554,23 +515,19 @@ onMounted(async () => {
     await selectQuiz(requestedQuizId)
     return
   }
-  activeTopicId.value = topics.value[0]?.id ?? null
+  activeBlockIndex.value = 0
+  openBlockSignVideo(0)
   startPresentationRefresh()
 })
 
 onBeforeUnmount(() => {
   clearQuizTimer()
   stopPresentationRefresh()
+  stopFloatingVideoDrag()
 })
 
-watch(topics, value => {
-  if (value.length && (!activeTopicId.value || !value.some(topic => topic.id === activeTopicId.value))) {
-    activeTopicId.value = value[0].id
-  }
-})
-
-watch(activeTopic, topic => {
-  activeSignVideoId.value = topic?.sign_videos?.[0]?.id ?? null
+watch(learningBlocks, value => {
+  if (activeBlockIndex.value >= value.length) activeBlockIndex.value = 0
 })
 
 watch(isPresentationProcessing, processing => {
@@ -608,31 +565,40 @@ function isStructuredPptxTopic(content?: string | null) {
   try { return JSON.parse(content ?? '').type === 'pptx_slide' } catch { return false }
 }
 
-async function selectTopic(topicId: number) {
-  const index = topics.value.findIndex(topic => topic.id === topicId)
-  if (index < 0 || !isTopicUnlocked(index)) return
+async function selectBlock(index: number) {
+  if (!isBlockUnlocked(index)) return
   clearQuizTimer()
   quizTimeExpired.value = false
   pendingQuizId.value = null
   activeQuizId.value = null
   activeCheckpointId.value = null
+  closeFloatingVideo()
   quizResult.value = null
-  activeTopicId.value = topicId
-  if (!completedIds.value.has(topicId)) {
-    await content.markTopic(moduleId.value, topicId, 'in_progress')
+  activeBlockIndex.value = index
+  const firstIncompleteTopic = learningBlocks.value[index]?.topics.find(topic => !completedIds.value.has(topic.id))
+  if (firstIncompleteTopic) {
+    await content.markTopic(moduleId.value, firstIncompleteTopic.id, 'in_progress')
   }
+  openBlockSignVideo(index)
 }
 
-function isTopicUnlocked(index: number) {
+function isBlockCompleted(block: { topics: Array<{ id: number }> }) {
+  return block.topics.every(topic => completedIds.value.has(topic.id))
+}
+
+function isBlockUnlocked(index: number) {
   if (index <= 0) return true
-  const previous = topics.value[index - 1]
-  const topic = topics.value[index]
-  const requiredCheckpoint = (moduleData.value?.checkpoints ?? []).find(checkpoint => checkpoint.end_sort_order === topic?.sort_order - 1)
+  const previous = learningBlocks.value[index - 1]
+  const requiredCheckpoint = (moduleData.value?.checkpoints ?? []).find(checkpoint => checkpoint.end_sort_order === previous?.end)
   return Boolean(
     previous
-    && completedIds.value.has(previous.id)
+    && isBlockCompleted(previous)
     && (!requiredCheckpoint || completedCheckpointIds.value.has(requiredCheckpoint.id)),
   )
+}
+
+function checkpointForBlock(block: { end: number }) {
+  return (moduleData.value?.checkpoints ?? []).find(checkpoint => checkpoint.end_sort_order === block.end)
 }
 
 function isCheckpointReady(checkpoint: { start_sort_order: number; end_sort_order: number }) {
@@ -647,6 +613,7 @@ function openCheckpoint(checkpointId: number) {
   clearQuizTimer()
   activeQuizId.value = null
   activeCheckpointId.value = checkpointId
+  closeFloatingVideo()
   checkpointAnswers.value = {}
   checkpointResult.value = null
 }
@@ -678,7 +645,7 @@ async function openQuiz(quizId: number) {
   quizTimeExpired.value = false
   activeQuizId.value = quizId
   activeCheckpointId.value = null
-  activeTopicId.value = null
+  closeFloatingVideo()
   const selectedQuiz = quizzes.value.find(quiz => quiz.id === quizId)
   quizAnswers.value = { ...(selectedQuiz?.student_answers ?? {}) }
   quizResult.value = null
@@ -694,18 +661,18 @@ async function openQuiz(quizId: number) {
   }
 }
 
-async function goPrevious() {
-  if (activeIndex.value <= 0) return
-  const previous = topics.value[activeIndex.value - 1]
-  await selectTopic(previous.id)
+async function goPreviousBlock() {
+  if (activeBlockIndex.value <= 0) return
+  await selectBlock(activeBlockIndex.value - 1)
 }
 
-async function goNext() {
-  if (!activeTopic.value) return
-  await content.markTopic(moduleId.value, activeTopic.value.id, 'completed')
-  const checkpoint = (moduleData.value?.checkpoints ?? []).find(item =>
-    item.end_sort_order === activeTopic.value?.sort_order && item.student_status !== 'completed',
-  )
+async function goNextBlock() {
+  if (!activeBlock.value) return
+  const incompleteTopics = activeBlock.value.topics.filter(topic => !completedIds.value.has(topic.id))
+  // One request and one database transaction for the entire progress block.
+  // This avoids ten competing database updates before the next block opens.
+  if (incompleteTopics.length) await content.completeTopicBlock(moduleId.value, activeBlock.value.topics.map(topic => topic.id))
+  const checkpoint = checkpointAfterActiveBlock.value
   if (checkpoint) {
     activeCheckpointId.value = checkpoint.id
     activeQuizId.value = null
@@ -713,12 +680,11 @@ async function goNext() {
     checkpointResult.value = null
     return
   }
-  if (activeIndex.value >= topics.value.length - 1) {
+  if (activeBlockIndex.value >= learningBlocks.value.length - 1) {
     if (quizzes.value.length) await selectQuiz(quizzes.value[0].id)
     return
   }
-  const next = topics.value[activeIndex.value + 1]
-  await selectTopic(next.id)
+  await selectBlock(activeBlockIndex.value + 1)
 }
 
 async function submitActiveCheckpoint() {
@@ -727,7 +693,10 @@ async function submitActiveCheckpoint() {
   checkpointSubmitting.value = true
   try {
     const result = await content.submitCheckpoint(moduleId.value, activeCheckpoint.value.id, checkpointAnswers.value)
-    if (result) checkpointResult.value = { score: result.score, total: result.total }
+    if (result) {
+      checkpointResult.value = { score: result.score, total: result.total }
+      checkpointEncouragement.value = checkpointMessage(result.score, result.total)
+    }
   } finally {
     checkpointSubmitting.value = false
   }
@@ -735,10 +704,10 @@ async function submitActiveCheckpoint() {
 
 async function continueAfterCheckpoint() {
   if (!activeCheckpoint.value) return
-  const next = topics.value.find(topic => topic.sort_order === activeCheckpoint.value!.end_sort_order + 1)
+  const nextBlockIndex = learningBlocks.value.findIndex(block => block.start === activeCheckpoint.value!.end_sort_order + 1)
   activeCheckpointId.value = null
   checkpointResult.value = null
-  if (next) await selectTopic(next.id)
+  if (nextBlockIndex >= 0) await selectBlock(nextBlockIndex)
   else if (quizzes.value.length) await selectQuiz(quizzes.value[0].id)
 }
 
@@ -767,6 +736,81 @@ function assetUrl(url?: string | null) {
   if (!url) return ''
   if (url.startsWith('http')) return url
   return `${API_BASE_URL}${url}`
+}
+
+function topicDisplayTitle(topic: { title?: string | null }) {
+  const title = topic.title?.trim() ?? ''
+  return /^slide\s+\d+$/i.test(title) ? '' : title
+}
+
+function checkpointMessage(score: number, total: number) {
+  const messages = score === total
+    ? ['Excellent work!', 'Amazing job!', 'Perfect score—well done!']
+    : score > 0
+      ? ['Nice effort—keep learning!', 'Good job—keep going!', 'You are making progress!']
+      : ['Keep trying—you can do this!', 'Every review helps you improve!', 'Stay curious and keep going!']
+  return messages[Math.floor(Math.random() * messages.length)]
+}
+
+function openBlockSignVideo(index: number) {
+  const video = learningBlocks.value[index]?.topics
+    .flatMap(topic => topic.sign_videos ?? [])
+    .find(Boolean)
+  if (video) openFloatingVideo(video)
+}
+
+async function openFloatingVideo(video: FloatingVideo) {
+  floatingVideo.value = video
+  floatingVideoMinimized.value = false
+  const panelWidth = Math.min(352, window.innerWidth - 32)
+  floatingVideoPosition.value = {
+    x: Math.max(16, window.innerWidth - panelWidth - 24),
+    y: Math.max(72, Math.min(104, window.innerHeight - 260)),
+  }
+  await nextTick()
+  // Browsers may refuse autoplay until there is a user gesture.  This call is
+  // still needed for a block selected by the student; the autoplay attribute
+  // covers the initial block where the browser allows it.
+  void floatingVideoElement.value?.play().catch(() => null)
+}
+
+function closeFloatingVideo() {
+  floatingVideo.value = null
+  floatingVideoMinimized.value = false
+  stopFloatingVideoDrag()
+}
+
+function startFloatingVideoDrag(event: PointerEvent) {
+  const panel = event.currentTarget.parentElement
+  if (!panel) return
+  const bounds = panel.getBoundingClientRect()
+  floatingVideoDragOffset = { x: event.clientX - bounds.left, y: event.clientY - bounds.top }
+  window.addEventListener('pointermove', moveFloatingVideo)
+  window.addEventListener('pointerup', stopFloatingVideoDrag, { once: true })
+}
+
+function moveFloatingVideo(event: PointerEvent) {
+  if (!floatingVideoDragOffset) return
+  const panelWidth = Math.min(352, window.innerWidth - 32)
+  const panelHeight = floatingVideoMinimized.value ? 62 : 270
+  floatingVideoPosition.value = {
+    x: Math.max(8, Math.min(window.innerWidth - panelWidth - 8, event.clientX - floatingVideoDragOffset.x)),
+    y: Math.max(8, Math.min(window.innerHeight - panelHeight - 8, event.clientY - floatingVideoDragOffset.y)),
+  }
+}
+
+function stopFloatingVideoDrag() {
+  floatingVideoDragOffset = null
+  window.removeEventListener('pointermove', moveFloatingVideo)
+  window.removeEventListener('pointerup', stopFloatingVideoDrag)
+}
+
+async function toggleFloatingVideoFullscreen() {
+  if (document.fullscreenElement) {
+    await document.exitFullscreen()
+    return
+  }
+  await floatingVideoElement.value?.requestFullscreen()
 }
 
 function startQuizTimer(initialRemainingSeconds: number) {
