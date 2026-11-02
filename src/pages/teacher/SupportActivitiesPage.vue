@@ -29,6 +29,8 @@
       <section class="card grid gap-4 p-5 md:grid-cols-2">
         <label><span class="figma-label">Activity title</span><input v-model.trim="title" class="figma-input" /></label>
         <label><span class="figma-label">Due date (optional)</span><input v-model="dueAt" class="figma-input" type="datetime-local" /></label>
+        <label><span class="figma-label">Admin Handsign dataset week</span><select v-model="answerWeek" class="figma-input" @change="loadDatasetLabels"><option value="">Select week...</option><option v-for="week in datasetWeeks" :key="week" :value="week">{{ week }}</option></select></label>
+        <p class="self-end pb-2 text-xs font-semibold text-ink-soft">Select the expected signed word from the Admin dataset for every missed question.</p>
         <label class="md:col-span-2"><span class="figma-label">Description</span><textarea v-model.trim="description" class="figma-input min-h-20" /></label>
       </section>
 
@@ -55,12 +57,27 @@
               <span><strong>Question {{ question.index + 1 }}.</strong> {{ question.prompt }}</span>
             </label>
             <div v-if="question.selected" class="mt-3 grid gap-3 border-t border-gray-100 pt-3 md:grid-cols-2">
+              <div>
+                <span class="figma-label">Signed question video</span>
+                <div class="flex flex-wrap gap-2">
+                  <label class="upload-file-box cursor-pointer">
+                    <span class="upload-file-plus">+</span>
+                    <span><strong>Upload video</strong><small>MP4, WebM, MOV or AVI</small></span>
+                    <input class="hidden" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-msvideo" @change="setQuestionVideo(question, $event)" />
+                  </label>
+                  <button class="figma-button" type="button" @click="openRecorder(question)">Take video</button>
+                </div>
+                <span class="mt-2 block text-xs font-semibold text-ink-soft">{{ question.video ? `Ready: ${question.video.name}` : 'Students will see this video instead of the text above.' }}</span>
+              </div>
               <label>
-                <span class="figma-label">Record or upload the signed question</span>
-                <input class="figma-input" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-msvideo" capture="user" @change="setQuestionVideo(question, $event)" />
-                <span class="mt-1 block text-xs font-semibold text-ink-soft">Students will see this video instead of the text above.</span>
+                <span class="figma-label">Expected signed answer</span>
+                <select v-model="question.answer" class="figma-input" :disabled="!answerWeek || labelsLoading">
+                  <option value="">{{ answerWeek ? (labelsLoading ? 'Loading Admin labels...' : 'Select the signed word...') : 'Select the Admin dataset week first...' }}</option>
+                  <option v-for="label in datasetLabels" :key="label" :value="label">{{ formatLabel(label) }}</option>
+                </select>
+                <span class="mt-1 block text-xs font-semibold text-ink-soft">Original checkpoint answer: {{ question.sourceAnswer || 'Not available' }}</span>
               </label>
-              <label>
+              <label v-if="false">
                 <span class="figma-label">Student answer type</span>
                 <select v-model="question.question_type" class="figma-input">
                   <option value="identification">Identification</option>
@@ -81,19 +98,37 @@
       <p v-if="error" class="status-error">{{ error }}</p>
       <div class="flex justify-end"><button class="figma-primary" :disabled="saving">{{ saving ? 'Posting…' : 'Post targeted support activity' }}</button></div>
     </form>
+
+    <Teleport to="body">
+      <div v-if="recordingQuestion" class="fixed inset-0 z-50 grid place-items-center bg-ink/45 p-4" @click.self="closeRecorder">
+        <section class="w-full max-w-2xl rounded-md border border-brand-teal bg-white p-4 shadow-xl">
+          <div class="flex items-start justify-between gap-3">
+            <div><h2 class="font-display text-lg font-bold">Take signed question video</h2><p class="text-xs font-semibold text-ink-soft">Record the sign-language question students will watch.</p></div>
+            <button class="figma-button" type="button" @click="closeRecorder">Cancel</button>
+          </div>
+          <video ref="recordingVideoRef" class="mt-4 aspect-video w-full rounded border bg-black object-cover" autoplay muted playsinline />
+          <p v-if="recordingError" class="status-error mt-3">{{ recordingError }}</p>
+          <div class="mt-4 flex justify-end gap-2">
+            <button class="figma-button" type="button" :disabled="!recordingReady || recording" @click="startRecorder">Start recording</button>
+            <button class="figma-primary" type="button" :disabled="!recording" @click="stopRecorder">Stop and use video</button>
+          </div>
+        </section>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { apiFetch, API_BASE_URL } from '@/lib/api'
+import { getDatasetLabelsForWeek, getDatasetSummary } from '@/services/handsignAdmin'
 
 interface Question { prompt: string; answer?: string; question_type?: 'identification' | 'multiple_choice' | 'true_false'; options?: string[] }
 interface Student { student_id: number; student_name: string; score: number; total: number; struggling: boolean; missed_question_indexes: number[] }
 interface Checkpoint { id: number; start_sort_order: number; end_sort_order: number; title: string; questions: Question[]; struggling_students: Student[] }
 interface Summary { module_id: number; module_title: string; checkpoints: Checkpoint[] }
-interface SignQuestionDraft extends Question { index: number; selected: boolean; question_type: 'identification' | 'multiple_choice'; options: string[]; video: File | null }
+interface SignQuestionDraft extends Question { index: number; selected: boolean; question_type: 'identification' | 'multiple_choice'; options: string[]; video: File | null; sourceAnswer: string }
 interface Draft { checkpointId: number; start: number; end: number; students: Student[]; studentIds: number[]; questions: SignQuestionDraft[] }
 
 const modules = ref<Array<{ id: number; title: string }>>([])
@@ -103,11 +138,26 @@ const drafts = ref<Draft[]>([])
 const title = ref('Targeted Learning Support')
 const description = ref('Review the assigned topics and answer the follow-up questions.')
 const dueAt = ref('')
+const answerWeek = ref('')
+const datasetWeeks = ref<string[]>([])
+const datasetLabels = ref<string[]>([])
+const labelsLoading = ref(false)
 const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
+const recordingQuestion = ref<SignQuestionDraft | null>(null)
+const recordingVideoRef = ref<HTMLVideoElement | null>(null)
+const recordingReady = ref(false)
+const recording = ref(false)
+const recordingError = ref('')
+let recordingStream: MediaStream | null = null
+let mediaRecorder: MediaRecorder | null = null
+let recordedChunks: Blob[] = []
 
-onMounted(async () => { modules.value = await apiFetch('/teacher/modules/') })
+onMounted(async () => {
+  modules.value = await apiFetch('/teacher/modules/')
+  try { datasetWeeks.value = (await getDatasetSummary()).weeks ?? [] } catch { /* Save validation provides a clear message if this cannot load. */ }
+})
 
 async function loadSummary() {
   summary.value = null
@@ -123,11 +173,12 @@ async function loadSummary() {
         const questions = checkpoint.questions
           .map((question, index) => ({
             ...question,
-            answer: readableAnswer(question.answer ?? ''),
+            answer: '',
+            sourceAnswer: readableAnswer(question.answer ?? ''),
             index,
             selected: true,
             question_type: 'identification' as const,
-            options: ['', '', '', ''],
+            options: [],
             video: null,
           }))
           .filter(question => missed.has(question.index))
@@ -145,7 +196,51 @@ async function loadSummary() {
 }
 
 function selectedStudents(draft: Draft) { return draft.studentIds }
+async function loadDatasetLabels() {
+  datasetLabels.value = []
+  if (!answerWeek.value) return
+  labelsLoading.value = true
+  try { datasetLabels.value = (await getDatasetLabelsForWeek(answerWeek.value)).labels }
+  catch (err) { error.value = err instanceof Error ? err.message : 'Unable to load Admin Handsign labels.' }
+  finally { labelsLoading.value = false }
+}
+function formatLabel(value: string) { return value.replace(/_/g, ' ') }
 function setQuestionVideo(question: SignQuestionDraft, event: Event) { question.video = (event.target as HTMLInputElement).files?.[0] ?? null }
+async function openRecorder(question: SignQuestionDraft) {
+  recordingQuestion.value = question
+  recordingError.value = ''
+  recordingReady.value = false
+  recording.value = false
+  await nextTick()
+  try {
+    recordingStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
+    if (!recordingVideoRef.value) throw new Error('Camera preview is not ready.')
+    recordingVideoRef.value.srcObject = recordingStream
+    await recordingVideoRef.value.play()
+    recordingReady.value = true
+  } catch {
+    recordingError.value = 'Camera permission is required to take a signed question video.'
+    stopCamera()
+  }
+}
+function startRecorder() {
+  if (!recordingStream || recording.value || !recordingQuestion.value) return
+  try {
+    recordedChunks = []
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ? 'video/webm;codecs=vp8' : 'video/webm'
+    mediaRecorder = new MediaRecorder(recordingStream, { mimeType })
+    mediaRecorder.ondataavailable = event => { if (event.data.size) recordedChunks.push(event.data) }
+    mediaRecorder.onstop = () => {
+      if (recordingQuestion.value && recordedChunks.length) recordingQuestion.value.video = new File([new Blob(recordedChunks, { type: 'video/webm' })], `signed-question-${recordingQuestion.value.index + 1}.webm`, { type: 'video/webm' })
+      closeRecorder()
+    }
+    mediaRecorder.start()
+    recording.value = true
+  } catch { recordingError.value = 'This browser could not start video recording.' }
+}
+function stopRecorder() { if (mediaRecorder?.state === 'recording') mediaRecorder.stop() }
+function stopCamera() { recordingStream?.getTracks().forEach(track => track.stop()); recordingStream = null; if (recordingVideoRef.value) recordingVideoRef.value.srcObject = null; recordingReady.value = false }
+function closeRecorder() { if (mediaRecorder?.state === 'recording') { mediaRecorder.onstop = null; mediaRecorder.stop() }; stopCamera(); recordingQuestion.value = null; recording.value = false; recordedChunks = [] }
 function selectedQuestions(draft: Draft) { return draft.questions.filter(question => question.selected) }
 function syncSuggestedStudents(draft: Draft) {
   const selectedIndexes = new Set(selectedQuestions(draft).map(question => question.index))
@@ -162,18 +257,13 @@ function readableAnswer(answer: string) {
 
 async function save() {
   error.value = ''
-  if (!selectedModuleId.value || !title.value || !description.value) { error.value = 'Complete the activity details.'; return }
+  if (!selectedModuleId.value || !title.value || !description.value || !answerWeek.value) { error.value = 'Complete the activity details and select the Admin Handsign dataset week.'; return }
   const active = drafts.value.filter(draft => draft.studentIds.length && selectedQuestions(draft).length)
   if (!active.length) { error.value = 'Select at least one student and one missed question for a topic group.'; return }
   for (const draft of active) {
     for (const question of selectedQuestions(draft)) {
       if (!question.video) { error.value = `Record or upload the sign-language video for question ${question.index + 1}.`; return }
-      if (question.question_type === 'multiple_choice') {
-        const choices = question.options.map(choice => choice.trim()).filter(Boolean)
-        if (choices.length < 2 || !choices.includes((question.answer ?? '').trim())) {
-          error.value = `Question ${question.index + 1} needs at least two choices including its original correct answer.`; return
-        }
-      }
+      if (!question.answer || !datasetLabels.value.includes(question.answer)) { error.value = `Select the Admin dataset answer for question ${question.index + 1}.`; return }
     }
   }
   saving.value = true
@@ -190,10 +280,11 @@ async function save() {
           questions: selectedQuestions(draft).map(question => ({
             prompt: question.prompt,
             answer: question.answer,
+            answer_week: answerWeek.value,
             source_question_index: question.index,
             prompt_type: 'sign_video',
-            question_type: question.question_type,
-            options: question.question_type === 'multiple_choice' ? question.options.map(choice => choice.trim()).filter(Boolean) : [],
+            question_type: 'identification',
+            options: [],
           })),
         })),
       }),
@@ -220,4 +311,6 @@ async function uploadVideo(path: string, form: FormData, label: string) {
   })
   if (!response.ok) throw new Error(`Activity was posted but its ${label} could not be uploaded.`)
 }
+
+onBeforeUnmount(closeRecorder)
 </script>

@@ -357,7 +357,7 @@
             <div class="px-6 py-5 space-y-4">
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Class Name</label>
-                <input v-model.trim="newClass.className" class="input-field" placeholder="e.g. Grade 6 Science" />
+                <input v-model.trim="newClass.className" class="input-field" placeholder="e.g. Grade 4 Science" />
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Grade Level</label>
@@ -690,7 +690,7 @@ function formatDate(value?: string | null) {
 
 async function loadGradeLevels() {
   if (!auth.token) return
-  gradeLevels.value = await fetchGradeLevelOptions(auth.token)
+  gradeLevels.value = (await fetchGradeLevelOptions(auth.token)).filter(grade => grade.name === 'Grade 4')
 }
 
 async function loadSections() {

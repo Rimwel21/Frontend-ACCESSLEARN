@@ -781,7 +781,8 @@ function closeFloatingVideo() {
 }
 
 function startFloatingVideoDrag(event: PointerEvent) {
-  const panel = event.currentTarget.parentElement
+  const target = event.currentTarget as HTMLElement | null
+  const panel = target?.parentElement
   if (!panel) return
   const bounds = panel.getBoundingClientRect()
   floatingVideoDragOffset = { x: event.clientX - bounds.left, y: event.clientY - bounds.top }

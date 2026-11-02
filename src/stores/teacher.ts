@@ -96,6 +96,7 @@ interface AssessmentSettings {
   shuffleQuestions?: boolean
   showAnswersAfterSubmission?: boolean
   allowTextAnswers?: boolean
+  audience?: 'regular' | 'hearing_impaired'
   dueAt?: string | null
   questions?: AssessmentQuestion[]
   submissionsCount?: number
@@ -219,6 +220,7 @@ interface TeacherAssessmentResponse {
   module_id: number | null
   topic_id: number | null
   assessment_type: 'quiz' | 'activity'
+  audience?: 'regular' | 'hearing_impaired'
   title: string
   description: string
   category: string | null
@@ -812,6 +814,7 @@ export const useTeacherStore = defineStore('teacher', () => {
         shuffleQuestions?: boolean
         showAnswersAfterSubmission?: boolean
         allowTextAnswers?: boolean
+        audience?: 'regular' | 'hearing_impaired'
         questions?: AssessmentQuestion[]
         dueAt?: string | null
       }
@@ -833,6 +836,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           shuffle_questions: formPayload.shuffleQuestions ?? true,
           show_answers_after_submission: formPayload.showAnswersAfterSubmission ?? true,
           allow_text_answers: formPayload.allowTextAnswers ?? false,
+          audience: formPayload.audience ?? 'regular',
           questions: formPayload.questions ?? [],
           due_at: formPayload.dueAt ?? null,
         }),
@@ -911,6 +915,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
     allowTextAnswers?: boolean
+    audience?: 'regular' | 'hearing_impaired'
     questions: AssessmentQuestion[]
     dueAt?: string | null
   }) {
@@ -936,6 +941,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           shuffle_questions: payload.shuffleQuestions,
           show_answers_after_submission: payload.showAnswersAfterSubmission,
           allow_text_answers: payload.allowTextAnswers ?? false,
+          audience: payload.audience ?? 'regular',
           questions: payload.questions,
           due_at: payload.dueAt ?? null,
         }),
@@ -1321,6 +1327,7 @@ function mapActivityResponse(assessment: TeacherAssessmentResponse): Activity {
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,
     allowTextAnswers: assessment.allow_text_answers ?? false,
+    audience: assessment.audience ?? 'regular',
     dueAt: assessment.due_at ?? null,
     createdAt: assessment.created_at ? new Date(assessment.created_at).toLocaleDateString() : null,
     dueDate: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString() : '',

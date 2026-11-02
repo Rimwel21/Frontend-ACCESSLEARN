@@ -303,7 +303,7 @@ const accountPanelLoading = ref(false)
 const accountPanelError = ref('')
 const accountPanelPage = ref(1)
 const accountPanelPerPage = 5
-const allowedStudentGrades = ['Grade 4', 'Grade 5', 'Grade 6']
+const allowedStudentGrades = ['Grade 4']
 const filteredAccountPanelItems = computed(() => accountPanelAllItems.value.filter(matchesAccountPanelFilters))
 const accountPanelItems = computed(() => {
   const start = (accountPanelPage.value - 1) * accountPanelPerPage

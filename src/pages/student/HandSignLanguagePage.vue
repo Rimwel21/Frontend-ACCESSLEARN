@@ -18,7 +18,7 @@
 
     <div class="grid gap-5 px-7 py-6 xl:grid-cols-[minmax(0,1fr)_365px]">
       <div class="space-y-5">
-        <SignLanguageToggle v-if="activeActivity && typedAnswersAllowed" v-model="signLanguageMode" :disabled="isActivityCompleted" />
+        <SignLanguageToggle v-if="activeActivity && typedAnswersAllowed && !isHearingImpairedActivity" v-model="signLanguageMode" :disabled="isActivityCompleted" />
 
         <section v-if="content.loading" class="border-[3px] border-brand-teal bg-white p-5 text-sm font-black">
           Loading activity...
@@ -43,7 +43,15 @@
               {{ activeQuestionParsed.type === 'multiple_choice' ? 'Multiple Choice' : 'True or False' }}
             </span>
           </div>
-          <h2 class="mt-2 font-display text-xl font-black">{{ activeQuestion?.prompt }}</h2>
+          <h2 v-if="!isHearingImpairedActivity" class="mt-2 font-display text-xl font-black">{{ activeQuestion?.prompt }}</h2>
+          <h2 v-else class="mt-2 font-display text-xl font-black">Watch the signed question, then choose the word.</h2>
+          <video
+            v-if="isHearingImpairedActivity && activeQuestion?.video_url"
+            :src="activityQuestionVideoUrl(activeQuestion.video_url)"
+            class="mt-4 aspect-video w-full rounded border-[3px] border-brand-teal bg-black object-contain"
+            autoplay muted controls playsinline
+          />
+          <p v-else-if="isHearingImpairedActivity" class="mt-4 border-[3px] border-brand-rose bg-brand-rose/10 p-3 text-xs font-black text-red-700">The teacher's signed question video is not available yet.</p>
 
           <!-- Display choices for Multiple Choice or True / False -->
           <div v-if="activeQuestionParsed.choices.length" class="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
@@ -104,7 +112,7 @@
           </div>
         </section>
 
-        <div v-if="activeActivity" class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.55fr)]">
+        <div v-if="activeActivity && !isHearingImpairedActivity" class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.55fr)]">
           <HandCamera
             v-if="forcedSignLanguageMode && !isActivityCompleted"
             v-model:video-ref="videoRef"
@@ -462,6 +470,7 @@ import PredictionDisplay from '@/components/handsign/PredictionDisplay.vue'
 import SignLanguageToggle from '@/components/handsign/SignLanguageToggle.vue'
 import CameraControls from '@/components/handsign/CameraControls.vue'
 import { useHandSign } from '@/composables/useHandSign'
+import { API_BASE_URL } from '@/lib/api'
 import { getTutorialStatus, handsignErrorMessage, tutorialVideoUrl } from '@/services/handsign'
 import { useProfileStore } from '@/stores/profile'
 import { useStudentContentStore } from '@/stores/studentContent'
@@ -669,8 +678,9 @@ const isHearingImpaired = computed(() => {
   const data = profile.profile
   return Boolean(data && 'student_type' in data && data.student_type === 'hearing impaired')
 })
-const typedAnswersAllowed = computed(() => activeActivity.value?.allow_text_answers === true)
-const forcedSignLanguageMode = computed(() => !typedAnswersAllowed.value || signLanguageMode.value)
+const isHearingImpairedActivity = computed(() => activeActivity.value?.audience === 'hearing_impaired')
+const typedAnswersAllowed = computed(() => isHearingImpairedActivity.value || activeActivity.value?.allow_text_answers === true)
+const forcedSignLanguageMode = computed(() => !isHearingImpairedActivity.value && (!typedAnswersAllowed.value || signLanguageMode.value))
 const studentTypeLabel = computed(() => isHearingImpaired.value ? 'Student with Hearing Impairment' : 'Regular Student')
 const defaultModeLabel = computed(() => {
   if (!typedAnswersAllowed.value) return 'Sign Language Mode only'
@@ -774,6 +784,10 @@ function nextQuestion() {
   if (activeQuestionIndex.value < activeActivity.value.questions.length - 1) {
     selectQuestion(activeQuestionIndex.value + 1)
   }
+}
+
+function activityQuestionVideoUrl(url?: string | null) {
+  return !url || url.startsWith('http') ? url ?? '' : `${API_BASE_URL}${url}`
 }
 
 async function submitAnswer() {

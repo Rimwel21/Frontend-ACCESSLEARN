@@ -359,7 +359,7 @@ const accessibilityOptions = ['Regular Student', 'Hearing Impaired Student']
 async function loadGradeLevels() {
   academicLoading.value = true
   try {
-    gradeLevels.value = await fetchPublicGradeLevelOptions()
+    gradeLevels.value = (await fetchPublicGradeLevelOptions()).filter(grade => grade.name === 'Grade 4')
   } catch (err) {
     validationError.value = err instanceof Error ? err.message : 'Unable to load grade levels.'
   } finally {

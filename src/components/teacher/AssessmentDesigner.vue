@@ -28,6 +28,29 @@
               <textarea id="assessment-description" v-model.trim="form.description" class="figma-input min-h-20 resize-y" />
             </div>
 
+            <div v-if="props.kind === 'activity'" class="sm:col-span-2 rounded-md border border-brand-teal/30 bg-brand-blue-soft/35 p-3">
+              <span class="figma-label">Who is this activity for?</span>
+              <div class="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  :class="['rounded border px-3 py-3 text-left text-xs font-bold transition', form.audience === 'regular' ? 'border-brand-blue bg-brand-blue text-white' : 'border-brand-teal/40 bg-white text-ink hover:bg-brand-blue-soft']"
+                  @click="setActivityAudience('regular')"
+                >
+                  <span class="block text-sm">Regular students</span>
+                  <span :class="form.audience === 'regular' ? 'text-white/85' : 'text-ink-soft'">Keep the existing activity and tutorial-practice flow.</span>
+                </button>
+                <button
+                  type="button"
+                  :class="['rounded border px-3 py-3 text-left text-xs font-bold transition', form.audience === 'hearing_impaired' ? 'border-brand-blue bg-brand-blue text-white' : 'border-brand-teal/40 bg-white text-ink hover:bg-brand-blue-soft']"
+                  @click="setActivityAudience('hearing_impaired')"
+                >
+                  <span class="block text-sm">Hearing-impaired students</span>
+                  <span :class="form.audience === 'hearing_impaired' ? 'text-white/85' : 'text-ink-soft'">Students watch your signed question and answer it through sign language.</span>
+                </button>
+              </div>
+              <p v-if="isHearingImpairedActivity" class="mt-2 text-[11px] font-semibold text-ink-soft">Hearing-impaired activities use multiple-choice questions, an Admin dataset answer, and one recorded signed-question video per question.</p>
+            </div>
+
             <div>
               <label class="figma-label" for="assessment-week">Week</label>
               <select id="assessment-week" v-model="form.week" class="figma-input">
@@ -235,7 +258,7 @@
                   class="figma-input bg-white"
                   @change="onQuestionTypeChange(index, ($event.target as HTMLSelectElement).value)"
                 >
-                  <option v-for="opt in QUESTION_TYPES" :key="opt" :value="opt">{{ opt }}</option>
+                  <option v-for="opt in availableQuestionTypes" :key="opt" :value="opt">{{ opt }}</option>
                 </select>
               </div>
 
@@ -323,6 +346,19 @@
               <!-- ── MULTIPLE CHOICE ── -->
               <template v-else-if="question.type === 'Multiple Choice'">
                 <div>
+                  <template v-if="isHearingImpairedActivity">
+                    <label class="figma-label">Correct answer from the Admin Handsign dataset</label>
+                    <select
+                      class="figma-input bg-white"
+                      :value="resolvedAnswerWord(question)"
+                      :disabled="!form.week || labelsLoading"
+                      @change="setHearingImpairedCorrectAnswer(index, ($event.target as HTMLSelectElement).value)"
+                    >
+                      <option value="">{{ form.week ? (labelsLoading ? 'Loading week labels...' : 'Select the signed word...') : 'Select the activity week first...' }}</option>
+                      <option v-for="item in identificationLabels" :key="item" :value="item">{{ formatHandsignLabel(item) }}</option>
+                    </select>
+                    <p v-if="form.week && !labelsLoading && identificationLabels.length === 0" class="mt-1 text-[11px] font-semibold text-amber-600">No Admin Handsign labels are configured for this week yet.</p>
+                  </template>
                   <label class="figma-label mb-2">
                     Choices
                     <span class="font-normal text-ink-soft">&mdash; click ○ to mark the correct answer</span>
@@ -394,8 +430,8 @@
               <div v-if="props.kind === 'activity'" class="rounded-md border border-gray-200 bg-gray-50 p-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <div class="text-xs font-black uppercase tracking-wide text-ink">Sign tutorial video</div>
-                    <p class="mt-0.5 text-[11px] font-semibold text-ink-soft">Saved using the correct answer word.</p>
+                    <div class="text-xs font-black uppercase tracking-wide text-ink">{{ isHearingImpairedActivity ? 'Signed question video' : 'Sign tutorial video' }}</div>
+                    <p class="mt-0.5 text-[11px] font-semibold text-ink-soft">{{ isHearingImpairedActivity ? 'Students will watch this video as their question.' : 'Saved using the correct answer word.' }}</p>
                   </div>
                   <span class="rounded-full bg-[#D6E4FF] px-3 py-1 text-[11px] font-bold text-[#315ed8]">
                     {{ canonicalPreview(resolvedAnswerWord(question)) || 'Answer needed' }}
@@ -405,11 +441,12 @@
                 <div class="mt-3 flex flex-wrap gap-2">
                   <label
                     :class="[
-                      'figma-button cursor-pointer',
+                      'upload-file-box cursor-pointer',
                       !resolvedAnswerWord(question) ? 'cursor-not-allowed opacity-50' : ''
                     ]"
                   >
-                    Upload Video
+                    <span class="upload-file-plus">+</span>
+                    <span><strong>{{ isHearingImpairedActivity ? 'Upload signed question' : 'Upload sign tutorial' }}</strong><small>MP4, WebM, MOV or AVI</small></span>
                     <input
                       class="hidden"
                       type="file"
@@ -534,6 +571,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { learningWeekOptions } from '@/constants/learning'
+import { apiFetch } from '@/lib/api'
 import { handsignErrorMessage, uploadTutorialVideo } from '@/services/handsign'
 import { getDatasetLabelsForWeek, updateDatasetLabelSampleRequirement } from '@/services/handsignAdmin'
 import { addTeacherActivityWeek, getTeacherActivityWeeks } from '@/services/teacherActivityWeeks'
@@ -653,6 +691,7 @@ function blankForm() {
     shuffleQuestions: true,
     showAnswersAfterSubmission: true,
     allowTextAnswers: false,
+    audience: 'regular' as 'regular' | 'hearing_impaired',
     questions: [blankQuestion('Identification')] as QuestionDraft[],
   }
 }
@@ -663,6 +702,8 @@ const saving = computed(() => props.kind === 'quiz' ? store.quizSaving : store.a
 const activityWeekOptions = computed(() => [...learningWeekOptions, ...additionalWeeks.value].sort((left, right) => weekNumber(left) - weekNumber(right)))
 const nextAdditionalWeekNumber = computed(() => Math.max(8, ...activityWeekOptions.value.map(weekNumber)) + 1)
 const isEditing = computed(() => Boolean(props.initialAssessment))
+const isHearingImpairedActivity = computed(() => props.kind === 'activity' && form.value.audience === 'hearing_impaired')
+const availableQuestionTypes = computed(() => isHearingImpairedActivity.value ? ['Multiple Choice'] as QuestionType[] : QUESTION_TYPES)
 const selectedTargetClasses = computed(() =>
   form.value.targetClassIds
     .map(id => store.classes.find(cls => cls.id === id))
@@ -1060,6 +1101,12 @@ function validateQuestions(): string | null {
       if (emptyIdx !== -1) return `${label}: Choice ${CHOICE_LETTERS[emptyIdx]} text cannot be empty.`
       if (new Set(texts).size !== texts.length) return `${label}: Choices must not have duplicate text.`
       if (!q._mcCorrect) return `${label}: Select a correct answer by clicking the circle next to a choice.`
+      if (isHearingImpairedActivity.value && !identificationLabels.value.includes(resolvedAnswerWord(q))) {
+        return `${label}: Select its correct answer from the Admin Handsign dataset.`
+      }
+      if (isHearingImpairedActivity.value && !tutorialFiles.value[i] && !props.initialAssessment) {
+        return `${label}: Record or upload the signed question video.`
+      }
     }
   }
   return null
@@ -1068,6 +1115,26 @@ function validateQuestions(): string | null {
 function assessmentCategory() {
   const types = [...new Set(form.value.questions.map(question => question.type))]
   return types.length === 1 ? types[0] : 'Mixed Questions'
+}
+
+function setActivityAudience(audience: 'regular' | 'hearing_impaired') {
+  form.value.audience = audience
+  if (audience !== 'hearing_impaired') return
+  form.value.allowTextAnswers = false
+  form.value.category = 'Multiple Choice'
+  form.value.questions.forEach(question => {
+    if (question.type !== 'Multiple Choice') applyQuestionType(question, 'Multiple Choice')
+  })
+  void loadIdentificationLabels()
+}
+
+function setHearingImpairedCorrectAnswer(questionIndex: number, answer: string) {
+  const question = form.value.questions[questionIndex]
+  if (!question || question.type !== 'Multiple Choice') return
+  const choice = question._mcChoices.find(item => item.letter === question._mcCorrect) ?? question._mcChoices[0]
+  if (!choice) return
+  choice.text = answer
+  question._mcCorrect = answer ? choice.letter : ''
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1166,16 +1233,28 @@ async function saveAssessment() {
       shuffleQuestions: form.value.shuffleQuestions,
       showAnswersAfterSubmission: form.value.showAnswersAfterSubmission,
       allowTextAnswers: form.value.allowTextAnswers,
+      audience: form.value.audience,
       questions,
       dueAt: toApiDateTime(form.value.dueDate, form.value.dueTime),
     })
 
-    if (props.initialAssessment) await store.updateActivity(props.initialAssessment.id, buildPayload(targetClassIds[0]))
+    const savedActivities: Array<{ id: number }> = []
+    if (props.initialAssessment) {
+      const saved = await store.updateActivity(props.initialAssessment.id, buildPayload(targetClassIds[0]))
+      if (!saved) throw new Error('Activity could not be saved.')
+      savedActivities.push(saved)
+    }
     else {
-      for (const classId of targetClassIds) await store.addActivity(buildPayload(classId))
+      for (const classId of targetClassIds) {
+        const saved = await store.addActivity(buildPayload(classId))
+        if (!saved) throw new Error('Activity could not be saved.')
+        savedActivities.push(saved)
+      }
     }
 
-    const tutorialUploadCount = await uploadPendingTutorialVideos(questionEntries)
+    const tutorialUploadCount = isHearingImpairedActivity.value
+      ? await uploadPendingHearingImpairedQuestionVideos(savedActivities, questionEntries)
+      : await uploadPendingTutorialVideos(questionEntries)
     tutorialUploadSummary.value = tutorialUploadCount
   }
 
@@ -1351,6 +1430,29 @@ async function uploadPendingTutorialVideos(entries: Array<{ question: QuestionDr
   return uploaded
 }
 
+async function uploadPendingHearingImpairedQuestionVideos(activities: Array<{ id: number }>, entries: Array<{ question: QuestionDraft; index: number }>) {
+  let uploaded = 0
+  for (const activity of activities) {
+    for (const { index } of entries) {
+      const file = tutorialFiles.value[index]
+      if (!file) continue
+      tutorialUploadMessages.value = { ...tutorialUploadMessages.value, [index]: 'Uploading signed question video...' }
+      tutorialUploadErrors.value = { ...tutorialUploadErrors.value, [index]: '' }
+      try {
+        const formData = new FormData()
+        formData.append('video', file)
+        await apiFetch(`/teacher/assessments/${activity.id}/questions/${index}/video`, { method: 'POST', body: formData })
+        tutorialUploadMessages.value = { ...tutorialUploadMessages.value, [index]: 'Signed question video uploaded.' }
+        uploaded += 1
+      } catch (err) {
+        tutorialUploadErrors.value = { ...tutorialUploadErrors.value, [index]: handsignErrorMessage(err) }
+        throw new Error('Activity saved, but a signed question video failed to upload.')
+      }
+    }
+  }
+  return uploaded
+}
+
 function canonicalPreview(value: string) {
   return value
     .trim()
@@ -1425,6 +1527,7 @@ async function hydrateForm() {
     shuffleQuestions: assessment.shuffleQuestions ?? true,
     showAnswersAfterSubmission: assessment.showAnswersAfterSubmission ?? true,
     allowTextAnswers: assessment.allowTextAnswers ?? false,
+    audience: ('audience' in assessment && assessment.audience === 'hearing_impaired') ? 'hearing_impaired' : 'regular',
     questions: assessment.questions?.length
       ? assessment.questions.map(q => {
           const questionType = inferQuestionType(q.answer, q.question_type ?? resolvedCategory)

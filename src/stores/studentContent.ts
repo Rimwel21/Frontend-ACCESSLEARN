@@ -64,6 +64,7 @@ export interface StudentAssessment {
   module_id?: number | null
   topic_id?: number | null
   assessment_type: 'quiz' | 'activity'
+  audience?: 'regular' | 'hearing_impaired'
   title: string
   description: string
   category?: string | null
@@ -77,6 +78,7 @@ export interface StudentAssessment {
     answer?: string | null
     question_type?: 'identification' | 'multiple_choice' | 'true_false'
     options?: string[]
+    video_url?: string | null
   }>
   student_status?: string | null
   student_score?: number | null
