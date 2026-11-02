@@ -123,7 +123,7 @@
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { apiFetch, API_BASE_URL } from '@/lib/api'
-import { getDatasetLabelsForWeek, getDatasetSummary } from '@/services/handsignAdmin'
+import { getDatasetLabelsForWeek, getDatasetWeeks } from '@/services/handsignAdmin'
 
 interface Question { prompt: string; answer?: string; question_type?: 'identification' | 'multiple_choice' | 'true_false'; options?: string[] }
 interface Student { student_id: number; student_name: string; score: number; total: number; struggling: boolean; missed_question_indexes: number[] }
@@ -140,7 +140,7 @@ const title = ref('Targeted Learning Support')
 const description = ref('Review the assigned topics and answer the follow-up questions.')
 const dueAt = ref('')
 const answerWeek = ref('')
-const datasetWeeks = ref<string[]>(Array.from({ length: 52 }, (_, index) => `Week ${index + 1}`))
+const datasetWeeks = ref<string[]>([])
 const datasetLabels = ref<string[]>([])
 const labelsLoading = ref(false)
 const loading = ref(false)
@@ -154,20 +154,11 @@ const recordingError = ref('')
 let recordingStream: MediaStream | null = null
 let mediaRecorder: MediaRecorder | null = null
 let recordedChunks: Blob[] = []
-const defaultDatasetWeeks = Array.from({ length: 52 }, (_, index) => `Week ${index + 1}`)
-
 onMounted(async () => {
   modules.value = await apiFetch('/teacher/modules/')
   try {
-    const summary = await getDatasetSummary()
-    // Older dataset responses expose the configured weeks through weekly_labels
-    // rather than the optional top-level weeks list.
-    datasetWeeks.value = [...new Set([
-      ...defaultDatasetWeeks,
-      ...(summary.weeks ?? []),
-      ...Object.keys(summary.weekly_labels ?? {}),
-    ])].sort((left, right) => Number(left.replace(/\D/g, '')) - Number(right.replace(/\D/g, '')))
-  } catch { /* Save validation provides a clear message if this cannot load. */ }
+    datasetWeeks.value = (await getDatasetWeeks()).weeks
+  } catch { /* The form explains when no deployed dataset weeks are reachable. */ }
 })
 
 async function loadSummary() {

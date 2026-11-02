@@ -47,6 +47,11 @@ export function getDatasetLabelsForWeek(week: string) {
   return apiFetch<{ week: string; labels: string[]; requirements: Record<string, number> }>(`/api/handsign/dataset/labels?${params}`)
 }
 
+/** Available to signed-in teachers; unlike the summary endpoint this is not admin-only. */
+export function getDatasetWeeks() {
+  return apiFetch<{ weeks: string[] }>('/api/handsign/dataset/weeks')
+}
+
 export function updateDatasetLabelSampleRequirement(label: string, week: string, samplesRequired: number) {
   return apiFetch<{
     label: string
