@@ -76,6 +76,7 @@
                   <option v-for="label in datasetLabels" :key="label" :value="label">{{ formatLabel(label) }}</option>
                 </select>
                 <span class="mt-1 block text-xs font-semibold text-ink-soft">Original checkpoint answer: {{ question.sourceAnswer || 'Not available' }}</span>
+                <span v-if="answerWeek && !labelsLoading && datasetLabels.length === 0" class="mt-1 block text-xs font-semibold text-amber-700">No Admin dataset words are available for {{ answerWeek }} yet.</span>
               </label>
               <label v-if="false">
                 <span class="figma-label">Student answer type</span>
@@ -139,7 +140,7 @@ const title = ref('Targeted Learning Support')
 const description = ref('Review the assigned topics and answer the follow-up questions.')
 const dueAt = ref('')
 const answerWeek = ref('')
-const datasetWeeks = ref<string[]>([])
+const datasetWeeks = ref<string[]>(Array.from({ length: 52 }, (_, index) => `Week ${index + 1}`))
 const datasetLabels = ref<string[]>([])
 const labelsLoading = ref(false)
 const loading = ref(false)
@@ -153,6 +154,7 @@ const recordingError = ref('')
 let recordingStream: MediaStream | null = null
 let mediaRecorder: MediaRecorder | null = null
 let recordedChunks: Blob[] = []
+const defaultDatasetWeeks = Array.from({ length: 52 }, (_, index) => `Week ${index + 1}`)
 
 onMounted(async () => {
   modules.value = await apiFetch('/teacher/modules/')
@@ -160,7 +162,11 @@ onMounted(async () => {
     const summary = await getDatasetSummary()
     // Older dataset responses expose the configured weeks through weekly_labels
     // rather than the optional top-level weeks list.
-    datasetWeeks.value = summary.weeks?.length ? summary.weeks : Object.keys(summary.weekly_labels ?? {})
+    datasetWeeks.value = [...new Set([
+      ...defaultDatasetWeeks,
+      ...(summary.weeks ?? []),
+      ...Object.keys(summary.weekly_labels ?? {}),
+    ])].sort((left, right) => Number(left.replace(/\D/g, '')) - Number(right.replace(/\D/g, '')))
   } catch { /* Save validation provides a clear message if this cannot load. */ }
 })
 
