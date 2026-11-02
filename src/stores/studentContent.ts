@@ -87,6 +87,10 @@ export interface StudentAssessment {
   student_remaining_seconds?: number | null
   student_submission_type?: string | null
   student_answers?: Record<string, string>
+  student_answered_count?: number
+  student_progress_percent?: number
+  student_progress_status?: string
+  student_last_saved_at?: string | null
   student_retake_eligible?: boolean
   student_retake_reason?: string | null
   student_retake_status?: string | null
@@ -468,6 +472,55 @@ export const useStudentContentStore = defineStore('studentContent', () => {
     return result
   }
 
+  async function saveActivityDraft(activityId: string | number, answers: Record<string, string>) {
+    const auth = useAuthStore()
+    if (!auth.token) return null
+    const path = `/student/activities/${activityId}/draft`
+    let result: {
+      activity_id: number
+      status: string
+      answered_count: number
+      total_questions: number
+      progress_percent: number
+      last_saved_at: string
+      submitted: boolean
+    }
+    try {
+      result = await apiFetch<typeof result>(path, {
+        method: 'POST',
+        token: auth.token,
+        body: JSON.stringify({ answers }),
+      })
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 0) throw err
+      await queueStudentMutation(path, 'POST', { answers }, auth.token)
+      const totalQuestions = currentActivity.value?.questions.length ?? 0
+      const answeredCount = Object.values(answers).filter(value => value?.trim()).length
+      result = {
+        activity_id: Number(activityId),
+        status: totalQuestions > 0 && answeredCount === totalQuestions ? 'draft_complete' : 'in_progress',
+        answered_count: answeredCount,
+        total_questions: totalQuestions,
+        progress_percent: totalQuestions ? Math.round(answeredCount / totalQuestions * 100) : 0,
+        last_saved_at: new Date().toISOString(),
+        submitted: false,
+      }
+    }
+    const applyDraft = (activity: StudentAssessment) => activity.id === Number(activityId) ? {
+      ...activity,
+      student_status: 'in_progress',
+      student_answers: { ...answers },
+      student_answered_count: result.answered_count,
+      student_progress_percent: result.progress_percent,
+      student_progress_status: result.status,
+      student_last_saved_at: result.last_saved_at,
+      student_started_at: activity.student_started_at ?? result.last_saved_at,
+    } : activity
+    activities.value = activities.value.map(applyDraft)
+    if (currentActivity.value?.id === Number(activityId)) currentActivity.value = applyDraft(currentActivity.value)
+    return result
+  }
+
   async function requestActivityRetake(activityId: string | number, reason = '') {
     const auth = useAuthStore()
     if (!auth.token) throw new Error('Please login first')
@@ -640,7 +693,7 @@ export const useStudentContentStore = defineStore('studentContent', () => {
   return {
     modules, activities, currentActivity, currentModule, deadlines, progress, progressByModule, sortedTopics, loading, error,
     fetchModules, fetchModule, fetchActivities, fetchActivity, fetchProgress, fetchAllProgress, completeTopicBlock,
-    fetchDeadlines, markTopic, startQuiz, saveQuizAnswers, requestQuizRetake, submitQuiz, submitAssessment, submitActivity, requestActivityRetake,
+    fetchDeadlines, markTopic, startQuiz, saveQuizAnswers, requestQuizRetake, submitQuiz, submitAssessment, submitActivity, saveActivityDraft, requestActivityRetake,
     submitCheckpoint,
   }
 })

@@ -62,6 +62,9 @@
                 <div class="text-[14px] font-black">{{ act.title }}</div>
                 <div class="mt-0.5 truncate font-mono text-[11px] text-ink-soft">{{ act.description }}</div>
                 <div class="mt-1 font-mono text-[10px] font-bold text-ink-soft">{{ act.category || 'Activity' }}</div>
+                <div v-if="act.status !== 'Finished' && act.totalQuestions" class="mt-1 font-mono text-[10px] font-black text-brand-blue">
+                  {{ act.answeredCount }}/{{ act.totalQuestions }} answered · {{ act.progressPercent }}%
+                </div>
               </div>
 
               <div class="flex items-center gap-3 ml-auto">
@@ -145,7 +148,7 @@ import PaginationControls from '@/components/common/PaginationControls.vue'
 import { useStudentContentStore } from '@/stores/studentContent'
 import { apiFetch } from '@/lib/api'
 
-type ActivityStatus = 'In Progress' | 'Not Started' | 'Finished'
+type ActivityStatus = 'In Progress' | 'Draft Complete' | 'Not Started' | 'Finished'
 
 interface ActivityRow {
   id: number
@@ -157,6 +160,9 @@ interface ActivityRow {
   completedAt?: string | null
   score?: number | null
   total?: number | null
+  answeredCount: number
+  totalQuestions: number
+  progressPercent: number
   status: ActivityStatus
 }
 
@@ -178,9 +184,14 @@ const activities = computed<ActivityRow[]>(() => content.activities.map(assessme
   completedAt: assessment.student_completed_at,
   score: assessment.student_score,
   total: assessment.student_total,
+  answeredCount: assessment.student_answered_count ?? 0,
+  totalQuestions: assessment.questions.length,
+  progressPercent: assessment.student_progress_percent ?? 0,
   status: assessment.student_status === 'completed'
     ? 'Finished'
-    : (assessment.student_status === 'in_progress' || assessment.student_started_at ? 'In Progress' : 'Not Started'),
+    : (assessment.student_progress_status === 'draft_complete'
+        ? 'Draft Complete'
+        : (assessment.student_status === 'in_progress' || assessment.student_started_at ? 'In Progress' : 'Not Started')),
 })))
 
 const inProgress = computed(() => activities.value.filter(activity => activity.status === 'In Progress'))
@@ -213,6 +224,7 @@ function openActivity(activity: ActivityRow) {
 function statusStyle(status: ActivityStatus) {
   switch (status) {
     case 'In Progress': return 'bg-brand-amber/25 text-brand-blue'
+    case 'Draft Complete': return 'bg-green-200 text-ink'
     case 'Finished': return 'bg-brand-teal/15 text-brand-teal'
     case 'Not Started': return 'bg-surface text-ink-soft'
     default: return 'bg-white'

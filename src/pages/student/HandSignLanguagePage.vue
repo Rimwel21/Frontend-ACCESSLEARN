@@ -36,6 +36,22 @@
           </p>
         </section>
 
+        <section v-if="activeActivity && !isActivityCompleted" class="border-[3px] border-brand-teal bg-brand-blue-soft p-4 shadow-card" aria-live="polite">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="font-mono text-[10px] font-black uppercase tracking-widest text-ink-soft">Your Progress</div>
+              <div class="mt-1 font-display text-xl font-black">{{ answeredCount }} / {{ totalQuestions }} Questions Answered</div>
+              <div class="mt-1 text-xs font-bold text-ink-soft">{{ progressPercent }}% · {{ draftStatusLabel }}</div>
+            </div>
+            <div class="text-right text-xs font-black" :class="savingState === 'error' ? 'text-brand-rose' : 'text-brand-blue'">
+              {{ saveStatusLabel }}
+            </div>
+          </div>
+          <div class="mt-3 h-3 overflow-hidden border-2 border-brand-teal bg-white">
+            <div class="h-full bg-brand-teal transition-all" :style="{ width: `${progressPercent}%` }"></div>
+          </div>
+        </section>
+
         <section v-else-if="activeActivity" class="border-[3px] border-brand-teal bg-brand-amber p-5 shadow-[0_14px_35px_rgba(251,146,60,0.18)]">
           <div class="flex items-center justify-between gap-2 font-mono text-[10px] font-black uppercase tracking-widest">
             <span>Question {{ activeQuestionIndex + 1 }} of {{ activeActivity.questions.length }}</span>
@@ -455,7 +471,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HandCamera from '@/components/handsign/HandCamera.vue'
 import PredictionDisplay from '@/components/handsign/PredictionDisplay.vue'
@@ -493,6 +509,12 @@ const textAnswer = ref('')
 const submitMessage = ref('')
 const activeQuestionIndex = ref(0)
 const answers = ref<Record<string, string>>({})
+const savingState = ref<'idle' | 'saving' | 'saved' | 'error'>('idle')
+const lastSavedAt = ref<string | null>(null)
+const draftHydrated = ref(false)
+let draftSaveTimer: number | null = null
+let autosaveTimer: number | null = null
+let lastSavedSnapshot = ''
 const result = ref<{ score: number; total: number } | null>(null)
 const resultPopup = ref<{ isCorrect: boolean; title: string; message: string } | null>(null)
 const tutorial = ref<TutorialStatus | null>(null)
@@ -686,6 +708,16 @@ const visibleAnswer = computed(() => {
   return normalized || answer.value
 })
 const isActivityCompleted = computed(() => activeActivity.value?.student_status === 'completed')
+const totalQuestions = computed(() => activeActivity.value?.questions.length ?? 0)
+const answeredCount = computed(() => Object.values(answers.value).filter(value => value?.trim()).length)
+const progressPercent = computed(() => totalQuestions.value ? Math.round(answeredCount.value / totalQuestions.value * 100) : 0)
+const draftStatusLabel = computed(() => progressPercent.value === 100 ? 'Draft Complete' : 'In Progress')
+const saveStatusLabel = computed(() => {
+  if (savingState.value === 'saving') return 'Saving...'
+  if (savingState.value === 'error') return 'Save failed. Retrying...'
+  if (lastSavedAt.value) return `Saved at ${new Date(lastSavedAt.value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+  return 'Not saved yet'
+})
 const expectedTutorialAnswer = computed(() => activeActivity.value?.questions.find(question => question.answer?.trim())?.answer?.trim() ?? '')
 const canonicalTutorialWord = computed(() => tutorial.value?.word ?? canonicalPreview(expectedTutorialAnswer.value))
 const shouldShowTutorialStatus = computed(() => Boolean(activeActivity.value && isActivityCompleted.value && expectedTutorialAnswer.value))
@@ -735,6 +767,14 @@ watch(answer, value => {
   answers.value[String(activeQuestionIndex.value)] = normalized
 })
 
+watch(textAnswer, value => {
+  if (forcedSignLanguageMode.value || isActivityCompleted.value) return
+  const key = String(activeQuestionIndex.value)
+  const normalized = normalizeAnswerForQuestion(value)
+  if (normalized) answers.value[key] = normalized
+  else delete answers.value[key]
+})
+
 watch(typedAnswersAllowed, allowed => {
   if (!allowed) {
     signLanguageMode.value = true
@@ -749,6 +789,10 @@ onMounted(async () => {
   if (activityId.value) {
     await content.fetchActivity(activityId.value)
     hydrateSubmittedAnswers()
+    lastSavedAt.value = activeActivity.value?.student_last_saved_at ?? null
+    lastSavedSnapshot = JSON.stringify(answers.value)
+    draftHydrated.value = true
+    autosaveTimer = window.setInterval(() => void saveDraftNow(), 15000)
   }
   if (isActivityCompleted.value) {
     stop()
@@ -763,6 +807,7 @@ onMounted(async () => {
 
 function selectQuestion(index: number) {
   saveCurrentAnswer()
+  void saveDraftNow()
   activeQuestionIndex.value = index
   textAnswer.value = answers.value[String(index)] ?? ''
   void reset()
@@ -797,6 +842,8 @@ async function submitAnswer() {
     return null
   })
   if (!submitted) return
+
+  clearDraftTimers()
 
   result.value = { score: submitted.score, total: submitted.total }
   submitMessage.value = `Submitted. Score: ${submitted.score} / ${submitted.total}`
@@ -886,6 +933,43 @@ function hydrateSubmittedAnswers() {
   answers.value = { ...submitted }
   textAnswer.value = answers.value[String(activeQuestionIndex.value)] ?? ''
 }
+
+function scheduleDraftSave() {
+  if (!draftHydrated.value || isActivityCompleted.value || !activityId.value) return
+  if (draftSaveTimer !== null) window.clearTimeout(draftSaveTimer)
+  draftSaveTimer = window.setTimeout(() => void saveDraftNow(), 700)
+}
+
+async function saveDraftNow() {
+  if (!draftHydrated.value || isActivityCompleted.value || !activityId.value) return
+  saveCurrentAnswer()
+  const snapshot = JSON.stringify(answers.value)
+  if (snapshot === lastSavedSnapshot) return
+  savingState.value = 'saving'
+  try {
+    const saved = await content.saveActivityDraft(activityId.value, answers.value)
+    if (!saved) return
+    lastSavedSnapshot = snapshot
+    lastSavedAt.value = saved.last_saved_at
+    savingState.value = 'saved'
+  } catch {
+    savingState.value = 'error'
+  }
+}
+
+function clearDraftTimers() {
+  if (draftSaveTimer !== null) window.clearTimeout(draftSaveTimer)
+  if (autosaveTimer !== null) window.clearInterval(autosaveTimer)
+  draftSaveTimer = null
+  autosaveTimer = null
+}
+
+watch(answers, scheduleDraftSave, { deep: true })
+
+onBeforeUnmount(() => {
+  void saveDraftNow()
+  clearDraftTimers()
+})
 
 function canonicalPreview(value: string) {
   return value

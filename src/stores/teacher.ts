@@ -437,6 +437,45 @@ export interface StudentRecord {
   handsignPractice: StudentHandsignRecord[]
 }
 
+export interface ActivityProgressStudent {
+  student_id: number
+  student_name: string
+  status: 'not_started' | 'in_progress' | 'draft_complete' | 'submitted' | 'late' | 'missing' | 'graded'
+  answered_count: number
+  unanswered_count: number
+  total_questions: number
+  progress_percent: number
+  last_saved_at?: string | null
+  submitted: boolean
+  submitted_at?: string | null
+  is_currently_working: boolean
+  answers: Record<string, string>
+}
+
+export interface ActivityProgressResponse {
+  activity_id: number
+  activity_title: string
+  class_id: number
+  class_name: string
+  grade_level?: string | null
+  section?: string | null
+  due_at?: string | null
+  summary: {
+    total_students: number
+    not_started: number
+    in_progress: number
+    draft_complete: number
+    submitted: number
+    missing: number
+    late: number
+    graded: number
+    started: number
+    started_percent: number
+    submitted_percent: number
+  }
+  students: ActivityProgressStudent[]
+}
+
 export const useTeacherStore = defineStore('teacher', () => {
   const teacherName = ref('Ms. Rymuel')
   const modules = ref<Module[]>([])
@@ -455,6 +494,9 @@ export const useTeacherStore = defineStore('teacher', () => {
   const quizError = ref('')
   const activitySaving = ref(false)
   const activityError = ref('')
+  const activityProgress = ref<ActivityProgressResponse | null>(null)
+  const activityProgressLoading = ref(false)
+  const activityProgressError = ref('')
   const classesLoading = ref(false)
   const classSaving = ref(false)
   const classError = ref('')
@@ -790,6 +832,23 @@ export const useTeacherStore = defineStore('teacher', () => {
     const data = await apiFetch<TeacherAssessmentResponse[]>(`/teacher/assessments/${type}`, { token: auth.token })
     if (type === 'quiz') quizzes.value = data.map(assessment => mapQuizResponse(assessment, modules.value))
     else activities.value = data.map(mapActivityResponse)
+  }
+
+  async function fetchActivityProgress(activityId: string | number) {
+    const auth = useAuthStore()
+    if (!auth.token) return null
+    activityProgressLoading.value = true
+    activityProgressError.value = ''
+    try {
+      activityProgress.value = await apiFetch<ActivityProgressResponse>(`/teacher/assessments/${activityId}/progress`, { token: auth.token })
+      return activityProgress.value
+    } catch (err) {
+      activityProgressError.value = err instanceof Error ? err.message : 'Unable to load activity progress'
+      activityProgress.value = null
+      return null
+    } finally {
+      activityProgressLoading.value = false
+    }
   }
 
   async function addQuiz(payload: {
@@ -1163,11 +1222,11 @@ export const useTeacherStore = defineStore('teacher', () => {
   return {
     teacherName, modules, performers, recentActivities, activityLogs, students, quizzes, activities, dashboardSummary,
     classes, availableClasses, selectedClassId, selectedClass, hasClasses,
-    modulesLoading, moduleSaving, moduleError, quizSaving, quizError, activitySaving, activityError,
+    modulesLoading, moduleSaving, moduleError, quizSaving, quizError, activitySaving, activityError, activityProgress, activityProgressLoading, activityProgressError,
     classesLoading, classSaving, classError, classStudents, classStudentsLoading, studentRecords, studentRecordsLoading, studentRecordsError, activityLogsLoading, activityLogsError,
     retakeRequests, retakeRequestsLoading, retakeRequestsError,
     publishedModules, unpublishedModules, atRiskStudents,
-    fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchActivityLogs, fetchStudentRecords, fetchAssessments, addQuiz, updateQuiz, deleteQuiz, addActivity, updateActivity, deleteActivity,
+    fetchModules, addModule, updateModule, replaceModuleFile, downloadModuleFile, deleteModule, fetchDashboardSummary, fetchRecentActivities, fetchActivityLogs, fetchStudentRecords, fetchAssessments, fetchActivityProgress, addQuiz, updateQuiz, deleteQuiz, addActivity, updateActivity, deleteActivity,
     fetchClasses, addClass, selectClass, deleteClass, fetchClassStudents,
     fetchAvailableClasses, selectClassAction, unselectClassAction, fetchRetakeRequests, reviewRetakeRequest, setRetakeAccess,
   }
