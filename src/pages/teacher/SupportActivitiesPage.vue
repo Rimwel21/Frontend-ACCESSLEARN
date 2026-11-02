@@ -9,7 +9,8 @@
       <RouterLink class="figma-button no-underline" to="/teacher/activities">Back to activities</RouterLink>
     </div>
 
-    <section id="posted-targeted-support" class="card p-5">
+    <!-- Posted Targeted Support activities are listed and managed on the main Activities page. -->
+    <section v-if="false" id="posted-targeted-support" class="card p-5">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p class="eyebrow">Posted activities</p>
@@ -122,7 +123,7 @@
       <p v-if="error" class="status-error">{{ error }}</p>
       <div v-if="success" class="rounded border border-brand-teal/40 bg-brand-blue-soft/50 p-4 text-sm font-semibold text-brand-teal">
         <p>{{ success }}</p>
-        <a class="mt-2 inline-flex figma-button no-underline" href="#posted-targeted-support">View posted targeted support</a>
+        <RouterLink class="mt-2 inline-flex figma-button no-underline" to="/teacher/activities">View targeted support activities</RouterLink>
       </div>
       <div class="flex justify-end"><button class="figma-primary" :disabled="saving">{{ saving ? 'Posting…' : 'Post targeted support activity' }}</button></div>
     </form>
@@ -345,7 +346,7 @@ async function save() {
       })
       await Promise.all(uploads)
     }))
-    await Promise.all([loadSummary(), loadPostedActivities()])
+    await loadSummary()
     success.value = 'Targeted support activity posted successfully. The selected students can now receive it in their targeted support list.'
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to post the support activity.' }
   finally { saving.value = false }
