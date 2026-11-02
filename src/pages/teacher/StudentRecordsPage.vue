@@ -399,6 +399,6 @@ function statusLabel(status: string) {
 }
 
 function readableStatus(status: string) {
-  return status.replaceAll('_', ' ')
+  return status.replace(/_/g, ' ')
 }
 </script>
