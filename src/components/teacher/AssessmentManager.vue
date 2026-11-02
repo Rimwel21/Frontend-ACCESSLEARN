@@ -113,6 +113,64 @@
       </div>
     </section>
 
+    <section v-if="props.kind === 'activity'" class="card overflow-hidden">
+      <div class="flex flex-wrap items-start justify-between gap-4 border-b border-brand-teal/20 bg-brand-blue-soft/35 px-5 py-4">
+        <div>
+          <p class="eyebrow">Targeted support</p>
+          <h2 class="font-display text-lg font-bold">Assigned learning support</h2>
+          <p class="mt-1 text-xs font-semibold text-ink-soft">Separate sign-language support sent only to the students selected by the teacher.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button class="figma-button" type="button" :disabled="supportActivitiesLoading" @click="loadSupportActivities">
+            {{ supportActivitiesLoading ? 'Refreshing...' : 'Refresh' }}
+          </button>
+          <RouterLink class="btn-primary no-underline" to="/teacher/support-activities">Create targeted support</RouterLink>
+        </div>
+      </div>
+
+      <div v-if="supportActivitiesError" class="m-4 status-error">{{ supportActivitiesError }}</div>
+      <div v-else-if="supportActivitiesLoading" class="p-5 text-sm font-semibold text-ink-soft">Loading targeted support activities...</div>
+      <div v-else-if="supportActivities.length === 0" class="p-6 text-center">
+        <p class="font-display text-base font-bold">No targeted support activities posted yet.</p>
+        <p class="mt-1 text-sm text-ink-soft">Create one when a hearing-impaired student needs review after a checkpoint.</p>
+      </div>
+      <div v-else class="grid gap-3 p-4">
+        <article v-for="supportActivity in supportActivities" :key="supportActivity.id" class="rounded-lg border border-brand-teal/25 bg-surface p-4 shadow-sm">
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="grid h-9 w-9 place-items-center rounded-full bg-brand-amber/25 text-sm font-black text-brand-amber">TS</span>
+                <h3 class="truncate font-display text-base font-bold">{{ supportActivity.title }}</h3>
+                <span class="badge badge-blue">{{ supportActivity.interventions.length }} topic group{{ supportActivity.interventions.length === 1 ? '' : 's' }}</span>
+              </div>
+              <p class="mt-3 text-sm text-ink-soft">{{ supportActivity.description }}</p>
+              <div class="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-ink-soft">
+                <span class="rounded bg-brand-teal/10 px-2 py-1">{{ supportStudentCount(supportActivity) }} selected student{{ supportStudentCount(supportActivity) === 1 ? '' : 's' }}</span>
+                <span class="rounded bg-brand-blue-soft px-2 py-1">{{ supportQuestionCount(supportActivity) }} signed question{{ supportQuestionCount(supportActivity) === 1 ? '' : 's' }}</span>
+                <span v-if="supportActivity.due_at" class="rounded bg-brand-amber/15 px-2 py-1">Due {{ formatSupportDate(supportActivity.due_at) }}</span>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 lg:justify-end">
+              <button class="figma-button" type="button" @click="toggleSupportDetails(supportActivity.id)">
+                {{ expandedSupportActivityId === supportActivity.id ? 'Hide details' : 'View details' }}
+              </button>
+              <RouterLink class="figma-button no-underline" to="/teacher/support-activities#posted-targeted-support">Manage</RouterLink>
+            </div>
+          </div>
+
+          <div v-if="expandedSupportActivityId === supportActivity.id" class="mt-4 grid gap-2 border-t border-brand-teal/15 pt-4">
+            <div v-for="group in supportActivity.interventions" :key="group.id" class="rounded border border-brand-teal/15 bg-brand-blue-soft/20 p-3 text-sm">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="font-display font-bold">{{ group.title }}</span>
+                <span class="text-xs font-semibold text-ink-soft">Topics {{ group.start_sort_order }}–{{ group.end_sort_order }} · {{ group.questions.length }} signed question{{ group.questions.length === 1 ? '' : 's' }}</span>
+              </div>
+              <p class="mt-2 text-xs font-semibold text-ink-soft">Students: {{ group.targets.map(target => target.student_name || `Student #${target.student_id}`).join(', ') || 'None selected' }}</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
     <div v-if="loading" class="empty-state">Loading {{ listTitle.toLowerCase() }}...</div>
     <div v-else-if="items.length === 0" class="card p-12 text-center">
       <h2 class="font-display text-xl font-bold">No {{ listTitle.toLowerCase() }} have been created yet.</h2>
@@ -213,6 +271,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import AssessmentDesigner from '@/components/teacher/AssessmentDesigner.vue'
 import PaginationControls from '@/components/common/PaginationControls.vue'
+import { apiFetch } from '@/lib/api'
 import { useTeacherStore } from '@/stores/teacher'
 import type { Activity, Quiz } from '@/stores/teacher'
 
@@ -232,6 +291,26 @@ const reviewingRetakeId = ref<number | null>(null)
 const retakeStatusFilter = ref('pending')
 const assessmentPage = ref(1)
 const assessmentPageSize = 8
+interface TargetedSupportTarget { id: number; student_id: number; student_name?: string | null }
+interface TargetedSupportGroup {
+  id: number
+  title: string
+  start_sort_order: number
+  end_sort_order: number
+  questions: unknown[]
+  targets: TargetedSupportTarget[]
+}
+interface TargetedSupportActivity {
+  id: number
+  title: string
+  description: string
+  due_at?: string | null
+  interventions: TargetedSupportGroup[]
+}
+const supportActivities = ref<TargetedSupportActivity[]>([])
+const supportActivitiesLoading = ref(false)
+const supportActivitiesError = ref('')
+const expandedSupportActivityId = ref<number | null>(null)
 
 const listTitle = computed(() => props.kind === 'quiz' ? 'Quizzes' : 'Activities')
 const items = computed(() => props.kind === 'quiz' ? store.quizzes : store.activities)
@@ -282,6 +361,7 @@ onMounted(async () => {
     if (props.kind === 'quiz') await store.fetchModules()
     await store.fetchAssessments(props.kind)
     await loadRetakeRequests()
+    if (props.kind === 'activity') await loadSupportActivities()
   } finally {
     loading.value = false
   }
@@ -355,6 +435,35 @@ function retakeReasonLabel(reason: string) {
   if (reason === 'failed_low_score') return 'Low score'
   if (reason === 'missed_deadline') return 'Missed deadline'
   return reason
+}
+
+async function loadSupportActivities() {
+  supportActivitiesLoading.value = true
+  supportActivitiesError.value = ''
+  try {
+    supportActivities.value = await apiFetch<TargetedSupportActivity[]>('/teacher/remediation-activities/')
+  } catch (err) {
+    supportActivitiesError.value = err instanceof Error ? err.message : 'Unable to load targeted support activities.'
+  } finally {
+    supportActivitiesLoading.value = false
+  }
+}
+
+function supportStudentCount(activity: TargetedSupportActivity) {
+  return activity.interventions.reduce((total, group) => total + group.targets.length, 0)
+}
+
+function supportQuestionCount(activity: TargetedSupportActivity) {
+  return activity.interventions.reduce((total, group) => total + group.questions.length, 0)
+}
+
+function toggleSupportDetails(activityId: number) {
+  expandedSupportActivityId.value = expandedSupportActivityId.value === activityId ? null : activityId
+}
+
+function formatSupportDate(value: string) {
+  const date = new Date(value)
+  return Number.isNaN(date.valueOf()) ? value : date.toLocaleDateString()
 }
 </script>
 
