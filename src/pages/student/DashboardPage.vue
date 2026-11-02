@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-surface">
     <div class="space-y-5 px-3 py-4 sm:px-5 sm:py-5 xl:px-7">
       <div class="min-w-0">
-        <section class="relative border-[3px] border-brand-teal bg-white shadow-card">
+        <section v-if="false" class="relative border-[3px] border-brand-teal bg-white shadow-card">
           <div class="flex items-center gap-3 px-4 py-3">
             <svg class="h-5 w-5 flex-shrink-0 text-brand-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35" />
@@ -77,6 +77,7 @@
                   <span>{{ inProgressModules.length }} In Progress</span>
                 </button>
                 <button
+                  v-if="false"
                   type="button"
                   class="flex items-center gap-1.5 border-[2px] border-white bg-white/10 px-3 py-1.5 font-bold transition hover:bg-white hover:text-ink"
                   @click="activeTab = 'finished'"
@@ -198,6 +199,7 @@
                 </button>
 
                 <button
+                  v-if="false"
                   :class="[
                     'border-[2.5px] border-brand-teal px-3 py-1.5 font-display text-[11px] font-black uppercase tracking-wider transition-all shadow-sm sm:px-3.5 sm:text-xs',
                     activeTab === 'finished'
@@ -338,7 +340,7 @@
               </div>
 
               <!-- SECTION 3: FINISHED & REVIEW -->
-              <div v-if="(activeTab === 'all' || activeTab === 'finished') && finishedModules.length > 0" class="space-y-3">
+              <div v-if="false" class="space-y-3">
                 <div class="flex items-center gap-2">
                   <span class="inline-flex items-center gap-1 border-[2px] border-brand-teal bg-emerald-600 px-2.5 py-0.5 font-display text-[11px] font-black uppercase tracking-wider text-white">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5" /></svg> FINISHED & REVIEW
