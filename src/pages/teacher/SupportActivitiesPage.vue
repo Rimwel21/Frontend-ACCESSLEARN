@@ -97,6 +97,10 @@
         </div>
       </section>
       <p v-if="error" class="status-error">{{ error }}</p>
+      <div v-if="success" class="rounded border border-brand-teal/40 bg-brand-blue-soft/50 p-4 text-sm font-semibold text-brand-teal">
+        <p>{{ success }}</p>
+        <RouterLink class="mt-2 inline-flex figma-button no-underline" to="/teacher/activities">View teacher activities</RouterLink>
+      </div>
       <div class="flex justify-end"><button class="figma-primary" :disabled="saving">{{ saving ? 'Posting…' : 'Post targeted support activity' }}</button></div>
     </form>
 
@@ -146,6 +150,7 @@ const labelsLoading = ref(false)
 const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
+const success = ref('')
 const recordingQuestion = ref<SignQuestionDraft | null>(null)
 const recordingVideoRef = ref<HTMLVideoElement | null>(null)
 const recordingReady = ref(false)
@@ -259,6 +264,7 @@ function readableAnswer(answer: string) {
 
 async function save() {
   error.value = ''
+  success.value = ''
   if (!selectedModuleId.value || !title.value || !description.value || !answerWeek.value) { error.value = 'Complete the activity details and select the Admin Handsign dataset week.'; return }
   const active = drafts.value.filter(draft => draft.studentIds.length && selectedQuestions(draft).length)
   if (!active.length) { error.value = 'Select at least one student and one missed question for a topic group.'; return }
@@ -301,6 +307,7 @@ async function save() {
       await Promise.all(uploads)
     }))
     await loadSummary()
+    success.value = 'Targeted support activity posted successfully. The selected students can now receive it in their targeted support list.'
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to post the support activity.' }
   finally { saving.value = false }
 }
