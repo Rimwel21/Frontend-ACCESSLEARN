@@ -295,6 +295,31 @@ interface TeacherStudentRecordResponse {
   quiz_activity?: string | null
   assessments: TeacherStudentRecordAssessmentResponse[]
   handsign_practice: TeacherStudentRecordHandsignResponse[]
+  learning_materials: TeacherStudentRecordMaterialResponse[]
+  targeted_support: TeacherStudentRecordTargetedSupportResponse[]
+}
+
+interface TeacherStudentRecordMaterialResponse {
+  id: number
+  title: string
+  completed_topics: number
+  total_topics: number
+  percent: number
+  status: string
+  last_updated?: string | null
+}
+
+interface TeacherStudentRecordTargetedSupportResponse {
+  id: number
+  activity_title: string
+  intervention_title: string
+  start_sort_order: number
+  end_sort_order: number
+  status: string
+  score?: number | null
+  total?: number | null
+  due_at?: string | null
+  completed_at?: string | null
 }
 
 export interface RetakeRequest {
@@ -349,6 +374,29 @@ export interface StudentHandsignRecord {
   completedAt?: string | null
 }
 
+export interface StudentMaterialRecord {
+  id: number
+  title: string
+  completedTopics: number
+  totalTopics: number
+  percent: number
+  status: string
+  lastUpdated?: string | null
+}
+
+export interface StudentTargetedSupportRecord {
+  id: number
+  activityTitle: string
+  interventionTitle: string
+  startSortOrder: number
+  endSortOrder: number
+  status: string
+  score?: number | null
+  total?: number | null
+  dueAt?: string | null
+  completedAt?: string | null
+}
+
 export interface StudentRecord {
   studentId: string
   studentName: string
@@ -368,6 +416,8 @@ export interface StudentRecord {
   quizActivity: string
   assessments: StudentAssessmentRecord[]
   handsignPractice: StudentHandsignRecord[]
+  learningMaterials: StudentMaterialRecord[]
+  targetedSupport: StudentTargetedSupportRecord[]
 }
 
 export const useTeacherStore = defineStore('teacher', () => {
@@ -1244,6 +1294,27 @@ function mapStudentRecordResponse(record: TeacherStudentRecordResponse): Student
       word: item.word,
       attemptScores: item.attempt_scores ?? [],
       highestScore: item.highest_score,
+      completedAt: item.completed_at ?? null,
+    })),
+    learningMaterials: (record.learning_materials ?? []).map(item => ({
+      id: item.id,
+      title: item.title,
+      completedTopics: item.completed_topics,
+      totalTopics: item.total_topics,
+      percent: item.percent,
+      status: item.status,
+      lastUpdated: item.last_updated ?? null,
+    })),
+    targetedSupport: (record.targeted_support ?? []).map(item => ({
+      id: item.id,
+      activityTitle: item.activity_title,
+      interventionTitle: item.intervention_title,
+      startSortOrder: item.start_sort_order,
+      endSortOrder: item.end_sort_order,
+      status: item.status,
+      score: item.score,
+      total: item.total,
+      dueAt: item.due_at ?? null,
       completedAt: item.completed_at ?? null,
     })),
   }
