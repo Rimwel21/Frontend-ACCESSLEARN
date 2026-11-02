@@ -34,18 +34,28 @@
             <p v-else class="status-error mt-4">The teacher's signed question video is not available yet.</p>
 
             <div class="mt-5 grid gap-5 lg:grid-cols-2">
-              <HandCamera v-model:video-ref="videoRef" v-model:canvas-ref="canvasRef" :detection="detection" :is-running="isRunning" :is-detecting="isDetecting" :error="cameraError" :retry-message="retryMessage" @start="start" />
+              <section class="overflow-hidden rounded border border-brand-teal/30 bg-white">
+                <div class="flex items-center justify-between border-b border-brand-teal/20 px-4 py-3">
+                  <p class="figma-label">Word gesture camera</p>
+                  <span class="text-xs font-semibold text-ink-soft">{{ cameraOn ? 'Ready' : 'Camera off' }}</span>
+                </div>
+                <div class="relative aspect-video bg-black">
+                  <video ref="wordVideoRef" class="h-full w-full -scale-x-100 object-cover" autoplay muted playsinline />
+                  <canvas ref="wordCanvasRef" hidden />
+                  <button v-if="!cameraOn" class="figma-primary absolute inset-0 m-auto h-fit" type="button" @click="startWordCamera">Start word-sign camera</button>
+                  <div v-if="capturing" class="absolute inset-x-0 bottom-0 bg-black/70 px-3 py-2 text-center text-xs font-bold text-white">Capturing your complete sign: {{ captureProgress }}%</div>
+                </div>
+                <div class="flex justify-end p-3"><button class="figma-button" type="button" :disabled="!cameraOn || capturing" @click="stopWordCamera">Stop camera</button></div>
+              </section>
               <section class="rounded border border-brand-teal/30 bg-brand-blue-soft/30 p-4">
-                <p class="figma-label">Your recognized sign</p>
-                <p class="min-h-12 rounded border border-brand-teal/30 bg-white px-3 py-3 text-lg font-bold">{{ normalizedAnswer || 'Show your sign to the camera.' }}</p>
-                <p class="mt-2 text-xs font-semibold text-ink-soft">The answer is saved even if it is not correct, so you can continue after checking it.</p>
+                <p class="figma-label">Your word-sign answer</p>
+                <p class="min-h-12 rounded border border-brand-teal/30 bg-white px-3 py-3 text-lg font-bold">{{ capturing ? 'Capturing your complete sign…' : 'Make the full sign shown in the question video.' }}</p>
+                <p class="mt-2 text-xs font-semibold text-ink-soft">This checks your whole word gesture against the Admin Word Gesture dataset—not alphabet letters. Your answer is recorded even when it is not correct.</p>
                 <div class="mt-4 flex flex-wrap gap-2">
-                  <button class="figma-button" type="button" :disabled="!normalizedAnswer" @click="backspace">Remove last sign</button>
-                  <button class="figma-button" type="button" @click="resetForQuestion">Clear answer</button>
-                  <button class="figma-primary" type="button" :disabled="!normalizedAnswer || checking" @click="checkCurrentAnswer">{{ checking ? 'Checking...' : 'Check my sign' }}</button>
+                  <button class="figma-primary" type="button" :disabled="!cameraOn || checking || capturing" @click="checkCurrentAnswer">{{ checking ? 'Checking word sign...' : 'Record and check my word sign' }}</button>
                 </div>
                 <p v-if="currentCheck" :class="currentCheck.correct ? 'status-success' : 'status-error'" class="mt-4">
-                  {{ currentCheck.correct ? 'Correct sign! Your answer has been recorded.' : "That sign isn't correct. Your answer has still been recorded; you may continue." }}
+                  {{ currentCheck.correct ? 'Correct sign! Your answer has been recorded.' : "That word sign isn't correct. Your answer has still been recorded; you may continue." }}
                 </p>
               </section>
             </div>
@@ -64,10 +74,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import HandCamera from '@/components/handsign/HandCamera.vue'
-import { useHandSign } from '@/composables/useHandSign'
 import { API_BASE_URL, apiFetch } from '@/lib/api'
 
 interface Topic { id: number; title: string; content: string; page_image_urls?: string[] }
@@ -87,6 +95,12 @@ const questionIndex = ref(0)
 const answers = ref<Record<string, string>>({})
 const checks = ref<Record<string, { correct: boolean }>>({})
 const result = ref<{ score: number; total: number } | null>(null)
+const wordVideoRef = ref<HTMLVideoElement | null>(null)
+const wordCanvasRef = ref<HTMLCanvasElement | null>(null)
+const cameraOn = ref(false)
+const capturing = ref(false)
+const captureProgress = ref(0)
+let wordStream: MediaStream | null = null
 const activeTopic = computed(() => activity.value?.topics[topicIndex.value] ?? null)
 const activeQuestion = computed(() => activity.value?.questions[questionIndex.value] ?? null)
 const currentCheck = computed(() => checks.value[String(questionIndex.value)] ?? null)
@@ -95,9 +109,6 @@ const allQuestionsChecked = computed(() => {
   if (!currentActivity) return false
   return currentActivity.questions.every((_, index) => Boolean(checks.value[String(index)]))
 })
-const { videoRef, canvasRef, detection, answer, isRunning, isDetecting, error: cameraError, retryMessage, start, reset, backspace } = useHandSign()
-const normalizedAnswer = computed(() => answer.value.trim().toUpperCase())
-
 onMounted(async () => {
   try {
     const loaded = await apiFetch<Activity>(`/student/remediation-activities/${route.params.targetId}`)
@@ -107,20 +118,66 @@ onMounted(async () => {
   finally { loading.value = false }
 })
 
+onBeforeUnmount(stopWordCamera)
+
 function assetUrl(url?: string | null) { return !url || url.startsWith('http') ? url ?? '' : `${API_BASE_URL}${url}` }
 function nextTopic() { if (!activity.value || topicIndex.value >= activity.value.topics.length - 1) step.value = 'questions'; else topicIndex.value++ }
-async function resetForQuestion() { await reset() }
-async function goToQuestion(index: number) { questionIndex.value = index; await reset() }
-async function checkCurrentAnswer() {
-  if (!normalizedAnswer.value) return
-  checking.value = true
+async function goToQuestion(index: number) { questionIndex.value = index }
+async function startWordCamera() {
+  if (cameraOn.value) return
+  error.value = ''
   try {
-    const savedAnswer = normalizedAnswer.value
-    const checked = await apiFetch<{ correct: boolean }>(`/student/remediation-activities/${route.params.targetId}/questions/${questionIndex.value}/check`, { method: 'POST', body: JSON.stringify({ answer: savedAnswer }) })
-    answers.value = { ...answers.value, [String(questionIndex.value)]: savedAnswer }
+    wordStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
+    if (!wordVideoRef.value) throw new Error('Camera preview is not ready.')
+    wordVideoRef.value.srcObject = wordStream
+    await wordVideoRef.value.play()
+    cameraOn.value = true
+  } catch {
+    error.value = 'Camera permission is required to record your word sign.'
+    stopWordCamera()
+  }
+}
+function stopWordCamera() {
+  wordStream?.getTracks().forEach(track => track.stop())
+  wordStream = null
+  cameraOn.value = false
+  if (wordVideoRef.value) wordVideoRef.value.srcObject = null
+}
+async function checkCurrentAnswer() {
+  checking.value = true
+  capturing.value = true
+  captureProgress.value = 0
+  error.value = ''
+  try {
+    const images = await captureWordFrames()
+    const checked = await apiFetch<{ correct: boolean }>(`/student/remediation-activities/${route.params.targetId}/questions/${questionIndex.value}/word-check`, { method: 'POST', body: JSON.stringify({ images }) })
+    answers.value = { ...answers.value, [String(questionIndex.value)]: checked.correct ? '__WORD_GESTURE_CORRECT__' : '__WORD_GESTURE_INCORRECT__' }
     checks.value = { ...checks.value, [String(questionIndex.value)]: checked }
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to check your signed answer.' }
-  finally { checking.value = false }
+  finally { checking.value = false; capturing.value = false; captureProgress.value = 0 }
+}
+async function captureWordFrames() {
+  const images: string[] = []
+  const targetFrames = 40
+  while (images.length < targetFrames) {
+    const image = captureFrameDataUrl()
+    if (image) images.push(image)
+    captureProgress.value = Math.round((images.length / targetFrames) * 100)
+    await new Promise(resolve => window.setTimeout(resolve, 100))
+  }
+  return images
+}
+function captureFrameDataUrl() {
+  const video = wordVideoRef.value
+  const canvas = wordCanvasRef.value
+  if (!video || !canvas || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return null
+  const scale = Math.min(1, 640 / video.videoWidth)
+  canvas.width = Math.round(video.videoWidth * scale)
+  canvas.height = Math.round(video.videoHeight * scale)
+  const context = canvas.getContext('2d')
+  if (!context) return null
+  context.drawImage(video, 0, 0, canvas.width, canvas.height)
+  return canvas.toDataURL('image/jpeg', 0.72)
 }
 async function submit() {
   if (!activity.value || !allQuestionsChecked.value) return
