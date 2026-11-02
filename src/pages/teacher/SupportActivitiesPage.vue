@@ -9,6 +9,29 @@
       <RouterLink class="figma-button no-underline" to="/teacher/activities">Back to activities</RouterLink>
     </div>
 
+    <section id="posted-targeted-support" class="card p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p class="eyebrow">Posted activities</p>
+          <h2 class="font-display text-lg font-bold">Targeted support activities</h2>
+          <p class="mt-1 text-xs font-semibold text-ink-soft">These activities are separate from regular class activities and are only sent to the selected students.</p>
+        </div>
+        <button class="figma-button" type="button" :disabled="postedLoading" @click="loadPostedActivities">{{ postedLoading ? 'Refreshing...' : 'Refresh list' }}</button>
+      </div>
+      <div v-if="postedLoading" class="mt-3 text-sm font-semibold text-ink-soft">Loading posted targeted support activities...</div>
+      <p v-else-if="postedActivities.length === 0" class="mt-3 text-sm font-semibold text-ink-soft">No targeted support activities have been posted yet.</p>
+      <div v-else class="mt-4 grid gap-2">
+        <article v-for="activity in postedActivities" :key="activity.id" class="rounded border border-brand-teal/25 bg-surface p-3 text-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="font-display font-bold">{{ activity.title }}</h3>
+            <span class="badge badge-blue">{{ activity.interventions.length }} topic group{{ activity.interventions.length === 1 ? '' : 's' }}</span>
+          </div>
+          <p class="mt-1 text-ink-soft">{{ activity.description }}</p>
+          <p class="mt-2 text-xs font-semibold text-ink-soft">{{ activity.interventions.reduce((total, group) => total + group.targets.length, 0) }} selected student{{ activity.interventions.reduce((total, group) => total + group.targets.length, 0) === 1 ? '' : 's' }} · {{ activity.interventions.reduce((total, group) => total + group.questions.length, 0) }} signed question{{ activity.interventions.reduce((total, group) => total + group.questions.length, 0) === 1 ? '' : 's' }}</p>
+        </article>
+      </div>
+    </section>
+
     <section class="card grid gap-4 p-5 md:grid-cols-2">
       <label>
         <span class="figma-label">Learning material</span>
@@ -99,7 +122,7 @@
       <p v-if="error" class="status-error">{{ error }}</p>
       <div v-if="success" class="rounded border border-brand-teal/40 bg-brand-blue-soft/50 p-4 text-sm font-semibold text-brand-teal">
         <p>{{ success }}</p>
-        <RouterLink class="mt-2 inline-flex figma-button no-underline" to="/teacher/activities">View teacher activities</RouterLink>
+        <a class="mt-2 inline-flex figma-button no-underline" href="#posted-targeted-support">View posted targeted support</a>
       </div>
       <div class="flex justify-end"><button class="figma-primary" :disabled="saving">{{ saving ? 'Posting…' : 'Post targeted support activity' }}</button></div>
     </form>
@@ -135,6 +158,8 @@ interface Checkpoint { id: number; start_sort_order: number; end_sort_order: num
 interface Summary { module_id: number; module_title: string; checkpoints: Checkpoint[] }
 interface SignQuestionDraft extends Question { index: number; selected: boolean; question_type: 'identification' | 'multiple_choice'; options: string[]; video: File | null; sourceAnswer: string }
 interface Draft { checkpointId: number; start: number; end: number; students: Student[]; studentIds: number[]; questions: SignQuestionDraft[] }
+interface PostedIntervention { id: number; questions: unknown[]; targets: Array<{ student_id: number }> }
+interface PostedActivity { id: number; title: string; description: string; interventions: PostedIntervention[] }
 
 const modules = ref<Array<{ id: number; title: string }>>([])
 const selectedModuleId = ref('')
@@ -151,6 +176,8 @@ const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
 const success = ref('')
+const postedActivities = ref<PostedActivity[]>([])
+const postedLoading = ref(false)
 const recordingQuestion = ref<SignQuestionDraft | null>(null)
 const recordingVideoRef = ref<HTMLVideoElement | null>(null)
 const recordingReady = ref(false)
@@ -161,10 +188,22 @@ let mediaRecorder: MediaRecorder | null = null
 let recordedChunks: Blob[] = []
 onMounted(async () => {
   modules.value = await apiFetch('/teacher/modules/')
+  await loadPostedActivities()
   try {
     datasetWeeks.value = (await getDatasetWeeks()).weeks
   } catch { /* The form explains when no deployed dataset weeks are reachable. */ }
 })
+
+async function loadPostedActivities() {
+  postedLoading.value = true
+  try {
+    postedActivities.value = await apiFetch<PostedActivity[]>('/teacher/remediation-activities/')
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Unable to load posted targeted support activities.'
+  } finally {
+    postedLoading.value = false
+  }
+}
 
 async function loadSummary() {
   summary.value = null
@@ -306,7 +345,7 @@ async function save() {
       })
       await Promise.all(uploads)
     }))
-    await loadSummary()
+    await Promise.all([loadSummary(), loadPostedActivities()])
     success.value = 'Targeted support activity posted successfully. The selected students can now receive it in their targeted support list.'
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to post the support activity.' }
   finally { saving.value = false }

@@ -14,7 +14,7 @@
             <h2 class="font-display text-sm font-black uppercase tracking-widest">Assigned Activities</h2>
             <button
               class="border-[3px] border-brand-teal bg-white px-4 py-2 text-xs font-black text-brand-blue shadow-card transition-all hover:-translate-y-1 hover:border-brand-amber hover:shadow-card-hover"
-              @click="content.fetchActivities()"
+              @click="refreshActivities"
             >
               <span class="inline-flex items-center gap-2">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 0 1-15.5 6.3L3 16" /><path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-5h5" /><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 0 1 15.5-6.3L21 8" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 3v5h-5" /></svg>
@@ -29,7 +29,7 @@
           <div v-else-if="content.error" class="border-[3px] border-brand-rose bg-brand-rose/10 p-6 text-sm font-black text-brand-rose shadow-card">
             {{ content.error }}
           </div>
-          <div v-else-if="activeActivities.length === 0" class="border-[3px] border-brand-teal bg-white p-8 text-center shadow-card">
+          <div v-else-if="activeActivities.length === 0 && supportActivities.length === 0" class="border-[3px] border-brand-teal bg-white p-8 text-center shadow-card">
             <h2 class="font-display text-lg font-black">No active activities.</h2>
             <p class="mt-2 text-sm text-ink-soft">New activities from your teacher will appear here. Completed activities are kept in Activity Storage.</p>
           </div>
@@ -197,9 +197,13 @@ watch(() => activities.value.length, () => {
 })
 
 onMounted(async () => {
+  await refreshActivities()
+})
+
+async function refreshActivities() {
   await content.fetchActivities()
   supportActivities.value = await apiFetch<Array<{ id: number; activity_title: string; start_sort_order: number; end_sort_order: number }>>('/student/remediation-activities/').catch(() => [])
-})
+}
 
 function openActivity(activity: ActivityRow) {
   router.push({
