@@ -163,7 +163,8 @@ async function captureWordFrames() {
     const image = captureFrameDataUrl()
     if (image) images.push(image)
     captureProgress.value = Math.round((images.length / targetFrames) * 100)
-    await new Promise(resolve => window.setTimeout(resolve, 100))
+    // Match the Admin dataset recorder: 40 frames captured every 80ms.
+    await new Promise(resolve => window.setTimeout(resolve, 80))
   }
   return images
 }
@@ -171,13 +172,15 @@ function captureFrameDataUrl() {
   const video = wordVideoRef.value
   const canvas = wordCanvasRef.value
   if (!video || !canvas || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return null
-  const scale = Math.min(1, 640 / video.videoWidth)
+  // Use the same image size and quality as Admin Handsign Management so the
+  // trained Word Gesture model receives the same type of camera frames.
+  const scale = Math.min(1, 256 / video.videoWidth)
   canvas.width = Math.round(video.videoWidth * scale)
   canvas.height = Math.round(video.videoHeight * scale)
   const context = canvas.getContext('2d')
   if (!context) return null
   context.drawImage(video, 0, 0, canvas.width, canvas.height)
-  return canvas.toDataURL('image/jpeg', 0.72)
+  return canvas.toDataURL('image/jpeg', 0.45)
 }
 async function submit() {
   if (!activity.value || !allQuestionsChecked.value) return
