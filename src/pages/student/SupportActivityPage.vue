@@ -55,7 +55,7 @@
                   <button class="figma-primary" type="button" :disabled="!cameraOn || checking || capturing" @click="checkCurrentAnswer">{{ checking ? 'Checking word sign...' : 'Record and check my word sign' }}</button>
                 </div>
                 <p v-if="currentCheck" :class="currentCheck.correct ? 'status-success' : 'status-error'" class="mt-4">
-                  {{ currentCheck.correct ? 'Correct sign! Your answer has been recorded.' : "That word sign isn't correct. Your answer has still been recorded; you may continue." }}
+                  Similarity: {{ currentCheck.similarity_percent?.toFixed(2) ?? '0.00' }}% — {{ currentCheck.correct ? 'Correct sign! Your answer has been recorded.' : "That word sign isn't correct. Your answer has still been recorded; you may continue." }}
                 </p>
               </section>
             </div>
@@ -93,7 +93,7 @@ const step = ref<'review' | 'questions'>('review')
 const topicIndex = ref(0)
 const questionIndex = ref(0)
 const answers = ref<Record<string, string>>({})
-const checks = ref<Record<string, { correct: boolean }>>({})
+const checks = ref<Record<string, { correct: boolean; similarity_percent?: number }>>({})
 const result = ref<{ score: number; total: number } | null>(null)
 const wordVideoRef = ref<HTMLVideoElement | null>(null)
 const wordCanvasRef = ref<HTMLCanvasElement | null>(null)
@@ -150,7 +150,7 @@ async function checkCurrentAnswer() {
   error.value = ''
   try {
     const images = await captureWordFrames()
-    const checked = await apiFetch<{ correct: boolean }>(`/student/remediation-activities/${route.params.targetId}/questions/${questionIndex.value}/word-check`, { method: 'POST', body: JSON.stringify({ images }) })
+    const checked = await apiFetch<{ correct: boolean; similarity_percent?: number }>(`/student/remediation-activities/${route.params.targetId}/questions/${questionIndex.value}/word-check`, { method: 'POST', body: JSON.stringify({ images }) })
     answers.value = { ...answers.value, [String(questionIndex.value)]: checked.correct ? '__WORD_GESTURE_CORRECT__' : '__WORD_GESTURE_INCORRECT__' }
     checks.value = { ...checks.value, [String(questionIndex.value)]: checked }
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to check your signed answer.' }
@@ -163,8 +163,8 @@ async function captureWordFrames() {
     const image = captureFrameDataUrl()
     if (image) images.push(image)
     captureProgress.value = Math.round((images.length / targetFrames) * 100)
-    // Match the Admin dataset recorder: 40 frames captured every 80ms.
-    await new Promise(resolve => window.setTimeout(resolve, 80))
+    // Match the existing tutorial-practice capture used by the similarity scorer.
+    await new Promise(resolve => window.setTimeout(resolve, 100))
   }
   return images
 }
@@ -172,15 +172,13 @@ function captureFrameDataUrl() {
   const video = wordVideoRef.value
   const canvas = wordCanvasRef.value
   if (!video || !canvas || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return null
-  // Use the same image size and quality as Admin Handsign Management so the
-  // trained Word Gesture model receives the same type of camera frames.
-  const scale = Math.min(1, 256 / video.videoWidth)
+  const scale = Math.min(1, 640 / video.videoWidth)
   canvas.width = Math.round(video.videoWidth * scale)
   canvas.height = Math.round(video.videoHeight * scale)
   const context = canvas.getContext('2d')
   if (!context) return null
   context.drawImage(video, 0, 0, canvas.width, canvas.height)
-  return canvas.toDataURL('image/jpeg', 0.45)
+  return canvas.toDataURL('image/jpeg', 0.72)
 }
 async function submit() {
   if (!activity.value || !allQuestionsChecked.value) return
