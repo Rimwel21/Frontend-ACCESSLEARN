@@ -304,6 +304,10 @@ interface TeacherStudentRecordMaterialResponse {
   title: string
   completed_topics: number
   total_topics: number
+  completed_checkpoints: number
+  total_checkpoints: number
+  latest_checkpoint_score?: number | null
+  latest_checkpoint_total?: number | null
   percent: number
   status: string
   last_updated?: string | null
@@ -379,6 +383,10 @@ export interface StudentMaterialRecord {
   title: string
   completedTopics: number
   totalTopics: number
+  completedCheckpoints: number
+  totalCheckpoints: number
+  latestCheckpointScore?: number | null
+  latestCheckpointTotal?: number | null
   percent: number
   status: string
   lastUpdated?: string | null
@@ -1301,6 +1309,10 @@ function mapStudentRecordResponse(record: TeacherStudentRecordResponse): Student
       title: item.title,
       completedTopics: item.completed_topics,
       totalTopics: item.total_topics,
+      completedCheckpoints: item.completed_checkpoints ?? 0,
+      totalCheckpoints: item.total_checkpoints ?? 0,
+      latestCheckpointScore: item.latest_checkpoint_score ?? null,
+      latestCheckpointTotal: item.latest_checkpoint_total ?? null,
       percent: item.percent,
       status: item.status,
       lastUpdated: item.last_updated ?? null,

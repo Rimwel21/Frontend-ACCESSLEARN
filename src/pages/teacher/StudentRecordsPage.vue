@@ -50,6 +50,7 @@
           <label class="figma-label" for="records-status">Status</label>
           <select id="records-status" v-model="filters.status" class="input-field h-10" @change="loadRecords">
             <option value="">All</option>
+            <option value="Not Started">Not Started</option>
             <option value="Needs Guidance">Needs Guidance</option>
             <option value="Keep Improving">Keep Improving</option>
             <option value="Good Progress">Good Progress</option>
@@ -164,6 +165,11 @@
                   <div class="mt-2 flex flex-wrap justify-between gap-2 text-xs text-ink-soft">
                     <span>Status: {{ readableStatus(material.status) }}</span>
                     <span>Updated: {{ formatDate(material.lastUpdated) }}</span>
+                  </div>
+                  <div v-if="material.totalCheckpoints" class="mt-2 text-xs text-ink-soft">
+                    <span class="font-semibold text-ink">Topic checkouts:</span>
+                    {{ material.completedCheckpoints }}/{{ material.totalCheckpoints }} completed
+                    <span v-if="material.latestCheckpointTotal"> · Latest {{ scoreText(material.latestCheckpointScore, material.latestCheckpointTotal) }}</span>
                   </div>
                 </div>
                 <div v-if="selectedRecord.learningMaterials.length === 0" class="rounded-xl border border-gray-100 bg-surface p-4 text-sm text-ink-soft">No learning materials are assigned to this student yet.</div>
