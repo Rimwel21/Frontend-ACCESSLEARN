@@ -156,7 +156,12 @@ let recordedChunks: Blob[] = []
 
 onMounted(async () => {
   modules.value = await apiFetch('/teacher/modules/')
-  try { datasetWeeks.value = (await getDatasetSummary()).weeks ?? [] } catch { /* Save validation provides a clear message if this cannot load. */ }
+  try {
+    const summary = await getDatasetSummary()
+    // Older dataset responses expose the configured weeks through weekly_labels
+    // rather than the optional top-level weeks list.
+    datasetWeeks.value = summary.weeks?.length ? summary.weeks : Object.keys(summary.weekly_labels ?? {})
+  } catch { /* Save validation provides a clear message if this cannot load. */ }
 })
 
 async function loadSummary() {
