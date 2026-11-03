@@ -48,10 +48,10 @@
           </div>
           <div v-if="!editingSection">
             <label class="field-label" for="grade-level">Grade Level</label>
-            <select id="grade-level" v-model.number="sectionForm.grade_level_id" class="input-field mt-1" required>
-              <option :value="null" disabled>Select grade level</option>
-              <option v-for="grade in gradeLevels" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
-            </select>
+            <div id="grade-level" class="mt-1 flex items-center justify-between rounded-xl border border-brand-teal/30 bg-brand-blue-soft/50 px-4 py-3">
+              <span class="font-semibold text-ink">Grade 4</span>
+              <span class="rounded-full bg-brand-teal/10 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-brand-teal">Only supported grade</span>
+            </div>
           </div>
           <div v-else class="rounded-xl border border-brand-teal/30 bg-surface/70 px-4 py-3">
             <p class="text-[11px] font-black uppercase tracking-widest text-ink-soft">Grade Level</p>
@@ -406,7 +406,10 @@ async function loadAllSections() {
   loading.value = true
   errorMsg.value = ''
   try {
-    gradeLevels.value = await fetchGradeLevelOptions(auth.token)
+    gradeLevels.value = (await fetchGradeLevelOptions(auth.token)).filter(grade => grade.name === 'Grade 4')
+    if (!editingSection.value && !sectionForm.value.grade_level_id) {
+      sectionForm.value.grade_level_id = gradeLevels.value[0]?.id ?? null
+    }
     sections.value = await fetchSectionsWithTeacherInfo(auth.token)
   } catch (err) {
     errorMsg.value = err instanceof ApiError ? err.message : 'Failed to load sections.'

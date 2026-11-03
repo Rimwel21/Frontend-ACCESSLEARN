@@ -1,31 +1,32 @@
 <template>
-  <div class="flex h-screen flex-col overflow-hidden bg-white">
-    <div class="shrink-0 border-b-[3px] border-brand-teal bg-brand-teal px-8 py-6">
-      <button class="mb-4 border-[3px] border-brand-teal bg-white px-4 py-2 text-xs font-black" @click="router.push('/teacher/modules')">Back</button>
-      <h1 class="font-display text-[32px] font-black text-white">{{ headerTitle }}</h1>
-      <p class="mt-1 text-sm font-bold text-white/85">{{ headerDescription }}</p>
-    </div>
+  <div class="flex h-screen flex-col overflow-hidden bg-surface">
+    <header class="shrink-0 border-b border-brand-teal/20 bg-white px-4 py-4 shadow-sm sm:px-7">
+      <div class="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4">
+        <div class="flex min-w-0 items-center gap-4">
+          <button class="inline-flex shrink-0 items-center gap-2 rounded-xl border border-brand-teal/30 bg-brand-blue-soft px-3 py-2 text-xs font-bold text-brand-blue transition hover:-translate-y-0.5 hover:border-brand-blue hover:bg-white hover:shadow-sm" type="button" @click="router.push('/teacher/modules')">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6" /><path stroke-linecap="round" d="M9 12h11" /></svg>
+            Back to materials
+          </button>
+          <div class="min-w-0 border-l border-brand-teal/20 pl-4">
+            <p class="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-brand-teal">Lesson preview</p>
+            <h1 class="truncate font-display text-xl font-bold text-ink sm:text-2xl">{{ headerTitle }}</h1>
+            <p v-if="headerDescription" class="mt-0.5 truncate text-xs text-ink-soft sm:text-sm">{{ headerDescription }}</p>
+          </div>
+        </div>
+        <span class="rounded-full bg-brand-teal/10 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-brand-teal">Teacher view</span>
+      </div>
+    </header>
 
     <div class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[220px_1fr]">
-      <aside class="border-b-[3px] border-brand-teal bg-white p-3 lg:h-full lg:overflow-y-auto lg:border-b-0 lg:border-r-[3px]">
-        <div class="mb-3 font-mono text-[10px] uppercase tracking-widest text-gray-500">Student Preview</div>
-        <button
-          v-if="hasAutoIntro"
-          :class="['mb-2 flex w-full items-center gap-2 border-[2px] border-brand-teal px-3 py-2.5 text-left text-xs font-black', isIntroActive ? 'bg-brand-blue text-white' : 'bg-white']"
-         
-          @click="activeTopicId = null"
-        >
-          <span class="h-4 w-4 rounded-full border-[2px] border-current bg-white" />
-          Introduction
-        </button>
+      <aside class="border-b border-brand-teal/20 bg-white p-3 lg:h-full lg:overflow-y-auto lg:border-b-0 lg:border-r">
+        <div class="mb-3 px-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-soft">Lesson topics</div>
         <button
           v-for="(topic, index) in topics"
           :key="topic.id"
-          :class="['mb-2 flex w-full items-center gap-2 border-[2px] border-brand-teal px-3 py-2.5 text-left text-xs font-black', activeTopic?.id === topic.id ? 'bg-brand-blue text-white' : 'bg-white']"
-         
+          :class="['mb-2 flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-bold transition', activeTopic?.id === topic.id ? 'border-brand-blue bg-brand-blue text-white shadow-sm' : 'border-brand-teal/25 bg-white text-ink hover:border-brand-teal hover:bg-brand-blue-soft']"
           @click="activeTopicId = topic.id"
         >
-          <span class="h-4 w-4 rounded-full border-[2px] border-current bg-white" />
+          <span :class="['grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-black', activeTopic?.id === topic.id ? 'bg-white/20 text-white' : 'bg-brand-teal/10 text-brand-teal']">{{ index + 1 }}</span>
           Topic {{ index + 1 }}
         </button>
         <div
@@ -38,7 +39,7 @@
         </div>
       </aside>
 
-      <main class="min-h-0 overflow-y-auto p-7">
+      <main class="min-h-0 overflow-y-auto p-4 sm:p-7">
         <div v-if="loading" class="border-[3px] border-brand-teal p-8 text-center font-black">Loading preview...</div>
         <div v-else-if="error" class="border-[3px] border-brand-teal bg-red-50 p-8 text-center font-black text-red-700">{{ error }}</div>
         <section v-if="!loading && !error && isPresentationProcessing" class="mb-6 overflow-hidden border-[3px] border-brand-amber bg-brand-amber/10">
@@ -74,10 +75,7 @@
             <div class="flex justify-end"><button class="figma-primary" type="button" :disabled="savingCheckpoints" @click="saveCheckpoints">{{ savingCheckpoints ? 'Saving…' : 'Save checkpoints' }}</button></div>
           </div>
         </section>
-        <article v-if="!loading && !error && isIntroActive" class="rounded-lg border-[2px] border-gray-200 bg-white p-6 text-sm leading-7 text-gray-700">
-          {{ moduleData?.description || 'Introduction content will be available here.' }}
-        </article>
-        <div v-else-if="!loading && !error && !activeTopic" class="border-[3px] border-brand-teal p-8 text-center">
+        <div v-if="!loading && !error && !activeTopic" class="border-[3px] border-brand-teal p-8 text-center">
           <h2 class="font-display text-xl font-black">No generated topics yet.</h2>
           <p class="mt-2 text-sm text-gray-500">Upload or replace the learning material file to generate student content.</p>
         </div>
@@ -103,7 +101,7 @@
                 <p v-if="signVideoFile" class="mt-1 truncate text-xs font-semibold text-ink-soft">{{ signVideoFile.name }}</p>
               </div>
             </div>
-            <div class="mt-3 flex flex-wrap items-center justify-between gap-3"><p v-if="signVideoError" class="status-error">{{ signVideoError }}</p><span v-else class="text-xs font-semibold text-ink-soft">Supported: Change in Matter, Photosynthesis, Force and Motion, and Water Cycle.</span><button class="figma-primary" type="button" :disabled="signVideoSaving" @click="uploadSignVideo">{{ signVideoSaving ? 'Saving…' : 'Save sign-language video' }}</button></div>
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-3"><p v-if="signVideoError" class="status-error">{{ signVideoError }}</p><span v-else class="text-xs font-semibold text-ink-soft">Supported: Life Cycle, Dietary Classification of Animals, and Food Chain.</span><button class="figma-primary" type="button" :disabled="signVideoSaving" @click="uploadSignVideo">{{ signVideoSaving ? 'Saving…' : 'Save sign-language video' }}</button></div>
             <div v-if="activeTopic.sign_videos?.length" class="mt-4 grid gap-3 md:grid-cols-2">
               <article v-for="video in activeTopic.sign_videos" :key="video.id" class="border border-brand-teal bg-white p-3"><div class="flex items-start justify-between gap-3"><div><strong class="text-sm">{{ video.title }}</strong><p class="mt-1 text-xs font-semibold text-ink-soft">{{ focusLabel(video.focus_area) }}</p></div><button class="figma-button text-xs" type="button" @click="removeSignVideo(video.id)">Remove</button></div><video :src="assetUrl(video.video_url)" controls class="mt-3 aspect-video w-full bg-black" /></article>
             </div>
@@ -194,19 +192,25 @@
           <!-- Navigation controls -->
           <div class="mx-auto flex max-w-6xl items-center justify-between pt-2">
             <button
-              class="border-[3px] border-brand-teal bg-white px-4 py-2.5 text-xs font-black text-ink shadow-[2px_2px_0_#000] transition-all hover:-translate-x-[1px] hover:-translate-y-[1px] sm:px-5 sm:text-sm"
+              class="inline-flex items-center gap-2 rounded-xl border border-brand-teal/30 bg-white px-4 py-2.5 text-xs font-bold text-ink shadow-sm transition hover:-translate-y-0.5 hover:border-brand-teal hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 sm:px-5 sm:text-sm"
+              type="button"
+              :disabled="activeIndex <= 0"
               @click="goPrevious"
             >
+              <span aria-hidden="true">←</span>
               Previous
             </button>
-            <span class="font-mono text-xs font-bold text-slate-500">
+            <span class="rounded-full bg-white px-3 py-1.5 font-mono text-[11px] font-bold text-slate-500 shadow-sm">
               Topic {{ activeIndex + 1 }} of {{ topics.length }}
             </span>
             <button
-              class="border-[3px] border-brand-teal bg-brand-blue px-4 py-2.5 text-xs font-black text-white shadow-[2px_2px_0_#000] transition-all hover:-translate-x-[2px] hover:-translate-y-[2px] sm:px-5 sm:text-sm"
+              class="inline-flex items-center gap-2 rounded-xl bg-brand-blue px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-brand-teal hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:text-sm"
+              type="button"
+              :disabled="activeIndex >= topics.length - 1"
               @click="goNext"
             >
               {{ activeIndex === topics.length - 1 ? 'Last Topic' : 'Next Topic' }}
+              <span aria-hidden="true">→</span>
             </button>
           </div>
         </article>
@@ -297,10 +301,9 @@ let presentationRefreshInFlight = false
 const presentationRefreshLimit = 24
 
 const focusAreas = [
-  { value: 'change_in_matter', label: 'Change in Matter' },
-  { value: 'photosynthesis', label: 'Plant Processes / Photosynthesis' },
-  { value: 'force_and_motion', label: 'Force and Motion' },
-  { value: 'water_cycle', label: 'Water Cycle' },
+  { value: 'life_cycle', label: 'Life Cycle' },
+  { value: 'dietary_classification', label: 'Dietary Classification of Animals' },
+  { value: 'food_chain', label: 'Food Chain' },
 ]
 
 const SLIDE_MARKER = /^-{2,}\s*Slide\s*\d+\s*-{2,}$/i
@@ -317,11 +320,9 @@ const topics = computed(() => {
     })
     .sort((a, b) => a.sort_order - b.sort_order)
 })
-const hasAutoIntro = computed(() => !isPagedMaterial(moduleData.value?.content_type))
 const quizzes = computed(() => (moduleData.value?.assessments ?? []).filter(item => item.assessment_type === 'quiz'))
 const activeTopic = computed(() => activeTopicId.value ? topics.value.find(topic => topic.id === activeTopicId.value) ?? null : null)
 const activeIndex = computed(() => activeTopic.value ? topics.value.findIndex(t => t.id === activeTopic.value?.id) : 0)
-const isIntroActive = computed(() => hasAutoIntro.value && !activeTopicId.value)
 const headerTitle = computed(() => activeTopic.value?.title || moduleData.value?.title || 'Module Preview')
 const headerDescription = computed(() => activeTopic.value?.description || moduleData.value?.description || '')
 const isPresentationProcessing = computed(() => {
@@ -352,7 +353,7 @@ onMounted(async () => {
   loading.value = true
   try {
     moduleData.value = await apiFetch<ModuleDetail>(`/teacher/modules/${route.params.moduleId}`)
-    activeTopicId.value = hasAutoIntro.value ? null : topics.value[0]?.id ?? null
+    activeTopicId.value = topics.value[0]?.id ?? null
     hydrateCheckpoints()
     startPresentationRefresh()
   } catch (err) {
@@ -601,25 +602,12 @@ async function saveCheckpoints() {
   }
 }
 
-function isPagedMaterial(contentType?: string | null) {
-  // Only PDF uses page-image rendering (no auto-intro tab).
-  // PPTX/PPT uses the structured slide card layout.
-  return contentType === 'PDF'
-}
-
 function goPrevious() {
-  if (activeIndex.value <= 0) {
-    if (hasAutoIntro.value) activeTopicId.value = null
-    return
-  }
+  if (activeIndex.value <= 0) return
   activeTopicId.value = topics.value[activeIndex.value - 1]?.id ?? null
 }
 
 function goNext() {
-  if (isIntroActive.value) {
-    activeTopicId.value = topics.value[0]?.id ?? null
-    return
-  }
   if (activeIndex.value < topics.value.length - 1) {
     activeTopicId.value = topics.value[activeIndex.value + 1]?.id ?? null
   }
