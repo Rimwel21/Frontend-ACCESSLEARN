@@ -42,13 +42,13 @@
       <div class="flex-1 space-y-2 overflow-y-auto px-3 py-2">
         <template v-for="(block, index) in learningBlocks" :key="`progress-${block.start}`">
           <button
-            :disabled="!isBlockUnlocked(index)"
+            :disabled="!isBlockUnlocked(index) || isTopicNavigationLocked"
             :class="[
               'flex w-full items-center gap-2.5 border-[2px] border-brand-teal px-3 py-2.5 text-left text-[13px] font-bold transition-all',
               activeBlockIndex === index ? 'bg-brand-blue text-white' : 'bg-white hover:bg-brand-blue-soft',
-              !isBlockUnlocked(index) ? 'cursor-not-allowed opacity-50 hover:bg-white' : ''
+              !isBlockUnlocked(index) || isTopicNavigationLocked ? 'cursor-not-allowed opacity-50 hover:bg-white' : ''
             ]"
-            :style="isBlockUnlocked(index) ? 'box-shadow:2px 2px 0 #000' : ''"
+            :style="isBlockUnlocked(index) && !isTopicNavigationLocked ? 'box-shadow:2px 2px 0 #000' : ''"
             @click="selectBlock(index)"
           >
             <span :class="['grid h-[20px] w-[20px] flex-shrink-0 place-items-center rounded-full border-[2px] border-brand-teal text-[10px] font-black', isBlockCompleted(block) ? 'bg-green-500 text-white' : 'bg-white text-ink']">
@@ -481,6 +481,9 @@ const completedCheckpointIds = computed(() => new Set(progress.value.completed_c
 const quizzes = computed(() => (moduleData.value?.assessments ?? []).filter(item => item.assessment_type === 'quiz'))
 const activeQuiz = computed(() => quizzes.value.find(quiz => quiz.id === activeQuizId.value) ?? null)
 const activeCheckpoint = computed(() => (moduleData.value?.checkpoints ?? []).find(checkpoint => checkpoint.id === activeCheckpointId.value) ?? null)
+// A checkpoint must be answered before the student can revisit its topic block.
+// Once it is submitted, checkpointResult unlocks the normal progress navigation.
+const isTopicNavigationLocked = computed(() => Boolean(activeCheckpoint.value && !checkpointResult.value))
 const quizUnlocked = computed(() => topics.value.length > 0 && progress.value.completed_topics >= topics.value.length)
 const headerTitle = computed(() => activeCheckpoint.value?.title || activeQuiz.value?.title || moduleData.value?.title || 'Learning Content')
 const headerDescription = computed(() => {
@@ -566,7 +569,7 @@ function isStructuredPptxTopic(content?: string | null) {
 }
 
 async function selectBlock(index: number) {
-  if (!isBlockUnlocked(index)) return
+  if (!isBlockUnlocked(index) || isTopicNavigationLocked.value) return
   clearQuizTimer()
   quizTimeExpired.value = false
   pendingQuizId.value = null
