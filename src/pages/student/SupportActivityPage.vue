@@ -16,6 +16,13 @@
         <section v-if="step === 'review'" class="mt-5 space-y-5">
           <article v-if="activeTopic" class="card p-5">
             <div class="mb-4 flex justify-between gap-3"><h2 class="font-display text-xl font-bold">{{ activeTopic.title }}</h2><span class="text-xs font-bold text-ink-soft">Topic {{ topicIndex + 1 }} of {{ activity.topics.length }}</span></div>
+            <section v-if="activeGuideVideo" class="mb-4 overflow-hidden rounded border-2 border-brand-teal bg-brand-blue-soft/40">
+              <div class="flex items-center justify-between gap-3 border-b border-brand-teal/25 px-3 py-2">
+                <div><p class="figma-label">Sign-language guide</p><p class="text-xs font-semibold text-ink-soft">{{ activeGuideVideo.source }}</p></div>
+                <span class="badge badge-blue">Video support</span>
+              </div>
+              <video :src="assetUrl(activeGuideVideo.url)" class="aspect-video w-full bg-black object-contain" autoplay muted controls playsinline />
+            </section>
             <div v-if="activeTopic.page_image_urls?.length" class="grid gap-4"><img v-for="url in activeTopic.page_image_urls" :key="url" :src="assetUrl(url)" class="w-full rounded border" /></div>
             <p v-else class="whitespace-pre-line text-sm leading-7">{{ activeTopic.content }}</p>
             <div class="mt-5 flex justify-between gap-2"><button class="figma-button" :disabled="topicIndex === 0" @click="topicIndex--">Previous</button><button class="figma-primary" @click="nextTopic">{{ topicIndex === activity.topics.length - 1 ? 'Go to activity' : 'Next topic' }}</button></div>
@@ -78,9 +85,9 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL, apiFetch } from '@/lib/api'
 
-interface Topic { id: number; title: string; content: string; page_image_urls?: string[] }
+interface Topic { id: number; title: string; content: string; page_image_urls?: string[]; sign_videos?: Array<{ title: string; video_url: string }> }
 interface SupportQuestion { prompt_type?: 'text' | 'sign_video'; sign_video_url?: string | null }
-interface Activity { activity_title: string; activity_description: string; start_sort_order: number; end_sort_order: number; status: string; score?: number | null; total?: number | null; is_late: boolean; topics: Topic[]; questions: SupportQuestion[] }
+interface Activity { activity_title: string; activity_description: string; start_sort_order: number; end_sort_order: number; status: string; score?: number | null; total?: number | null; is_late: boolean; review_video_url?: string | null; topics: Topic[]; questions: SupportQuestion[] }
 
 const route = useRoute()
 const router = useRouter()
@@ -102,6 +109,12 @@ const capturing = ref(false)
 const captureProgress = ref(0)
 let wordStream: MediaStream | null = null
 const activeTopic = computed(() => activity.value?.topics[topicIndex.value] ?? null)
+const activeGuideVideo = computed(() => {
+  const topicVideo = activeTopic.value?.sign_videos?.[0]
+  if (topicVideo?.video_url) return { url: topicVideo.video_url, source: `${topicVideo.title} from Topic Progress` }
+  if (activity.value?.review_video_url) return { url: activity.value.review_video_url, source: 'Teacher-uploaded review guide' }
+  return null
+})
 const activeQuestion = computed(() => activity.value?.questions[questionIndex.value] ?? null)
 const currentCheck = computed(() => checks.value[String(questionIndex.value)] ?? null)
 const allQuestionsChecked = computed(() => {

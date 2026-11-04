@@ -73,6 +73,22 @@
             </label>
           </div>
         </div>
+        <div class="mt-4 rounded border border-brand-teal/25 bg-brand-blue-soft/30 p-3">
+          <template v-if="draft.topicVideoCount">
+            <p class="figma-label">Topic review sign-language video</p>
+            <p class="text-xs font-semibold text-ink-soft">{{ draft.topicVideoCount }} video{{ draft.topicVideoCount === 1 ? '' : 's' }} already attached in Topic Progress will be shown automatically to students during this support activity. No additional upload is needed.</p>
+          </template>
+          <template v-else>
+            <span class="figma-label">Topic review sign-language video (optional)</span>
+            <p class="mb-2 text-xs font-semibold text-ink-soft">Upload one guide video for this topic group. Students see it while reviewing before the signed questions.</p>
+            <label class="upload-file-box cursor-pointer">
+              <span class="upload-file-plus">+</span>
+              <span><strong>Upload review video</strong><small>MP4, WebM, MOV or AVI</small></span>
+              <input class="hidden" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-msvideo" @change="setReviewVideo(draft, $event)" />
+            </label>
+            <span class="mt-2 block text-xs font-semibold text-ink-soft">{{ draft.reviewVideo ? `Ready: ${draft.reviewVideo.name}` : 'Optional: upload only when Topic Progress has no sign-language video.' }}</span>
+          </template>
+        </div>
         <div class="mt-4">
           <span class="figma-label">Missed questions to present through sign language</span>
           <article v-for="question in draft.questions" :key="question.index" class="mt-2 rounded border border-gray-200 p-3 text-sm">
@@ -158,7 +174,8 @@ interface Student { student_id: number; student_name: string; score: number; tot
 interface Checkpoint { id: number; start_sort_order: number; end_sort_order: number; title: string; questions: Question[]; struggling_students: Student[] }
 interface Summary { module_id: number; module_title: string; checkpoints: Checkpoint[] }
 interface SignQuestionDraft extends Question { index: number; selected: boolean; question_type: 'identification' | 'multiple_choice'; options: string[]; video: File | null; sourceAnswer: string }
-interface Draft { checkpointId: number; start: number; end: number; students: Student[]; studentIds: number[]; questions: SignQuestionDraft[] }
+interface ModuleTopic { sort_order: number; sign_videos?: Array<{ id: number }> }
+interface Draft { checkpointId: number; start: number; end: number; students: Student[]; studentIds: number[]; questions: SignQuestionDraft[]; topicVideoCount: number; reviewVideo: File | null }
 interface PostedIntervention { id: number; questions: unknown[]; targets: Array<{ student_id: number }> }
 interface PostedActivity { id: number; title: string; description: string; interventions: PostedIntervention[] }
 
@@ -166,6 +183,7 @@ const modules = ref<Array<{ id: number; title: string }>>([])
 const selectedModuleId = ref('')
 const summary = ref<Summary | null>(null)
 const drafts = ref<Draft[]>([])
+const moduleTopics = ref<ModuleTopic[]>([])
 const title = ref('Targeted Learning Support')
 const description = ref('Review the assigned topics and answer the follow-up questions.')
 const dueAt = ref('')
@@ -212,7 +230,12 @@ async function loadSummary() {
   if (!selectedModuleId.value) return
   loading.value = true
   try {
-    summary.value = await apiFetch<Summary>(`/teacher/modules/${selectedModuleId.value}/checkpoint-summary`)
+    const [loadedSummary, loadedTopics] = await Promise.all([
+      apiFetch<Summary>(`/teacher/modules/${selectedModuleId.value}/checkpoint-summary`),
+      apiFetch<ModuleTopic[]>(`/teacher/modules/${selectedModuleId.value}/topics`).catch(() => []),
+    ])
+    summary.value = loadedSummary
+    moduleTopics.value = loadedTopics
     drafts.value = summary.value.checkpoints
       .filter(checkpoint => checkpoint.struggling_students.length)
       .map(checkpoint => {
@@ -236,6 +259,10 @@ async function loadSummary() {
           students: checkpoint.struggling_students,
           studentIds: checkpoint.struggling_students.map(student => student.student_id),
           questions,
+          topicVideoCount: moduleTopics.value
+            .filter(topic => topic.sort_order >= checkpoint.start_sort_order && topic.sort_order <= checkpoint.end_sort_order)
+            .reduce((count, topic) => count + (topic.sign_videos?.length ?? 0), 0),
+          reviewVideo: null,
         }
       })
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to load checkpoint reports.' }
@@ -253,6 +280,7 @@ async function loadDatasetLabels() {
 }
 function formatLabel(value: string) { return value.replace(/_/g, ' ') }
 function setQuestionVideo(question: SignQuestionDraft, event: Event) { question.video = (event.target as HTMLInputElement).files?.[0] ?? null }
+function setReviewVideo(draft: Draft, event: Event) { draft.reviewVideo = (event.target as HTMLInputElement).files?.[0] ?? null }
 async function openRecorder(question: SignQuestionDraft) {
   recordingQuestion.value = question
   recordingError.value = ''
@@ -344,6 +372,10 @@ async function save() {
         const form = new FormData(); form.append('video', question.video as File)
         uploads.push(uploadVideo(`/teacher/remediation-activities/${created.id}/interventions/${interventionId}/questions/${questionIndex}/video`, form, `sign-language video for question ${question.index + 1}`))
       })
+      if (draft.reviewVideo && !draft.topicVideoCount) {
+        const form = new FormData(); form.append('video', draft.reviewVideo)
+        uploads.push(uploadVideo(`/teacher/remediation-activities/${created.id}/interventions/${interventionId}/review-video`, form, `topic review video for Topics ${draft.start}-${draft.end}`))
+      }
       await Promise.all(uploads)
     }))
     await loadSummary()
