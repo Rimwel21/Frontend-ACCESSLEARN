@@ -37,13 +37,15 @@
               <section class="overflow-hidden rounded border border-brand-teal/30 bg-white">
                 <div class="flex items-center justify-between border-b border-brand-teal/20 px-4 py-3">
                   <p class="figma-label">Word gesture camera</p>
-                  <span class="text-xs font-semibold text-ink-soft">{{ capturing ? 'Recording...' : cameraOn ? 'Ready' : 'Camera off' }}</span>
+                  <span class="text-xs font-semibold text-ink-soft">{{ preparing ? 'Get ready...' : capturing ? 'Recording...' : cameraOn ? 'Ready' : 'Camera off' }}</span>
                 </div>
                 <div class="relative aspect-video bg-black">
                   <video ref="wordVideoRef" class="h-full w-full -scale-x-100 object-cover" autoplay muted playsinline />
                   <canvas ref="wordCanvasRef" hidden />
                   <button v-if="!cameraOn" class="figma-primary absolute inset-0 m-auto h-fit" type="button" @click="startWordCamera">Start word-sign camera</button>
-                  <div v-if="capturing" class="absolute inset-x-0 bottom-0 bg-black/70 px-3 py-2 text-center text-xs font-bold text-white">Recording your full sign: {{ recordingSecondsRemaining }} second{{ recordingSecondsRemaining === 1 ? '' : 's' }}</div>
+                  <div v-if="preparing || capturing" class="absolute inset-x-0 bottom-0 bg-black/70 px-3 py-2 text-center text-xs font-bold text-white">
+                    {{ preparing ? `Get ready: ${countdownSecondsRemaining}` : `Recording your full sign: ${recordingSecondsRemaining} second${recordingSecondsRemaining === 1 ? '' : 's'}` }}
+                  </div>
                 </div>
                 <div class="flex justify-end p-3"><button class="figma-button" type="button" :disabled="!cameraOn || capturing" @click="stopWordCamera">Stop camera</button></div>
               </section>
@@ -52,7 +54,7 @@
                 <p class="min-h-12 rounded border border-brand-teal/30 bg-white px-3 py-3 text-lg font-bold">{{ capturing ? 'Capturing your complete sign…' : 'Make the full sign shown in the question video.' }}</p>
                 <p class="mt-2 text-xs font-semibold text-ink-soft">This checks your whole word gesture against the Admin Word Gesture dataset—not alphabet letters. Your answer is recorded even when it is not correct.</p>
                 <div class="mt-4 flex flex-wrap gap-2">
-                  <button class="figma-primary" type="button" :disabled="!cameraOn || checking || capturing || Boolean(currentCheck)" @click="checkCurrentAnswer">{{ checking ? 'Checking...' : capturing ? `Recording ${recordingSecondsRemaining}s` : currentCheck ? 'Answer recorded' : 'Start Recording' }}</button>
+                  <button class="figma-primary" type="button" :disabled="!cameraOn || checking || preparing || capturing || Boolean(currentCheck)" @click="checkCurrentAnswer">{{ checking ? 'Checking...' : preparing ? `Get ready ${countdownSecondsRemaining}s` : capturing ? `Recording ${recordingSecondsRemaining}s` : currentCheck ? 'Answer recorded' : 'Start Recording' }}</button>
                 </div>
                 <p v-if="currentCheck" :class="currentCheck.correct ? 'status-success' : 'status-error'" class="mt-4">
                   {{ currentCheck.message || (currentCheck.correct ? 'Correct!' : 'Incorrect.') }}
@@ -120,8 +122,10 @@ const result = ref<{ score: number; total: number } | null>(null)
 const wordVideoRef = ref<HTMLVideoElement | null>(null)
 const wordCanvasRef = ref<HTMLCanvasElement | null>(null)
 const cameraOn = ref(false)
+const preparing = ref(false)
 const capturing = ref(false)
 const captureProgress = ref(0)
+const countdownSecondsRemaining = ref(3)
 const recordingSecondsRemaining = ref(3)
 let wordStream: MediaStream | null = null
 const activeTopic = computed(() => activity.value?.topics[topicIndex.value] ?? null)
@@ -238,16 +242,35 @@ function stopWordCamera() {
 }
 async function checkCurrentAnswer() {
   checking.value = true
-  capturing.value = true
+  preparing.value = true
+  countdownSecondsRemaining.value = 3
   captureProgress.value = 0
   error.value = ''
   try {
+    await startRecordingCountdown()
+    preparing.value = false
+    capturing.value = true
     const images = await captureWordFrames()
     const checked = await apiFetch<SavedCheck>(`/student/remediation-activities/${route.params.targetId}/questions/${questionIndex.value}/word-check`, { method: 'POST', body: JSON.stringify({ images }) })
     answers.value = { ...answers.value, [String(questionIndex.value)]: checked.correct ? '__WORD_GESTURE_CORRECT__' : '__WORD_GESTURE_INCORRECT__' }
     checks.value = { ...checks.value, [String(questionIndex.value)]: { ...checked, message: outcomeMessage(checked.correct) } }
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to check your signed answer.' }
-  finally { checking.value = false; capturing.value = false; captureProgress.value = 0; recordingSecondsRemaining.value = 3 }
+  finally {
+    checking.value = false
+    preparing.value = false
+    capturing.value = false
+    captureProgress.value = 0
+    countdownSecondsRemaining.value = 3
+    recordingSecondsRemaining.value = 3
+  }
+}
+async function startRecordingCountdown() {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt < 3000) {
+    const elapsed = Date.now() - startedAt
+    countdownSecondsRemaining.value = Math.max(1, Math.ceil((3000 - elapsed) / 1000))
+    await new Promise(resolve => window.setTimeout(resolve, 100))
+  }
 }
 async function captureWordFrames() {
   const images: string[] = []
