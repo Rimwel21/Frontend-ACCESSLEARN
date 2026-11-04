@@ -127,7 +127,7 @@ const preparing = ref(false)
 const capturing = ref(false)
 const captureProgress = ref(0)
 const countdownSecondsRemaining = ref(3)
-const recordingSecondsRemaining = ref(3)
+const recordingSecondsRemaining = ref(4)
 let wordStream: MediaStream | null = null
 const activeTopic = computed(() => activity.value?.topics[topicIndex.value] ?? null)
 type FloatingGuideVideo = { url: string; title: string }
@@ -262,7 +262,7 @@ async function checkCurrentAnswer() {
     capturing.value = false
     captureProgress.value = 0
     countdownSecondsRemaining.value = 3
-    recordingSecondsRemaining.value = 3
+    recordingSecondsRemaining.value = 4
   }
 }
 async function startRecordingCountdown() {
@@ -275,15 +275,15 @@ async function startRecordingCountdown() {
 }
 async function captureWordFrames() {
   const images: string[] = []
-  const targetFrames = 40
+  const recordingDurationMs = 4000
   const startedAt = Date.now()
-  while (images.length < targetFrames && Date.now() - startedAt < 3000) {
+  while (Date.now() - startedAt < recordingDurationMs) {
     const image = captureFrameDataUrl()
     if (image) images.push(image)
     const elapsed = Date.now() - startedAt
-    captureProgress.value = Math.round(Math.min(100, (elapsed / 3000) * 100))
-    recordingSecondsRemaining.value = Math.max(1, Math.ceil((3000 - elapsed) / 1000))
-    await new Promise(resolve => window.setTimeout(resolve, 70))
+    captureProgress.value = Math.round(Math.min(100, (elapsed / recordingDurationMs) * 100))
+    recordingSecondsRemaining.value = Math.max(1, Math.ceil((recordingDurationMs - elapsed) / 1000))
+    await new Promise(resolve => window.setTimeout(resolve, 100))
   }
   if (images.length < 10) throw new Error('Camera frames could not be captured. Keep the camera on and try again.')
   return images
