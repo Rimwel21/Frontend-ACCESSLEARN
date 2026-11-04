@@ -18,7 +18,7 @@
             <div class="mb-4 flex justify-between gap-3"><h2 class="font-display text-xl font-bold">{{ activeTopic.title }}</h2><span class="text-xs font-bold text-ink-soft">Topic {{ topicIndex + 1 }} of {{ activity.topics.length }}</span></div>
             <div v-if="activeTopic.page_image_urls?.length" class="grid gap-4"><img v-for="url in activeTopic.page_image_urls" :key="url" :src="assetUrl(url)" class="w-full rounded border" /></div>
             <p v-else class="whitespace-pre-line text-sm leading-7">{{ activeTopic.content }}</p>
-            <div class="mt-5 flex justify-between gap-2"><button class="figma-button" :disabled="topicIndex === 0" @click="topicIndex--">Previous</button><button class="figma-primary" @click="nextTopic">{{ topicIndex === activity.topics.length - 1 ? 'Go to activity' : 'Next topic' }}</button></div>
+            <div class="mt-5 flex justify-between gap-2"><button class="figma-button" :disabled="topicIndex === 0" @click="previousTopic">Previous</button><button class="figma-primary" @click="nextTopic">{{ topicIndex === activity.topics.length - 1 ? 'Go to activity' : 'Next topic' }}</button></div>
           </article>
           <article v-else class="card p-5"><p class="text-sm">No review topics are available.</p><button class="figma-primary mt-4" @click="step = 'questions'">Go to activity</button></article>
         </section>
@@ -37,13 +37,13 @@
               <section class="overflow-hidden rounded border border-brand-teal/30 bg-white">
                 <div class="flex items-center justify-between border-b border-brand-teal/20 px-4 py-3">
                   <p class="figma-label">Word gesture camera</p>
-                  <span class="text-xs font-semibold text-ink-soft">{{ cameraOn ? 'Ready' : 'Camera off' }}</span>
+                  <span class="text-xs font-semibold text-ink-soft">{{ capturing ? 'Recording...' : cameraOn ? 'Ready' : 'Camera off' }}</span>
                 </div>
                 <div class="relative aspect-video bg-black">
                   <video ref="wordVideoRef" class="h-full w-full -scale-x-100 object-cover" autoplay muted playsinline />
                   <canvas ref="wordCanvasRef" hidden />
                   <button v-if="!cameraOn" class="figma-primary absolute inset-0 m-auto h-fit" type="button" @click="startWordCamera">Start word-sign camera</button>
-                  <div v-if="capturing" class="absolute inset-x-0 bottom-0 bg-black/70 px-3 py-2 text-center text-xs font-bold text-white">Capturing your complete sign: {{ captureProgress }}%</div>
+                  <div v-if="capturing" class="absolute inset-x-0 bottom-0 bg-black/70 px-3 py-2 text-center text-xs font-bold text-white">Recording your full sign: {{ recordingSecondsRemaining }} second{{ recordingSecondsRemaining === 1 ? '' : 's' }}</div>
                 </div>
                 <div class="flex justify-end p-3"><button class="figma-button" type="button" :disabled="!cameraOn || capturing" @click="stopWordCamera">Stop camera</button></div>
               </section>
@@ -52,10 +52,10 @@
                 <p class="min-h-12 rounded border border-brand-teal/30 bg-white px-3 py-3 text-lg font-bold">{{ capturing ? 'Capturing your complete sign…' : 'Make the full sign shown in the question video.' }}</p>
                 <p class="mt-2 text-xs font-semibold text-ink-soft">This checks your whole word gesture against the Admin Word Gesture dataset—not alphabet letters. Your answer is recorded even when it is not correct.</p>
                 <div class="mt-4 flex flex-wrap gap-2">
-                  <button class="figma-primary" type="button" :disabled="!cameraOn || checking || capturing" @click="checkCurrentAnswer">{{ checking ? 'Checking word sign...' : 'Record and check my word sign' }}</button>
+                  <button class="figma-primary" type="button" :disabled="!cameraOn || checking || capturing || Boolean(currentCheck)" @click="checkCurrentAnswer">{{ checking ? 'Checking...' : capturing ? `Recording ${recordingSecondsRemaining}s` : currentCheck ? 'Answer recorded' : 'Start Recording' }}</button>
                 </div>
                 <p v-if="currentCheck" :class="currentCheck.correct ? 'status-success' : 'status-error'" class="mt-4">
-                  Reference similarity: {{ currentCheck.similarity_percent?.toFixed(2) ?? '0.00' }}% — {{ currentCheck.feedback || (currentCheck.correct ? 'Correct sign! Your answer has been recorded.' : "That word sign isn't correct. Your answer has still been recorded; you may continue.") }}
+                  {{ currentCheck.message || (currentCheck.correct ? 'Correct!' : 'Incorrect.') }}
                 </p>
               </section>
             </div>
@@ -63,8 +63,8 @@
 
           <div v-if="result" class="status-success">Submitted: {{ result.score }} correct answer{{ result.score === 1 ? '' : 's' }} / {{ result.total }}.</div>
           <div class="flex flex-wrap justify-between gap-2">
-            <button class="figma-button" :disabled="questionIndex === 0" @click="goToQuestion(questionIndex - 1)">Previous question</button>
-            <button v-if="questionIndex < activity.questions.length - 1" class="figma-primary" :disabled="!currentCheck" @click="goToQuestion(questionIndex + 1)">Next question</button>
+            <span />
+            <button v-if="questionIndex < activity.questions.length - 1" class="figma-primary" :disabled="!currentCheck" @click="nextQuestion">Next question</button>
             <button v-else class="figma-primary" :disabled="saving || Boolean(result) || !allQuestionsChecked" @click="submit">{{ saving ? 'Submitting...' : result ? 'Completed' : 'Submit activity' }}</button>
           </div>
         </section>
@@ -100,7 +100,9 @@ import { API_BASE_URL, apiFetch } from '@/lib/api'
 
 interface Topic { id: number; title: string; content: string; page_image_urls?: string[]; sign_videos?: Array<{ title: string; video_url: string }> }
 interface SupportQuestion { prompt_type?: 'text' | 'sign_video'; sign_video_url?: string | null }
-interface Activity { activity_title: string; activity_description: string; start_sort_order: number; end_sort_order: number; status: string; score?: number | null; total?: number | null; is_late: boolean; review_video_url?: string | null; topics: Topic[]; questions: SupportQuestion[] }
+interface SavedCheck { correct: boolean; similarity_percent?: number; feedback?: string; message?: string }
+interface SupportProgress { stage?: 'review' | 'questions'; topic_index?: number; question_index?: number; checks?: Record<string, SavedCheck> }
+interface Activity { activity_title: string; activity_description: string; start_sort_order: number; end_sort_order: number; status: string; score?: number | null; total?: number | null; is_late: boolean; review_video_url?: string | null; saved_answers?: Record<string, string>; progress?: SupportProgress; topics: Topic[]; questions: SupportQuestion[] }
 
 const route = useRoute()
 const router = useRouter()
@@ -113,13 +115,14 @@ const step = ref<'review' | 'questions'>('review')
 const topicIndex = ref(0)
 const questionIndex = ref(0)
 const answers = ref<Record<string, string>>({})
-const checks = ref<Record<string, { correct: boolean; similarity_percent?: number; feedback?: string }>>({})
+const checks = ref<Record<string, SavedCheck>>({})
 const result = ref<{ score: number; total: number } | null>(null)
 const wordVideoRef = ref<HTMLVideoElement | null>(null)
 const wordCanvasRef = ref<HTMLCanvasElement | null>(null)
 const cameraOn = ref(false)
 const capturing = ref(false)
 const captureProgress = ref(0)
+const recordingSecondsRemaining = ref(3)
 let wordStream: MediaStream | null = null
 const activeTopic = computed(() => activity.value?.topics[topicIndex.value] ?? null)
 type FloatingGuideVideo = { url: string; title: string }
@@ -140,8 +143,17 @@ onMounted(async () => {
   try {
     const loaded = await apiFetch<Activity>(`/student/remediation-activities/${route.params.targetId}`)
     activity.value = loaded
+    answers.value = { ...(loaded.saved_answers ?? {}) }
+    checks.value = Object.fromEntries(Object.entries(loaded.progress?.checks ?? {}).map(([index, check]) => [index, { ...check, message: outcomeMessage(check.correct) }]))
+    const savedProgress = loaded.progress
+    if (savedProgress?.stage === 'questions') {
+      step.value = 'questions'
+      questionIndex.value = Math.min(savedProgress.question_index ?? 0, Math.max(loaded.questions.length - 1, 0))
+    } else {
+      topicIndex.value = Math.min(savedProgress?.topic_index ?? 0, Math.max(loaded.topics.length - 1, 0))
+      openGuideForCurrentTopic()
+    }
     if (loaded.status === 'completed') result.value = { score: loaded.score ?? 0, total: loaded.total ?? 0 }
-    openGuideForCurrentTopic()
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to load support activity.' }
   finally { loading.value = false }
 })
@@ -151,11 +163,20 @@ onBeforeUnmount(() => { stopWordCamera(); closeGuideVideo() })
 watch(step, value => { if (value === 'questions') closeGuideVideo() })
 
 function assetUrl(url?: string | null) { return !url || url.startsWith('http') ? url ?? '' : `${API_BASE_URL}${url}` }
-function nextTopic() {
-  if (!activity.value || topicIndex.value >= activity.value.topics.length - 1) { step.value = 'questions'; return }
+async function saveProgress(stage: 'review' | 'questions', topic = topicIndex.value, question = questionIndex.value) {
+  await apiFetch(`/student/remediation-activities/${route.params.targetId}/progress`, { method: 'PUT', body: JSON.stringify({ stage, topic_index: topic, question_index: question }) })
+}
+async function nextTopic() {
+  if (!activity.value || topicIndex.value >= activity.value.topics.length - 1) {
+    step.value = 'questions'
+    await saveProgress('questions', topicIndex.value, 0)
+    return
+  }
   topicIndex.value++
+  await saveProgress('review')
   openGuideForCurrentTopic()
 }
+async function previousTopic() { if (topicIndex.value > 0) { topicIndex.value--; await saveProgress('review'); openGuideForCurrentTopic() } }
 function guideForTopic() {
   const topicVideo = activeTopic.value?.sign_videos?.[0]
   if (topicVideo?.video_url) return { url: topicVideo.video_url, title: topicVideo.title }
@@ -190,7 +211,11 @@ function moveGuide(event: PointerEvent) {
 }
 function stopGuideDrag() { guideDragOffset = null; window.removeEventListener('pointermove', moveGuide); window.removeEventListener('pointerup', stopGuideDrag) }
 async function toggleGuideFullscreen() { if (document.fullscreenElement) await document.exitFullscreen(); else await floatingGuideElement.value?.requestFullscreen() }
-async function goToQuestion(index: number) { questionIndex.value = index }
+async function nextQuestion() {
+  if (!activity.value || !currentCheck.value || questionIndex.value >= activity.value.questions.length - 1) return
+  questionIndex.value++
+  await saveProgress('questions')
+}
 async function startWordCamera() {
   if (cameraOn.value) return
   error.value = ''
@@ -218,23 +243,32 @@ async function checkCurrentAnswer() {
   error.value = ''
   try {
     const images = await captureWordFrames()
-    const checked = await apiFetch<{ correct: boolean; similarity_percent?: number; feedback?: string }>(`/student/remediation-activities/${route.params.targetId}/questions/${questionIndex.value}/word-check`, { method: 'POST', body: JSON.stringify({ images }) })
+    const checked = await apiFetch<SavedCheck>(`/student/remediation-activities/${route.params.targetId}/questions/${questionIndex.value}/word-check`, { method: 'POST', body: JSON.stringify({ images }) })
     answers.value = { ...answers.value, [String(questionIndex.value)]: checked.correct ? '__WORD_GESTURE_CORRECT__' : '__WORD_GESTURE_INCORRECT__' }
-    checks.value = { ...checks.value, [String(questionIndex.value)]: checked }
+    checks.value = { ...checks.value, [String(questionIndex.value)]: { ...checked, message: outcomeMessage(checked.correct) } }
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to check your signed answer.' }
-  finally { checking.value = false; capturing.value = false; captureProgress.value = 0 }
+  finally { checking.value = false; capturing.value = false; captureProgress.value = 0; recordingSecondsRemaining.value = 3 }
 }
 async function captureWordFrames() {
   const images: string[] = []
   const targetFrames = 40
-  while (images.length < targetFrames) {
+  const startedAt = Date.now()
+  while (images.length < targetFrames && Date.now() - startedAt < 3000) {
     const image = captureFrameDataUrl()
     if (image) images.push(image)
-    captureProgress.value = Math.round((images.length / targetFrames) * 100)
-    // Match the existing tutorial-practice capture used by the similarity scorer.
-    await new Promise(resolve => window.setTimeout(resolve, 100))
+    const elapsed = Date.now() - startedAt
+    captureProgress.value = Math.round(Math.min(100, (elapsed / 3000) * 100))
+    recordingSecondsRemaining.value = Math.max(1, Math.ceil((3000 - elapsed) / 1000))
+    await new Promise(resolve => window.setTimeout(resolve, 70))
   }
+  if (images.length < 10) throw new Error('Camera frames could not be captured. Keep the camera on and try again.')
   return images
+}
+function outcomeMessage(correct: boolean) {
+  const messages = correct
+    ? ['Correct! Great job!', 'Correct! Well done!', 'Correct! Excellent signing!', 'Correct! Keep it up!']
+    : ['Incorrect. Keep practicing!', 'Incorrect. You can improve!', 'Incorrect. Nice effort!', 'Incorrect. Try the next one!']
+  return messages[Math.floor(Math.random() * messages.length)]
 }
 function captureFrameDataUrl() {
   const video = wordVideoRef.value
