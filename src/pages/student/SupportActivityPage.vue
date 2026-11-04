@@ -58,6 +58,7 @@
                 </div>
                 <p v-if="currentCheck" :class="currentCheck.correct ? 'status-success' : 'status-error'" class="mt-4">
                   {{ currentCheck.message || (currentCheck.correct ? 'Correct!' : 'Incorrect.') }}
+                  <span v-if="currentCheck.similarity_percent !== undefined" class="block mt-1 text-xs font-semibold">Reference similarity: {{ currentCheck.similarity_percent.toFixed(2) }}%</span>
                 </p>
               </section>
             </div>
