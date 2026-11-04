@@ -273,6 +273,7 @@ async function loadSummary() {
           reviewVideo: null,
         }
       })
+      .filter(draft => draft.questions.length)
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to load checkpoint reports.' }
   finally { loading.value = false }
 }
@@ -380,7 +381,6 @@ async function save() {
         const form = new FormData(); form.append('video', question.video as File)
         uploads.push(uploadVideo(`/teacher/remediation-activities/${created.id}/interventions/${interventionId}/questions/${questionIndex}/video`, form, `sign-language video for question ${question.index + 1}`))
       })
-      .filter(draft => draft.questions.length)
       if (draft.reviewVideo && !draft.topicVideoCount) {
         const form = new FormData(); form.append('video', draft.reviewVideo)
         uploads.push(uploadVideo(`/teacher/remediation-activities/${created.id}/interventions/${interventionId}/review-video`, form, `topic review video for Topics ${draft.start}-${draft.end}`))
