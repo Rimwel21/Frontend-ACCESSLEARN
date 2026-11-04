@@ -122,6 +122,7 @@
           <button class="figma-button" type="button" :disabled="supportActivitiesLoading" @click="loadSupportActivities">
             {{ supportActivitiesLoading ? 'Refreshing...' : 'Refresh' }}
           </button>
+          <RouterLink class="btn-primary no-underline" to="/teacher/support-activities">Create targeted support</RouterLink>
         </div>
       </div>
 
