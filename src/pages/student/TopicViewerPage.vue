@@ -160,10 +160,7 @@
             </div>
             <input v-else v-model="checkpointAnswers[String(index)]" :disabled="Boolean(checkpointResult)" class="mt-3 w-full border-[2px] border-brand-teal px-3 py-2 text-sm" placeholder="Your answer" />
           </section>
-          <div class="flex flex-wrap justify-between gap-3">
-            <button class="border-[3px] border-brand-teal bg-white px-5 py-2.5 text-sm font-black text-ink transition hover:bg-brand-blue-soft" type="button" @click="reviewCheckpointTopics">
-              Review Topic Progress {{ checkpointBlockIndex + 1 }}
-            </button>
+          <div class="flex justify-end">
             <button v-if="!checkpointResult" class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white disabled:opacity-60" :disabled="checkpointSubmitting" @click="submitActiveCheckpoint">{{ checkpointSubmitting ? 'Submitting…' : 'Submit Checkpoint' }}</button>
             <button v-else class="border-[3px] border-brand-teal bg-brand-blue px-5 py-2.5 text-sm font-black text-white" @click="continueAfterCheckpoint">Continue to Next Topic</button>
           </div>
@@ -484,9 +481,6 @@ const completedCheckpointIds = computed(() => new Set(progress.value.completed_c
 const quizzes = computed(() => (moduleData.value?.assessments ?? []).filter(item => item.assessment_type === 'quiz'))
 const activeQuiz = computed(() => quizzes.value.find(quiz => quiz.id === activeQuizId.value) ?? null)
 const activeCheckpoint = computed(() => (moduleData.value?.checkpoints ?? []).find(checkpoint => checkpoint.id === activeCheckpointId.value) ?? null)
-const checkpointBlockIndex = computed(() => activeCheckpoint.value
-  ? learningBlocks.value.findIndex(block => block.end === activeCheckpoint.value?.end_sort_order)
-  : -1)
 const quizUnlocked = computed(() => topics.value.length > 0 && progress.value.completed_topics >= topics.value.length)
 const headerTitle = computed(() => activeCheckpoint.value?.title || activeQuiz.value?.title || moduleData.value?.title || 'Learning Content')
 const headerDescription = computed(() => {
@@ -715,11 +709,6 @@ async function continueAfterCheckpoint() {
   checkpointResult.value = null
   if (nextBlockIndex >= 0) await selectBlock(nextBlockIndex)
   else if (quizzes.value.length) await selectQuiz(quizzes.value[0].id)
-}
-
-async function reviewCheckpointTopics() {
-  if (checkpointBlockIndex.value < 0) return
-  await selectBlock(checkpointBlockIndex.value)
 }
 
 async function submitActiveQuiz(autoSubmit = false) {
