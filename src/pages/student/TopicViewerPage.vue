@@ -533,6 +533,12 @@ watch(learningBlocks, value => {
   if (activeBlockIndex.value >= value.length) activeBlockIndex.value = 0
 })
 
+// A learning-block guide is for reading the topics only. It must never cover
+// checkpoint questions or continue playing while the student is answering.
+watch(activeCheckpointId, checkpointId => {
+  if (checkpointId !== null) closeFloatingVideo()
+})
+
 watch(isPresentationProcessing, processing => {
   if (processing) startPresentationRefresh()
   else stopPresentationRefresh()

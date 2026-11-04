@@ -16,13 +16,6 @@
         <section v-if="step === 'review'" class="mt-5 space-y-5">
           <article v-if="activeTopic" class="card p-5">
             <div class="mb-4 flex justify-between gap-3"><h2 class="font-display text-xl font-bold">{{ activeTopic.title }}</h2><span class="text-xs font-bold text-ink-soft">Topic {{ topicIndex + 1 }} of {{ activity.topics.length }}</span></div>
-            <section v-if="activeGuideVideo" class="mb-4 overflow-hidden rounded border-2 border-brand-teal bg-brand-blue-soft/40">
-              <div class="flex items-center justify-between gap-3 border-b border-brand-teal/25 px-3 py-2">
-                <div><p class="figma-label">Sign-language guide</p><p class="text-xs font-semibold text-ink-soft">{{ activeGuideVideo.source }}</p></div>
-                <span class="badge badge-blue">Video support</span>
-              </div>
-              <video :src="assetUrl(activeGuideVideo.url)" class="aspect-video w-full bg-black object-contain" autoplay muted controls playsinline />
-            </section>
             <div v-if="activeTopic.page_image_urls?.length" class="grid gap-4"><img v-for="url in activeTopic.page_image_urls" :key="url" :src="assetUrl(url)" class="w-full rounded border" /></div>
             <p v-else class="whitespace-pre-line text-sm leading-7">{{ activeTopic.content }}</p>
             <div class="mt-5 flex justify-between gap-2"><button class="figma-button" :disabled="topicIndex === 0" @click="topicIndex--">Previous</button><button class="figma-primary" @click="nextTopic">{{ topicIndex === activity.topics.length - 1 ? 'Go to activity' : 'Next topic' }}</button></div>
@@ -77,11 +70,31 @@
         </section>
       </template>
     </div>
+
+    <Teleport to="body">
+      <section
+        v-if="floatingGuideVideo && step === 'review'"
+        class="fixed z-40 w-[min(22rem,calc(100vw-2rem))] overflow-hidden border-[3px] border-brand-teal bg-white shadow-2xl"
+        :style="{ left: `${floatingGuidePosition.x}px`, top: `${floatingGuidePosition.y}px` }"
+      >
+        <div class="flex cursor-move touch-none items-center justify-between gap-2 bg-brand-amber px-3 py-2 select-none" @pointerdown="startGuideDrag">
+          <div class="min-w-0"><div class="font-mono text-[9px] font-black uppercase tracking-wide">Movable sign-language video</div><div class="truncate text-xs font-bold">{{ floatingGuideVideo.title }}</div></div>
+          <div class="flex shrink-0 gap-1">
+            <button type="button" class="grid h-7 w-7 place-items-center border-2 border-brand-teal bg-white text-sm font-black" :aria-label="guideMinimized ? 'Restore video' : 'Minimize video'" @pointerdown.stop @click="guideMinimized = !guideMinimized"><span aria-hidden="true">{{ guideMinimized ? '+' : '−' }}</span></button>
+            <button type="button" class="grid h-7 w-7 place-items-center border-2 border-brand-teal bg-white text-lg font-black leading-none" aria-label="Close movable video" @pointerdown.stop @click="closeGuideVideo">×</button>
+          </div>
+        </div>
+        <div v-if="!guideMinimized" class="bg-black">
+          <video ref="floatingGuideElement" :src="assetUrl(floatingGuideVideo.url)" autoplay controls playsinline class="aspect-video w-full" />
+          <div class="flex justify-end bg-white p-2"><button type="button" class="border-2 border-brand-teal px-3 py-1 text-xs font-black" @click="toggleGuideFullscreen">Full screen</button></div>
+        </div>
+      </section>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL, apiFetch } from '@/lib/api'
 
@@ -109,12 +122,13 @@ const capturing = ref(false)
 const captureProgress = ref(0)
 let wordStream: MediaStream | null = null
 const activeTopic = computed(() => activity.value?.topics[topicIndex.value] ?? null)
-const activeGuideVideo = computed(() => {
-  const topicVideo = activeTopic.value?.sign_videos?.[0]
-  if (topicVideo?.video_url) return { url: topicVideo.video_url, source: `${topicVideo.title} from Topic Progress` }
-  if (activity.value?.review_video_url) return { url: activity.value.review_video_url, source: 'Teacher-uploaded review guide' }
-  return null
-})
+type FloatingGuideVideo = { url: string; title: string }
+const floatingGuideVideo = ref<FloatingGuideVideo | null>(null)
+const guideMinimized = ref(false)
+const guideDismissed = ref(false)
+const floatingGuidePosition = ref({ x: 24, y: 104 })
+const floatingGuideElement = ref<HTMLVideoElement | null>(null)
+let guideDragOffset: { x: number; y: number } | null = null
 const activeQuestion = computed(() => activity.value?.questions[questionIndex.value] ?? null)
 const currentCheck = computed(() => checks.value[String(questionIndex.value)] ?? null)
 const allQuestionsChecked = computed(() => {
@@ -127,14 +141,55 @@ onMounted(async () => {
     const loaded = await apiFetch<Activity>(`/student/remediation-activities/${route.params.targetId}`)
     activity.value = loaded
     if (loaded.status === 'completed') result.value = { score: loaded.score ?? 0, total: loaded.total ?? 0 }
+    openGuideForCurrentTopic()
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to load support activity.' }
   finally { loading.value = false }
 })
 
-onBeforeUnmount(stopWordCamera)
+onBeforeUnmount(() => { stopWordCamera(); closeGuideVideo() })
+
+watch(step, value => { if (value === 'questions') closeGuideVideo() })
 
 function assetUrl(url?: string | null) { return !url || url.startsWith('http') ? url ?? '' : `${API_BASE_URL}${url}` }
-function nextTopic() { if (!activity.value || topicIndex.value >= activity.value.topics.length - 1) step.value = 'questions'; else topicIndex.value++ }
+function nextTopic() {
+  if (!activity.value || topicIndex.value >= activity.value.topics.length - 1) { step.value = 'questions'; return }
+  topicIndex.value++
+  openGuideForCurrentTopic()
+}
+function guideForTopic() {
+  const topicVideo = activeTopic.value?.sign_videos?.[0]
+  if (topicVideo?.video_url) return { url: topicVideo.video_url, title: topicVideo.title }
+  if (activity.value?.review_video_url) return { url: activity.value.review_video_url, title: 'Targeted-support review guide' }
+  return null
+}
+async function openGuideForCurrentTopic() {
+  if (guideDismissed.value || floatingGuideVideo.value) return
+  const video = guideForTopic()
+  if (!video) return
+  floatingGuideVideo.value = video
+  guideMinimized.value = false
+  const panelWidth = Math.min(352, window.innerWidth - 32)
+  floatingGuidePosition.value = { x: Math.max(16, window.innerWidth - panelWidth - 24), y: Math.max(72, Math.min(104, window.innerHeight - 260)) }
+  await nextTick()
+  void floatingGuideElement.value?.play().catch(() => null)
+}
+function closeGuideVideo() { floatingGuideVideo.value = null; guideMinimized.value = false; guideDismissed.value = true; stopGuideDrag() }
+function startGuideDrag(event: PointerEvent) {
+  const panel = (event.currentTarget as HTMLElement | null)?.parentElement
+  if (!panel) return
+  const bounds = panel.getBoundingClientRect()
+  guideDragOffset = { x: event.clientX - bounds.left, y: event.clientY - bounds.top }
+  window.addEventListener('pointermove', moveGuide)
+  window.addEventListener('pointerup', stopGuideDrag, { once: true })
+}
+function moveGuide(event: PointerEvent) {
+  if (!guideDragOffset) return
+  const panelWidth = Math.min(352, window.innerWidth - 32)
+  const panelHeight = guideMinimized.value ? 62 : 270
+  floatingGuidePosition.value = { x: Math.max(8, Math.min(window.innerWidth - panelWidth - 8, event.clientX - guideDragOffset.x)), y: Math.max(8, Math.min(window.innerHeight - panelHeight - 8, event.clientY - guideDragOffset.y)) }
+}
+function stopGuideDrag() { guideDragOffset = null; window.removeEventListener('pointermove', moveGuide); window.removeEventListener('pointerup', stopGuideDrag) }
+async function toggleGuideFullscreen() { if (document.fullscreenElement) await document.exitFullscreen(); else await floatingGuideElement.value?.requestFullscreen() }
 async function goToQuestion(index: number) { questionIndex.value = index }
 async function startWordCamera() {
   if (cameraOn.value) return

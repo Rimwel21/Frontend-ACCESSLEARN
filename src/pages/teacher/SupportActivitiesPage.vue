@@ -176,7 +176,7 @@ interface Summary { module_id: number; module_title: string; checkpoints: Checkp
 interface SignQuestionDraft extends Question { index: number; selected: boolean; question_type: 'identification' | 'multiple_choice'; options: string[]; video: File | null; sourceAnswer: string }
 interface ModuleTopic { sort_order: number; sign_videos?: Array<{ id: number }> }
 interface Draft { checkpointId: number; start: number; end: number; students: Student[]; studentIds: number[]; questions: SignQuestionDraft[]; topicVideoCount: number; reviewVideo: File | null }
-interface PostedIntervention { id: number; questions: unknown[]; targets: Array<{ student_id: number }> }
+interface PostedIntervention { id: number; checkpoint_id?: number | null; questions: Array<{ source_question_index?: number | null }>; targets: Array<{ student_id: number }> }
 interface PostedActivity { id: number; title: string; description: string; interventions: PostedIntervention[] }
 
 const modules = ref<Array<{ id: number; title: string }>>([])
@@ -236,9 +236,17 @@ async function loadSummary() {
     ])
     summary.value = loadedSummary
     moduleTopics.value = loadedTopics
+    await loadPostedActivities()
     drafts.value = summary.value.checkpoints
       .filter(checkpoint => checkpoint.struggling_students.length)
       .map(checkpoint => {
+        const alreadyPostedQuestionIndexes = new Set(
+          postedActivities.value
+            .flatMap(activity => activity.interventions)
+            .filter(intervention => intervention.checkpoint_id === checkpoint.id)
+            .flatMap(intervention => intervention.questions.map(question => question.source_question_index))
+            .filter((index): index is number => typeof index === 'number'),
+        )
         const missed = new Set(checkpoint.struggling_students.flatMap(student => student.missed_question_indexes))
         const questions = checkpoint.questions
           .map((question, index) => ({
@@ -251,7 +259,7 @@ async function loadSummary() {
             options: [],
             video: null,
           }))
-          .filter(question => missed.has(question.index))
+          .filter(question => missed.has(question.index) && !alreadyPostedQuestionIndexes.has(question.index))
         return {
           checkpointId: checkpoint.id,
           start: checkpoint.start_sort_order,
@@ -372,6 +380,7 @@ async function save() {
         const form = new FormData(); form.append('video', question.video as File)
         uploads.push(uploadVideo(`/teacher/remediation-activities/${created.id}/interventions/${interventionId}/questions/${questionIndex}/video`, form, `sign-language video for question ${question.index + 1}`))
       })
+      .filter(draft => draft.questions.length)
       if (draft.reviewVideo && !draft.topicVideoCount) {
         const form = new FormData(); form.append('video', draft.reviewVideo)
         uploads.push(uploadVideo(`/teacher/remediation-activities/${created.id}/interventions/${interventionId}/review-video`, form, `topic review video for Topics ${draft.start}-${draft.end}`))
