@@ -267,7 +267,11 @@ async function captureWordFrames() {
 function outcomeMessage(correct: boolean) {
   const messages = correct
     ? ['Correct! Great job!', 'Correct! Well done!', 'Correct! Excellent signing!', 'Correct! Keep it up!']
-    : ['Incorrect. Keep practicing!', 'Incorrect. You can improve!', 'Incorrect. Nice effort!', 'Incorrect. Try the next one!']
+    : [
+        'Incorrect. Next time, read the learning material carefully.',
+        'Incorrect. Next time, watch the learning-material video carefully.',
+        'Incorrect. Review the learning material and video before your next answer.',
+      ]
   return messages[Math.floor(Math.random() * messages.length)]
 }
 function captureFrameDataUrl() {
