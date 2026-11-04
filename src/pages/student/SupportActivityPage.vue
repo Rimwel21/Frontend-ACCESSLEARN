@@ -55,7 +55,7 @@
                   <button class="figma-primary" type="button" :disabled="!cameraOn || checking || capturing" @click="checkCurrentAnswer">{{ checking ? 'Checking word sign...' : 'Record and check my word sign' }}</button>
                 </div>
                 <p v-if="currentCheck" :class="currentCheck.correct ? 'status-success' : 'status-error'" class="mt-4">
-                  Similarity: {{ currentCheck.similarity_percent?.toFixed(2) ?? '0.00' }}% — {{ currentCheck.correct ? 'Correct sign! Your answer has been recorded.' : "That word sign isn't correct. Your answer has still been recorded; you may continue." }}
+                  Reference similarity: {{ currentCheck.similarity_percent?.toFixed(2) ?? '0.00' }}% — {{ currentCheck.feedback || (currentCheck.correct ? 'Correct sign! Your answer has been recorded.' : "That word sign isn't correct. Your answer has still been recorded; you may continue.") }}
                 </p>
               </section>
             </div>
@@ -113,7 +113,7 @@ const step = ref<'review' | 'questions'>('review')
 const topicIndex = ref(0)
 const questionIndex = ref(0)
 const answers = ref<Record<string, string>>({})
-const checks = ref<Record<string, { correct: boolean; similarity_percent?: number }>>({})
+const checks = ref<Record<string, { correct: boolean; similarity_percent?: number; feedback?: string }>>({})
 const result = ref<{ score: number; total: number } | null>(null)
 const wordVideoRef = ref<HTMLVideoElement | null>(null)
 const wordCanvasRef = ref<HTMLCanvasElement | null>(null)
@@ -218,7 +218,7 @@ async function checkCurrentAnswer() {
   error.value = ''
   try {
     const images = await captureWordFrames()
-    const checked = await apiFetch<{ correct: boolean; similarity_percent?: number }>(`/student/remediation-activities/${route.params.targetId}/questions/${questionIndex.value}/word-check`, { method: 'POST', body: JSON.stringify({ images }) })
+    const checked = await apiFetch<{ correct: boolean; similarity_percent?: number; feedback?: string }>(`/student/remediation-activities/${route.params.targetId}/questions/${questionIndex.value}/word-check`, { method: 'POST', body: JSON.stringify({ images }) })
     answers.value = { ...answers.value, [String(questionIndex.value)]: checked.correct ? '__WORD_GESTURE_CORRECT__' : '__WORD_GESTURE_INCORRECT__' }
     checks.value = { ...checks.value, [String(questionIndex.value)]: checked }
   } catch (err) { error.value = err instanceof Error ? err.message : 'Unable to check your signed answer.' }
