@@ -7,7 +7,7 @@
       </div>
       <div class="px-4 py-2 bg-emerald-50 text-brand-green rounded-full flex items-center gap-2 border border-brand-green/10">
           <span class="h-2 w-2 rounded-full bg-brand-green animate-pulse"></span>
-          <span class="text-xs font-bold uppercase tracking-widest">Global Activity: High</span>
+          <span class="text-xs font-bold uppercase tracking-widest">Platform Usage: Medium</span>
       </div>
     </div>
 
@@ -106,8 +106,8 @@
                          <div class="h-12 w-12 rounded-2xl bg-surface flex items-center justify-center text-xl">👨‍🏫</div>
                          <div>
                              <div class="text-sm font-bold text-ink">Teacher Activity</div>
-                             <p class="text-xs text-ink-soft mb-3 leading-relaxed">High volume of new module creation across Senior High sections.</p>
-                             <div class="px-3 py-1 bg-brand-violet/5 text-[10px] font-bold text-brand-violet uppercase inline-block rounded-md tracking-wider">Activity: High</div>
+                             <p class="text-xs text-ink-soft mb-3 leading-relaxed">Moderate volume of new module creation across Senior High sections.</p>
+                             <div class="px-3 py-1 bg-brand-violet/5 text-[10px] font-bold text-brand-violet uppercase inline-block rounded-md tracking-wider">Activity: Medium</div>
                          </div>
                      </div>
                  </div>
