@@ -2,6 +2,13 @@ import { cacheApiResponse, getCachedApiResponse } from '@/lib/offlineDb'
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
 
+/** Join an API path without turning a configured `/api` base into `/api/api/...`. */
+export function apiUrl(path: string, baseUrl = API_BASE_URL) {
+  const base = baseUrl.replace(/\/$/, '')
+  if (base.endsWith('/api') && path.startsWith('/api/')) return `${base}${path.slice(4)}`
+  return `${base}${path}`
+}
+
 export class ApiError extends Error {
   status: number
 
@@ -45,7 +52,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}) {
   let response: Response
 
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(apiUrl(path), {
       ...options,
       headers,
       cache: options.cache ?? 'no-store',
@@ -91,7 +98,7 @@ async function retryLocalApiBase(path: string, options: ApiOptions, headers: Hea
   if (!fallbackBaseUrl) return null
 
   try {
-    return await fetch(`${fallbackBaseUrl}${path}`, {
+    return await fetch(apiUrl(path, fallbackBaseUrl), {
       ...options,
       headers: new Headers(headers),
       cache: options.cache ?? 'no-store',

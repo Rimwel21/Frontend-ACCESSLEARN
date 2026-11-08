@@ -137,7 +137,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const filters = ref({ grade: '', section: '', page: 1 })
-const gradeOptions = ['Grade 4', 'Grade 5', 'Grade 6']
+const gradeOptions = ['Grade 4']
 const sections = ref(['Diamond', 'Sapphire', 'Emerald', 'Ruby', 'Pearl'])
 const students = ref<any[]>([])
 const selectedIds = ref<number[]>([])
@@ -150,10 +150,10 @@ const allSelected = computed(() => students.value.length > 0 && selectedIds.valu
 
 async function fetchStudents() {
     students.value = [
-        { id: 401, full_name: 'Isagani R. Dela Cruz', grade_level: 'Grade 6', section_name: 'Diamond', account_status: 'active', progress: 85 },
-        { id: 402, full_name: 'Basilio M. Santos', grade_level: 'Grade 6', section_name: 'Diamond', account_status: 'active', progress: 92 },
-        { id: 403, full_name: 'Julieta G. Capule', grade_level: 'Grade 6', section_name: 'Sapphire', account_status: 'waiting', progress: 0 },
-        { id: 404, full_name: 'Victorina S. Tiago', grade_level: 'Grade 5', section_name: 'Pearl', account_status: 'active', progress: 45 },
+        { id: 401, full_name: 'Isagani R. Dela Cruz', grade_level: 'Grade 4', section_name: 'Diamond', account_status: 'active', progress: 85 },
+        { id: 402, full_name: 'Basilio M. Santos', grade_level: 'Grade 4', section_name: 'Diamond', account_status: 'active', progress: 92 },
+        { id: 403, full_name: 'Julieta G. Capule', grade_level: 'Grade 4', section_name: 'Sapphire', account_status: 'waiting', progress: 0 },
+        { id: 404, full_name: 'Victorina S. Tiago', grade_level: 'Grade 4', section_name: 'Pearl', account_status: 'active', progress: 45 },
     ]
 }
 

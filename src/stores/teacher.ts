@@ -110,6 +110,7 @@ interface AssessmentSettings {
   shuffleQuestions?: boolean
   showAnswersAfterSubmission?: boolean
   allowTextAnswers?: boolean
+  audience?: 'regular' | 'hearing_impaired'
   dueAt?: string | null
   questions?: AssessmentQuestion[]
   submissionsCount?: number
@@ -247,6 +248,7 @@ interface TeacherAssessmentResponse {
   module_id: number | null
   topic_id: number | null
   assessment_type: 'quiz' | 'activity'
+  audience?: 'regular' | 'hearing_impaired'
   title: string
   description: string
   category: string | null
@@ -337,6 +339,35 @@ interface TeacherStudentRecordResponse {
   quiz_activity?: string | null
   assessments: TeacherStudentRecordAssessmentResponse[]
   handsign_practice: TeacherStudentRecordHandsignResponse[]
+  learning_materials: TeacherStudentRecordMaterialResponse[]
+  targeted_support: TeacherStudentRecordTargetedSupportResponse[]
+}
+
+interface TeacherStudentRecordMaterialResponse {
+  id: number
+  title: string
+  completed_topics: number
+  total_topics: number
+  completed_checkpoints: number
+  total_checkpoints: number
+  latest_checkpoint_score?: number | null
+  latest_checkpoint_total?: number | null
+  percent: number
+  status: string
+  last_updated?: string | null
+}
+
+interface TeacherStudentRecordTargetedSupportResponse {
+  id: number
+  activity_title: string
+  intervention_title: string
+  start_sort_order: number
+  end_sort_order: number
+  status: string
+  score?: number | null
+  total?: number | null
+  due_at?: string | null
+  completed_at?: string | null
 }
 
 export interface RetakeRequest {
@@ -402,6 +433,33 @@ export interface StudentHandsignRecord {
   completedAt?: string | null
 }
 
+export interface StudentMaterialRecord {
+  id: number
+  title: string
+  completedTopics: number
+  totalTopics: number
+  completedCheckpoints: number
+  totalCheckpoints: number
+  latestCheckpointScore?: number | null
+  latestCheckpointTotal?: number | null
+  percent: number
+  status: string
+  lastUpdated?: string | null
+}
+
+export interface StudentTargetedSupportRecord {
+  id: number
+  activityTitle: string
+  interventionTitle: string
+  startSortOrder: number
+  endSortOrder: number
+  status: string
+  score?: number | null
+  total?: number | null
+  dueAt?: string | null
+  completedAt?: string | null
+}
+
 export interface StudentRecord {
   studentId: string
   studentName: string
@@ -435,6 +493,8 @@ export interface StudentRecord {
   quizActivity: string
   assessments: StudentAssessmentRecord[]
   handsignPractice: StudentHandsignRecord[]
+  learningMaterials: StudentMaterialRecord[]
+  targetedSupport: StudentTargetedSupportRecord[]
 }
 
 export interface ActivityProgressStudent {
@@ -940,6 +1000,7 @@ export const useTeacherStore = defineStore('teacher', () => {
         shuffleQuestions?: boolean
         showAnswersAfterSubmission?: boolean
         allowTextAnswers?: boolean
+        audience?: 'regular' | 'hearing_impaired'
         questions?: AssessmentQuestion[]
         dueAt?: string | null
       }
@@ -961,6 +1022,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           shuffle_questions: formPayload.shuffleQuestions ?? true,
           show_answers_after_submission: formPayload.showAnswersAfterSubmission ?? true,
           allow_text_answers: formPayload.allowTextAnswers ?? false,
+          audience: formPayload.audience ?? 'regular',
           questions: formPayload.questions ?? [],
           due_at: formPayload.dueAt ?? null,
         }),
@@ -1039,6 +1101,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     shuffleQuestions: boolean
     showAnswersAfterSubmission: boolean
     allowTextAnswers?: boolean
+    audience?: 'regular' | 'hearing_impaired'
     questions: AssessmentQuestion[]
     dueAt?: string | null
   }) {
@@ -1064,6 +1127,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           shuffle_questions: payload.shuffleQuestions,
           show_answers_after_submission: payload.showAnswersAfterSubmission,
           allow_text_answers: payload.allowTextAnswers ?? false,
+          audience: payload.audience ?? 'regular',
           questions: payload.questions,
           due_at: payload.dueAt ?? null,
         }),
@@ -1398,6 +1462,31 @@ function mapStudentRecordResponse(record: TeacherStudentRecordResponse): Student
       highestScore: item.highest_score,
       completedAt: item.completed_at ?? null,
     })),
+    learningMaterials: (record.learning_materials ?? []).map(item => ({
+      id: item.id,
+      title: item.title,
+      completedTopics: item.completed_topics,
+      totalTopics: item.total_topics,
+      completedCheckpoints: item.completed_checkpoints ?? 0,
+      totalCheckpoints: item.total_checkpoints ?? 0,
+      latestCheckpointScore: item.latest_checkpoint_score ?? null,
+      latestCheckpointTotal: item.latest_checkpoint_total ?? null,
+      percent: item.percent,
+      status: item.status,
+      lastUpdated: item.last_updated ?? null,
+    })),
+    targetedSupport: (record.targeted_support ?? []).map(item => ({
+      id: item.id,
+      activityTitle: item.activity_title,
+      interventionTitle: item.intervention_title,
+      startSortOrder: item.start_sort_order,
+      endSortOrder: item.end_sort_order,
+      status: item.status,
+      score: item.score,
+      total: item.total,
+      dueAt: item.due_at ?? null,
+      completedAt: item.completed_at ?? null,
+    })),
   }
 }
 
@@ -1479,6 +1568,7 @@ function mapActivityResponse(assessment: TeacherAssessmentResponse): Activity {
     shuffleQuestions: assessment.shuffle_questions,
     showAnswersAfterSubmission: assessment.show_answers_after_submission,
     allowTextAnswers: assessment.allow_text_answers ?? false,
+    audience: assessment.audience ?? 'regular',
     dueAt: assessment.due_at ?? null,
     createdAt: assessment.created_at ? new Date(assessment.created_at).toLocaleDateString() : null,
     dueDate: assessment.due_at ? new Date(assessment.due_at).toLocaleDateString() : '',

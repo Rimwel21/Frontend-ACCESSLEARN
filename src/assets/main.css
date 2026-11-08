@@ -59,7 +59,7 @@
 @layer components {
   .btn-primary   { @apply px-5 py-2.5 rounded-full bg-brand-amber text-white font-semibold text-sm shadow-sm hover:-translate-y-px hover:scale-105 transition-all cursor-pointer border-0; }
   .btn-primary:hover { background: linear-gradient(135deg,#f59e5b,#DB767D); box-shadow: 0 0 20px rgba(245, 158, 91, 0.4); }
-  .btn-secondary { @apply px-5 py-2.5 rounded-full bg-white text-ink font-semibold text-sm shadow-sm hover:-translate-y-px transition-all cursor-pointer border border-brand-blue; }
+  .btn-secondary { @apply px-5 py-2.5 rounded-full bg-brand-blue-soft text-ink font-semibold text-sm shadow-sm hover:-translate-y-px transition-all cursor-pointer border border-brand-blue; }
   .btn-secondary:hover { @apply bg-brand-rose text-white; box-shadow: 0 0 18px rgba(219, 118, 125, 0.28); }
   .card          { @apply bg-white rounded-xl shadow-card overflow-hidden border border-brand-teal/30; }
   .card-hover    { @apply card hover:-translate-y-2 hover:border-brand-amber hover:shadow-card-hover transition-all; }
@@ -92,9 +92,13 @@
   .figma-label   { @apply mb-1 block text-xs font-bold text-ink; }
   .figma-input   { @apply w-full rounded border border-brand-teal bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/25; }
   .figma-card-title { @apply mb-3 text-sm font-bold text-ink; }
-  .figma-button  { @apply rounded border border-brand-teal/40 bg-white px-4 py-2 text-xs font-bold shadow-sm transition hover:-translate-y-px hover:border-brand-amber hover:text-brand-blue disabled:cursor-wait disabled:opacity-60; }
+  .figma-button  { @apply rounded border border-brand-teal/40 bg-brand-blue-soft/60 px-4 py-2 text-xs font-bold text-ink shadow-sm transition hover:-translate-y-px hover:border-brand-amber hover:bg-brand-blue hover:text-white disabled:cursor-wait disabled:opacity-60; }
   .figma-primary { @apply rounded bg-brand-amber px-4 py-2 text-xs font-bold text-white transition hover:scale-105 disabled:cursor-wait disabled:opacity-60; }
   .figma-primary:hover { background: linear-gradient(135deg,#f59e5b,#DB767D); box-shadow: 0 0 20px rgba(245, 158, 91, 0.35); }
+  .upload-file-box { @apply flex min-h-16 flex-1 items-center gap-3 rounded border-2 border-dashed border-brand-teal/50 bg-white px-3 py-2 text-left text-xs text-ink transition hover:border-brand-amber hover:bg-brand-blue-soft; }
+  .upload-file-plus { @apply grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-blue text-xl font-bold text-white; }
+  .upload-file-box strong { @apply block font-bold; }
+  .upload-file-box small { @apply mt-0.5 block text-[10px] font-semibold text-ink-soft; }
   .nav-icon-box  { @apply h-5 w-5 flex-shrink-0 rounded border border-current bg-white/20; }
 }
 

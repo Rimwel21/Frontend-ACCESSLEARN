@@ -286,6 +286,35 @@
 
               <div class="mt-5 grid gap-4 lg:grid-cols-2">
                 <div>
+                  <h4 class="font-display text-base font-semibold">Learning Materials</h4>
+                  <p class="mt-1 text-xs text-ink-soft">Topic and topic-checkout progress for every assigned learning material.</p>
+                  <div class="mt-3 space-y-3">
+                    <div v-for="material in selectedRecord.learningMaterials" :key="material.id" class="rounded-xl border border-gray-100 bg-surface p-4">
+                      <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <div class="text-sm font-semibold text-ink">{{ material.title }}</div>
+                          <div class="mt-0.5 font-mono text-[11px] uppercase text-ink-soft">{{ material.completedTopics }}/{{ material.totalTopics }} topics completed</div>
+                        </div>
+                        <span :class="statusBadge(material.status)">{{ material.percent }}%</span>
+                      </div>
+                      <div class="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                        <div class="h-full rounded-full bg-gradient-to-r from-brand-teal to-brand-green" :style="{ width: `${material.percent}%` }"></div>
+                      </div>
+                      <div class="mt-2 flex flex-wrap justify-between gap-2 text-xs text-ink-soft">
+                        <span>Status: {{ readableStatus(material.status) }}</span>
+                        <span>Updated: {{ formatDate(material.lastUpdated) }}</span>
+                      </div>
+                      <div v-if="material.totalCheckpoints" class="mt-2 text-xs text-ink-soft">
+                        <span class="font-semibold text-ink">Topic checkouts:</span>
+                        {{ material.completedCheckpoints }}/{{ material.totalCheckpoints }} completed
+                        <span v-if="material.latestCheckpointTotal"> · Latest {{ scoreText(material.latestCheckpointScore, material.latestCheckpointTotal) }}</span>
+                      </div>
+                    </div>
+                    <div v-if="selectedRecord.learningMaterials.length === 0" class="rounded-xl border border-gray-100 bg-surface p-4 text-sm text-ink-soft">No learning materials are assigned to this student yet.</div>
+                  </div>
+                </div>
+
+                <div>
                   <h4 class="font-display text-base font-semibold">Activities and Quizzes</h4>
                   <div class="mt-3 space-y-3">
                     <div v-for="item in selectedRecord.assessments" :key="`${item.assessmentType}-${item.assessmentId}`" class="rounded-xl border border-gray-100 bg-surface p-4">
@@ -330,7 +359,29 @@
                         </button>
                       </div>
                     </div>
-                    <div v-if="selectedRecord.assessments.length === 0" class="rounded-xl border border-gray-100 bg-surface p-4 text-sm text-ink-soft">No submitted activities or quizzes yet.</div>
+                    <div v-if="selectedRecord.assessments.length === 0" class="rounded-xl border border-gray-100 bg-surface p-4 text-sm text-ink-soft">No submitted regular activities or quizzes yet.</div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 class="font-display text-base font-semibold">Targeted Support</h4>
+                  <p class="mt-1 text-xs text-ink-soft">Signed-video support activities assigned to this student.</p>
+                  <div class="mt-3 space-y-3">
+                    <div v-for="support in selectedRecord.targetedSupport" :key="support.id" class="rounded-xl border border-gray-100 bg-surface p-4">
+                      <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <div class="text-sm font-semibold text-ink">{{ support.activityTitle }}</div>
+                          <div class="mt-0.5 font-mono text-[11px] uppercase text-ink-soft">{{ support.interventionTitle }} · Topics {{ support.startSortOrder }}–{{ support.endSortOrder }}</div>
+                        </div>
+                        <span :class="statusBadge(support.status)">{{ readableStatus(support.status) }}</span>
+                      </div>
+                      <div class="mt-3 grid gap-2 text-xs text-ink-soft sm:grid-cols-2">
+                        <div><span class="font-semibold text-ink">Result:</span> {{ scoreText(support.score, support.total) }}</div>
+                        <div><span class="font-semibold text-ink">Due:</span> {{ formatDate(support.dueAt) }}</div>
+                        <div><span class="font-semibold text-ink">Completed:</span> {{ formatDate(support.completedAt) }}</div>
+                      </div>
+                    </div>
+                    <div v-if="selectedRecord.targetedSupport.length === 0" class="rounded-xl border border-gray-100 bg-surface p-4 text-sm text-ink-soft">No targeted support has been assigned to this student.</div>
                   </div>
                 </div>
 
@@ -372,7 +423,7 @@
             <div class="px-6 py-5 space-y-4">
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Class Name</label>
-                <input v-model.trim="newClass.className" class="input-field" placeholder="e.g. Grade 6 Science" />
+                <input v-model.trim="newClass.className" class="input-field" placeholder="e.g. Grade 4 Science" />
               </div>
               <div>
                 <label class="block text-xs font-semibold text-ink-soft mb-1.5">Grade Level</label>
@@ -610,6 +661,10 @@ function statusLabel(status: string) {
   return status.toLowerCase() === 'needs help' ? 'Needs Guidance' : status
 }
 
+function readableStatus(status: string) {
+  return status.replace(/_/g, ' ')
+}
+
 function recordNeedsGuidance(record: StudentRecord) {
   const label = statusLabel(record.status)
   return label === 'Needs Guidance' || label === 'Keep Improving'
@@ -713,7 +768,7 @@ function formatDate(value?: string | null) {
 
 async function loadGradeLevels() {
   if (!auth.token) return
-  gradeLevels.value = await fetchGradeLevelOptions(auth.token)
+  gradeLevels.value = (await fetchGradeLevelOptions(auth.token)).filter(grade => grade.name === 'Grade 4')
 }
 
 async function loadSections() {

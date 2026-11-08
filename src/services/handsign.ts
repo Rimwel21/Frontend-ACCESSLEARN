@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { API_BASE_URL } from '@/lib/api'
+import { API_BASE_URL, apiUrl } from '@/lib/api'
 import type {
   BackspaceCameraSessionResponse,
   CameraDetectionResponse,
@@ -11,7 +11,7 @@ import type {
 } from '@/types/handsign'
 
 const handsignApi = axios.create({
-  baseURL: `${API_BASE_URL}/api/handsign`,
+  baseURL: apiUrl('/api/handsign'),
   timeout: 30000,
 })
 

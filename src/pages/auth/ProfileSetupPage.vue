@@ -287,7 +287,7 @@ async function loadGradeLevels() {
   gradeLevelsLoading.value = true
   gradeLevelError.value = ''
   try {
-    gradeLevels.value = await fetchGradeLevelOptions(auth.token)
+    gradeLevels.value = (await fetchGradeLevelOptions(auth.token)).filter(grade => grade.name === 'Grade 4')
   } catch (err) {
     gradeLevelError.value = err instanceof Error ? err.message : 'Failed to load grade levels.'
   } finally {
