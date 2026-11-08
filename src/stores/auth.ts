@@ -455,8 +455,11 @@ export const useAuthStore = defineStore('auth', () => {
         throw offlineErr
       }
 
-      error.value = err instanceof Error ? err.message : 'Login failed'
-      throw err
+      const loginError = err instanceof ApiError && err.status === 429
+        ? new ApiError('Too many login attempts. Please wait one minute and try again.', 429)
+        : err
+      error.value = loginError instanceof Error ? loginError.message : 'Login failed'
+      throw loginError
     } finally {
       loading.value = false
     }

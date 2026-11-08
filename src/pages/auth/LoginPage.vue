@@ -238,10 +238,13 @@ const loginAlert = computed(() => {
   }
 
   if (auth.error) {
+    const isRateLimited = auth.error.toLowerCase().includes('too many login attempts')
     return {
       type: 'error',
       title: auth.error,
-      detail: 'Check your credentials and try again.',
+      detail: isRateLimited
+        ? 'Repeated attempts are temporarily blocked to protect the account.'
+        : 'Check your credentials and try again.',
     }
   }
 
