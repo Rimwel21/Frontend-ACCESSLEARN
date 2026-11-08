@@ -456,6 +456,8 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       const loginError = err instanceof ApiError && err.status === 429
+        // Plan §3.3 / Appendix A.1: explain temporary request throttling without
+        // exposing whether a username or email exists.
         ? new ApiError('Too many login attempts. Please wait one minute and try again.', 429)
         : err
       error.value = loginError instanceof Error ? loginError.message : 'Login failed'
@@ -466,6 +468,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    // Plan §3.3 / Appendix A.3: clear selected browser session state on logout.
+    // Access-token localStorage remains a documented risk pending safer storage.
     if (token.value && !token.value.startsWith('offline-session:')) {
       void fetch(`${API_BASE_URL}/api/logout`, {
         method: 'POST',

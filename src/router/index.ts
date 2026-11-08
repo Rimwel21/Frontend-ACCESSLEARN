@@ -80,6 +80,8 @@ export const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 })
 
+// Cybersecurity Plan §3.3 / Appendix A.2: these guards protect navigation UX.
+// FastAPI role dependencies remain the authoritative access-control boundary.
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
