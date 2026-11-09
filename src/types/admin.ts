@@ -59,6 +59,87 @@ export interface AuditLogOut {
     location?: string | null;
     status: string;
     created_at: string;
+    severity?: 'critical' | 'high' | 'medium' | 'low' | string;
+    old_value?: string | null;
+    new_value?: string | null;
+}
+
+export interface DatabaseStatus {
+    active_database: string;
+    engine_type: string;
+    database_name: string;
+    host?: string | null;
+    backup_capable: boolean;
+    restore_capable: boolean;
+    backup_storage_path: string;
+    total_backups: number;
+    last_backup_time?: string | null;
+    last_verified_time?: string | null;
+    environment: string;
+    production_safeguards_active: boolean;
+    status_message: string;
+}
+
+export interface BackupItem {
+    backup_id: string;
+    filename: string;
+    created_at: string;
+    backup_type: string;
+    database_engine: string;
+    file_size: number;
+    file_size_human: string;
+    checksum_sha256: string;
+    status: string;
+    integrity_status: string;
+    created_by_id?: number | null;
+    created_by_name?: string | null;
+    table_counts?: Record<string, number> | null;
+    notes?: string | null;
+}
+
+export interface BackupVerifyResult {
+    backup_id: string;
+    integrity_status: string;
+    computed_checksum: string;
+    expected_checksum: string;
+    checksum_matches: boolean;
+    structure_valid: boolean;
+    details: string;
+    verified_at: string;
+}
+
+export interface RestorePreview {
+    backup_id: string;
+    database_engine: string;
+    created_at: string;
+    file_size_human: string;
+    checksum_sha256: string;
+    target_database: string;
+    target_environment: string;
+    can_restore: boolean;
+    restriction_reason?: string | null;
+    table_counts?: Record<string, number> | null;
+    warnings: string[];
+    safety_measures: string[];
+    required_confirmation_text: string;
+}
+
+export interface RestoreResult {
+    backup_id: string;
+    status: string;
+    message: string;
+    restored_at: string;
+    pre_restore_safety_backup?: string | null;
+    verified_tables?: Record<string, number> | null;
+}
+
+export interface DryRunRestoreResult {
+    backup_id: string;
+    status: string;
+    message: string;
+    sandbox_verified: boolean;
+    table_counts: Record<string, number>;
+    duration_ms: number;
 }
 
 export interface NotificationOut {

@@ -1,110 +1,179 @@
 <template>
   <div class="admin-ui min-h-[100dvh] bg-surface lg:flex lg:h-screen lg:overflow-hidden">
-    <aside class="z-10 hidden w-[200px] min-w-[200px] flex-col border-r border-brand-teal/30 bg-surface/60 shadow-sm lg:flex">
-      <div class="border-b border-brand-teal/30 bg-brand-blue-soft px-5 py-5">
+    <!-- Desktop Sidebar -->
+    <aside class="z-10 hidden w-[230px] min-w-[230px] flex-col border-r border-brand-teal/30 bg-surface/80 shadow-sm lg:flex">
+      <!-- Brand & Console Title -->
+      <div class="border-b border-brand-teal/30 bg-brand-blue-soft px-5 py-4">
         <div class="font-display text-2xl font-bold tracking-tight text-brand-blue">SIGNHEAR</div>
         <div class="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-ink-soft">Admin Console</div>
       </div>
 
-      <div class="mx-3 my-3 flex items-center gap-2.5 rounded-xl border border-brand-teal/25 bg-white/75 p-3 text-left shadow-card">
-        <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-blue to-brand-teal text-base font-bold text-white">
+      <!-- Administrator Profile Header -->
+      <div class="mx-3.5 my-3 flex items-center gap-2.5 rounded-xl border border-brand-teal/25 bg-white p-3 text-left shadow-xs">
+        <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-blue to-brand-teal text-sm font-bold text-white shadow-xs">
           A
         </div>
-        <div class="min-w-0">
-          <div class="truncate text-[13px] font-semibold text-ink">Administrator</div>
-          <div class="truncate text-[10px] text-ink-soft">{{ auth.accountIdentity }}</div>
+        <div class="min-w-0 flex-1">
+          <div class="truncate text-[13px] font-bold text-ink">Administrator</div>
+          <div class="truncate text-[10px] font-mono text-ink-soft" :title="auth.accountIdentity">{{ auth.accountIdentity }}</div>
         </div>
       </div>
 
-      <nav class="flex-1 px-2.5 py-1" aria-label="Admin navigation">
+      <!-- Navigation Links -->
+      <nav class="flex-1 px-3 py-2 space-y-1" aria-label="Admin navigation">
         <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" custom v-slot="{ isActive, navigate }">
           <button
             type="button"
             @click="navigate"
             :class="[
-              'mb-0.5 flex w-full items-center gap-2.5 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left text-[13.5px] font-medium transition-all',
+              'flex w-full items-center gap-3 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left text-[13px] font-semibold transition-all',
               isActive
-                ? 'border-brand-amber bg-brand-blue/[0.12] text-brand-blue'
-                : 'border-transparent text-brand-blue/80 hover:translate-x-1 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
+                ? 'border-brand-amber bg-brand-blue/[0.12] text-brand-blue font-bold shadow-xs'
+                : 'border-transparent text-ink-soft hover:bg-brand-blue/[0.06] hover:text-ink',
             ]"
           >
-            <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg
+              class="h-5 w-5 shrink-0 text-current"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
               <path v-for="path in item.iconPaths" :key="path" :d="path" />
             </svg>
-            {{ item.label }}
+            <span class="whitespace-nowrap">{{ item.label }}</span>
           </button>
         </RouterLink>
       </nav>
 
-      <div class="border-t border-brand-teal/30 px-4 py-3.5">
-        <button class="w-full rounded-lg bg-white/75 px-3 py-2 text-xs font-bold text-ink-soft transition-all hover:bg-brand-rose hover:text-white" @click="logout">
-          Logout
+      <!-- Bottom Logout -->
+      <div class="border-t border-brand-teal/30 px-3.5 py-3">
+        <button
+          type="button"
+          class="flex w-full items-center justify-center gap-2 rounded-lg border border-brand-teal/30 bg-white px-3 py-2 text-xs font-bold text-ink-soft transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 shadow-xs"
+          @click="logout"
+        >
+          <svg class="h-4 w-4 shrink-0" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span>Logout</span>
         </button>
       </div>
     </aside>
 
+    <!-- Mobile Drawer -->
     <div v-if="menuOpen" class="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
-      <button class="absolute inset-0 bg-ink/45" type="button" aria-label="Close navigation" @click="menuOpen = false"></button>
-      <aside class="safe-area-bottom safe-area-top relative flex h-[100dvh] max-h-[100dvh] w-[min(84vw,290px)] flex-col overflow-y-auto border-r border-brand-teal/30 bg-surface shadow-2xl">
-        <div class="border-b border-brand-teal/30 bg-brand-blue-soft px-5 py-5">
+      <button class="absolute inset-0 bg-ink/45 backdrop-blur-xs" type="button" aria-label="Close navigation" @click="menuOpen = false"></button>
+      <aside class="safe-area-bottom safe-area-top relative flex h-[100dvh] max-h-[100dvh] w-[min(84vw,280px)] flex-col overflow-y-auto border-r border-brand-teal/30 bg-surface shadow-2xl">
+        <div class="border-b border-brand-teal/30 bg-brand-blue-soft px-5 py-4">
           <div class="font-display text-2xl font-bold tracking-tight text-brand-blue">SIGNHEAR</div>
           <div class="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-ink-soft">Admin Console</div>
         </div>
 
-        <div class="mx-3 my-3 flex items-center gap-2.5 rounded-xl border border-brand-teal/25 bg-white/75 p-3 text-left shadow-card">
-          <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-blue to-brand-teal text-base font-bold text-white">
+        <div class="mx-3.5 my-3 flex items-center gap-2.5 rounded-xl border border-brand-teal/25 bg-white p-3 text-left shadow-xs">
+          <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-blue to-brand-teal text-sm font-bold text-white shadow-xs">
             A
           </div>
-          <div class="min-w-0">
-            <div class="truncate text-[13px] font-semibold text-ink">Administrator</div>
-            <div class="truncate text-[10px] text-ink-soft">{{ auth.accountIdentity }}</div>
+          <div class="min-w-0 flex-1">
+            <div class="truncate text-[13px] font-bold text-ink">Administrator</div>
+            <div class="truncate text-[10px] font-mono text-ink-soft">{{ auth.accountIdentity }}</div>
           </div>
         </div>
 
-        <nav class="flex-1 px-2.5 py-1" aria-label="Admin mobile navigation">
+        <nav class="flex-1 px-3 py-2 space-y-1" aria-label="Admin mobile navigation">
           <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" custom v-slot="{ isActive, navigate }">
             <button
               type="button"
               @click="() => { navigate(); menuOpen = false }"
               :class="[
-                'mb-0.5 flex w-full items-center gap-2.5 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left text-[13.5px] font-medium transition-all',
+                'flex w-full items-center gap-3 rounded-lg border-l-[3px] px-3.5 py-2.5 text-left text-[13px] font-semibold transition-all',
                 isActive
-                  ? 'border-brand-amber bg-brand-blue/[0.12] text-brand-blue'
-                  : 'border-transparent text-brand-blue/80 hover:bg-brand-teal/[0.15] hover:text-brand-blue',
+                  ? 'border-brand-amber bg-brand-blue/[0.12] text-brand-blue font-bold shadow-xs'
+                  : 'border-transparent text-ink-soft hover:bg-brand-blue/[0.06] hover:text-ink',
               ]"
             >
-              <svg class="h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <svg
+                class="h-5 w-5 shrink-0 text-current"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <path v-for="path in item.iconPaths" :key="path" :d="path" />
               </svg>
-              {{ item.label }}
+              <span>{{ item.label }}</span>
             </button>
           </RouterLink>
         </nav>
 
-        <div class="border-t border-brand-teal/30 px-4 py-3.5">
-          <button class="w-full rounded-lg bg-white/75 px-3 py-2 text-xs font-bold text-ink-soft transition-all hover:bg-brand-rose hover:text-white" @click="logout">
-            Logout
+        <div class="border-t border-brand-teal/30 px-3.5 py-3">
+          <button
+            type="button"
+            class="flex w-full items-center justify-center gap-2 rounded-lg border border-brand-teal/30 bg-white px-3 py-2 text-xs font-bold text-ink-soft transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 shadow-xs"
+            @click="logout"
+          >
+            <svg class="h-4 w-4 shrink-0" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Logout</span>
           </button>
         </div>
       </aside>
     </div>
 
+    <!-- Main Content Area -->
     <div class="flex min-w-0 flex-1 flex-col lg:h-screen lg:overflow-hidden">
-      <header class="safe-area-top flex flex-shrink-0 items-center gap-3.5 border-b border-brand-teal/25 bg-white px-4 py-3.5 sm:px-6 lg:px-7">
-        <button
-          type="button"
-          class="inline-flex h-10 w-10 flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-lg border border-brand-teal/40 bg-white text-brand-blue shadow-sm transition-all hover:border-brand-amber hover:bg-brand-blue/[0.08] lg:hidden"
-          aria-label="Open navigation"
-          @click="menuOpen = true"
-        >
-          <span class="block h-0.5 w-5 rounded-full bg-current" aria-hidden="true"></span>
-          <span class="block h-0.5 w-5 rounded-full bg-current" aria-hidden="true"></span>
-          <span class="block h-0.5 w-5 rounded-full bg-current" aria-hidden="true"></span>
-        </button>
-        <span class="min-w-0 flex-1 truncate font-display text-[18px] font-semibold text-ink">{{ currentTitle }}</span>
+      <!-- Fixed Height, Fully Padded & Centered Header -->
+      <header class="flex h-16 min-h-[64px] flex-shrink-0 items-center justify-between border-b border-brand-teal/25 bg-white px-4 sm:px-6 lg:px-8 shadow-xs">
+        <div class="flex items-center gap-3.5 min-w-0">
+          <button
+            type="button"
+            class="inline-flex h-10 w-10 flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-lg border border-brand-teal/40 bg-white text-brand-blue shadow-xs transition-all hover:border-brand-amber hover:bg-brand-blue/[0.08] lg:hidden"
+            aria-label="Open navigation"
+            @click="menuOpen = true"
+          >
+            <span class="block h-0.5 w-5 rounded-full bg-current" aria-hidden="true"></span>
+            <span class="block h-0.5 w-5 rounded-full bg-current" aria-hidden="true"></span>
+            <span class="block h-0.5 w-5 rounded-full bg-current" aria-hidden="true"></span>
+          </button>
+
+          <!-- Breadcrumb & Title with proper vertical alignment and no clipping -->
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="hidden font-mono text-xs font-bold uppercase tracking-widest text-ink-soft sm:inline">Admin Console</span>
+            <span class="hidden text-ink-soft/40 sm:inline">/</span>
+            <h1 class="truncate font-display text-lg sm:text-xl font-bold text-ink tracking-tight">{{ currentTitle }}</h1>
+          </div>
+        </div>
+
+        <!-- Right Side Header Controls -->
+        <div class="flex items-center gap-3 flex-shrink-0">
+          <!-- Academic Scope Pill -->
+          <span class="hidden md:inline-flex items-center gap-1.5 rounded-full bg-brand-teal/15 border border-brand-teal/30 px-3 py-1 font-mono text-[11px] font-bold text-brand-blue uppercase tracking-wider">
+            <span class="h-1.5 w-1.5 rounded-full bg-brand-blue"></span>
+            Grade 4 Scope
+          </span>
+
+          <!-- Administrator Chip -->
+          <div class="flex items-center gap-2 rounded-xl border border-brand-teal/20 bg-surface/70 px-3 py-1.5 text-xs shadow-xs">
+            <div class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-brand-blue to-brand-teal text-[11px] font-bold text-white shadow-xs">
+              A
+            </div>
+            <span class="font-bold text-ink hidden sm:inline">Administrator</span>
+          </div>
+        </div>
       </header>
 
-      <main class="safe-area-bottom scrollbar-thin min-w-0 flex-1 overflow-visible p-4 sm:p-6 lg:overflow-y-auto lg:overscroll-contain lg:p-7">
+      <main class="scrollbar-thin min-w-0 flex-1 overflow-visible p-4 sm:p-6 lg:overflow-y-auto lg:overscroll-contain lg:p-7">
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
             <component :is="Component" :key="route.fullPath" />
@@ -153,6 +222,9 @@ const titleMap: Record<string, string> = {
   AdminHandsignDataset: 'Handsign Dataset',
   AdminSections: 'Section Management',
   AdminAuditLog: 'Audit Log',
+  AdminAccounts: 'Account Management',
+  AdminTeachers: 'Teacher Management',
+  AdminStudents: 'Student Management',
 }
 
 const currentTitle = computed(() => titleMap[route.name as string] ?? 'SIGNHEAR Admin')

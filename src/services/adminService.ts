@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api'
+import { apiFetch, apiUrl } from '@/lib/api'
 import type { 
   AdminDashboardStats, 
   AccountListOut, 
@@ -7,7 +7,13 @@ import type {
   AuditLogOut, 
   NotificationOut,
   ReportOut,
-  PaginatedResponse 
+  PaginatedResponse,
+  DatabaseStatus,
+  BackupItem,
+  BackupVerifyResult,
+  RestorePreview,
+  RestoreResult,
+  DryRunRestoreResult
 } from '@/types/admin'
 
 export const adminService = {
@@ -104,5 +110,72 @@ export const adminService = {
 
   async markNotificationRead(id: number): Promise<NotificationOut> {
       return apiFetch<NotificationOut>(`/admin/notifications/${id}/read`, { method: 'PATCH' })
+  },
+
+  // Backup and Restore
+  async getBackupStatus(): Promise<DatabaseStatus> {
+    return apiFetch<DatabaseStatus>('/admin/backup/status')
+  },
+
+  async getBackups(): Promise<BackupItem[]> {
+    return apiFetch<BackupItem[]>('/admin/backup/list')
+  },
+
+  async createBackup(data?: { notes?: string; backup_type?: string }): Promise<BackupItem> {
+    return apiFetch<BackupItem>('/admin/backup/create', {
+      method: 'POST',
+      body: JSON.stringify(data ?? {})
+    })
+  },
+
+  async verifyBackup(backupId: string): Promise<BackupVerifyResult> {
+    return apiFetch<BackupVerifyResult>(`/admin/backup/${backupId}/verify`, {
+      method: 'POST'
+    })
+  },
+
+  async downloadBackup(backupId: string): Promise<void> {
+    const token = localStorage.getItem('access_token')
+    const url = apiUrl(`/admin/backup/${backupId}/download`)
+    const response = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    if (!response.ok) {
+      throw new Error('Failed to download backup file')
+    }
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    const disposition = response.headers.get('content-disposition')
+    let filename = `${backupId}.db`
+    if (disposition && disposition.includes('filename=')) {
+      const match = disposition.match(/filename="?([^"]+)"?/)
+      if (match && match[1]) filename = match[1]
+    }
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(downloadUrl)
+  },
+
+  async previewRestore(backupId: string): Promise<RestorePreview> {
+    return apiFetch<RestorePreview>(`/admin/backup/${backupId}/preview`, {
+      method: 'POST'
+    })
+  },
+
+  async dryRunRestore(backupId: string): Promise<DryRunRestoreResult> {
+    return apiFetch<DryRunRestoreResult>(`/admin/backup/${backupId}/test-restore`, {
+      method: 'POST'
+    })
+  },
+
+  async restoreBackup(backupId: string, confirmationText: string): Promise<RestoreResult> {
+    return apiFetch<RestoreResult>(`/admin/backup/${backupId}/restore`, {
+      method: 'POST',
+      body: JSON.stringify({ confirmation_text: confirmationText })
+    })
   }
 }
