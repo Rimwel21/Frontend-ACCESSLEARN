@@ -491,6 +491,151 @@
         </div>
       </div>
 
+      <!-- Automated Backup Cadence & Storage Vault Section -->
+      <section class="card overflow-hidden border border-brand-teal/20 bg-gradient-to-br from-white via-surface/30 to-brand-blue-soft/20 shadow-xs">
+        <div class="border-b border-brand-teal/15 bg-white/70 px-5 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-blue text-white shadow-xs">
+              <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-display text-sm font-bold text-ink">Automated Backup Cadence & Storage Vault</h3>
+              <p class="text-xs text-ink-soft">Configured automatic snapshot schedule, protected physical vault location, and restoration workflow.</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span
+              :class="[
+                'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold font-mono uppercase tracking-wide border',
+                scheduleCadence !== 'disabled'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  : 'bg-slate-100 text-slate-700 border-slate-300'
+              ]"
+            >
+              <span class="h-2 w-2 rounded-full" :class="scheduleCadence !== 'disabled' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'"></span>
+              {{ scheduleCadence !== 'disabled' ? 'Auto-Backup: Active' : 'Auto-Backup: Paused' }}
+            </span>
+            <button
+              type="button"
+              class="h-8 px-3 rounded-lg bg-white border border-brand-teal/30 hover:bg-surface text-ink text-xs font-bold shadow-xs inline-flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              :disabled="runningScheduleNow"
+              @click="triggerScheduleNow"
+            >
+              <svg class="h-3.5 w-3.5 text-brand-blue" :class="{ 'animate-spin': runningScheduleNow }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>{{ runningScheduleNow ? 'Running...' : 'Run Scheduled Now' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-5 grid gap-5 grid-cols-1 lg:grid-cols-12">
+          <!-- Left: Cadence Controls & Countdown (5 cols) -->
+          <div class="lg:col-span-5 space-y-4 rounded-xl border border-brand-teal/20 bg-white p-4">
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-ink-soft mb-1.5">
+                Automated Cadence Frequency
+              </label>
+              <div class="flex items-center gap-2">
+                <select
+                  v-model="scheduleCadence"
+                  class="input-field !h-10 text-xs font-semibold flex-1"
+                  :disabled="updatingSchedule"
+                  @change="handleCadenceChange"
+                >
+                  <option value="every_2_weeks">Every 2 Weeks (Recommended)</option>
+                  <option value="every_1_month">Every 1 Month</option>
+                  <option value="weekly">Weekly (Every 7 Days)</option>
+                  <option value="daily">Daily</option>
+                  <option value="disabled">Manual Only (Disable Auto)</option>
+                </select>
+                <span v-if="updatingSchedule" class="text-xs text-brand-blue font-bold animate-pulse">Saving...</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5 pt-1 text-xs">
+              <div class="rounded-lg bg-surface/70 border border-brand-teal/15 p-2.5">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-ink-soft">Next Scheduled Snapshot</div>
+                <div class="font-mono text-xs font-bold text-ink mt-1 truncate" :title="scheduleConfig?.next_run_time || 'N/A'">
+                  {{ scheduleConfig?.next_run_time ? formatDate(scheduleConfig.next_run_time) : 'Manual Only' }}
+                </div>
+                <div class="text-[11px] text-ink-soft truncate font-mono">
+                  {{ scheduleConfig?.next_run_time ? formatTime(scheduleConfig.next_run_time) : 'No timer' }}
+                </div>
+              </div>
+
+              <div class="rounded-lg bg-surface/70 border border-brand-teal/15 p-2.5">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-ink-soft">Last Execution</div>
+                <div class="font-mono text-xs font-bold text-ink mt-1 truncate" :title="scheduleConfig?.last_run_time || 'None'">
+                  {{ scheduleConfig?.last_run_time ? formatDate(scheduleConfig.last_run_time) : 'None recorded' }}
+                </div>
+                <div class="text-[11px] text-ink-soft truncate font-mono">
+                  {{ scheduleConfig?.last_run_time ? formatTime(scheduleConfig.last_run_time) : 'Awaiting first run' }}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 text-[11px] text-ink-soft bg-emerald-50/70 text-emerald-900 border border-emerald-200/80 rounded-lg p-2.5">
+              <svg class="h-4 w-4 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>Automated verification: Every snapshot calculates and records a SHA-256 integrity hash automatically.</span>
+            </div>
+          </div>
+
+          <!-- Right: Physical Storage Vault & Restoration Guide (7 cols) -->
+          <div class="lg:col-span-7 space-y-3 rounded-xl border border-brand-teal/20 bg-white p-4">
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-ink-soft">
+                Where Backups Are Saved & How Admin Restores Them
+              </h4>
+            </div>
+
+            <!-- Path Badges -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div class="rounded-lg bg-surface/70 border border-brand-teal/15 p-2.5 space-y-1">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-ink-soft">Storage Vault Location</div>
+                <div class="font-mono text-xs font-bold text-ink flex items-center gap-1.5">
+                  <span class="rounded bg-brand-blue-soft/50 text-brand-blue px-1.5 py-0.5 border border-brand-teal/30">./backups/</span>
+                </div>
+                <div class="text-[10px] text-ink-soft truncate" :title="scheduleConfig?.absolute_vault_path || 'Server Project Root / backups'">
+                  {{ scheduleConfig?.absolute_vault_path || 'Server local vault directory' }}
+                </div>
+              </div>
+
+              <div class="rounded-lg bg-surface/70 border border-brand-teal/15 p-2.5 space-y-1">
+                <div class="text-[10px] font-bold uppercase tracking-widest text-ink-soft">Manifest & Artifacts</div>
+                <div class="font-mono text-xs font-bold text-ink truncate">
+                  <span class="rounded bg-surface text-ink px-1.5 py-0.5 border border-brand-teal/20">backups/manifest.json</span>
+                </div>
+                <div class="text-[10px] text-ink-soft">
+                  Files: <span class="font-mono">backup_YYYYMMDD_*.db</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3-Step Restoration Instructions -->
+            <div class="rounded-lg border border-sky-200/80 bg-sky-50/50 p-3 text-xs space-y-2">
+              <div class="font-bold text-sky-950 flex items-center gap-1.5">
+                <svg class="h-4 w-4 text-sky-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Administrator Restoration Instructions:</span>
+              </div>
+              <ol class="list-decimal list-inside space-y-1 text-sky-950 pl-1 text-[11px] leading-relaxed">
+                <li><strong>Cryptographic Check:</strong> Click <span class="font-semibold text-emerald-800">Verify</span> on any snapshot in the table below to confirm the SHA-256 hash matches the recorded manifest artifact.</li>
+                <li><strong>Sandbox Dry-Run:</strong> Click <span class="font-semibold text-sky-800">Dry-Run</span> to test table decompression and structure inside an isolated temporary sandbox without modifying live data.</li>
+                <li><strong>Guarded Live Restore:</strong> Click <span class="font-semibold text-rose-700">Restore</span> and type <span class="font-mono bg-white px-1 py-0.2 rounded border border-rose-300 text-rose-800 font-bold">RESTORE</span>. The system automatically creates a pre-restore safety snapshot before applying recovery.</li>
+                <li><strong>Offline Disaster Recovery:</strong> If server access is lost, copy the raw <span class="font-mono bg-white px-1 py-0.2 rounded border border-sky-300 text-sky-900">.db</span> file directly from <span class="font-mono">./backups/</span> to replace <span class="font-mono">local.db</span>.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Backup History Section -->
       <section class="card overflow-hidden">
         <div class="border-b border-brand-teal/20 bg-surface/40 px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1060,6 +1205,7 @@ import { adminService } from '@/services/adminService'
 import type {
   AuditLogOut,
   BackupItem,
+  BackupScheduleConfig,
   DatabaseStatus,
   RestorePreview,
   RestoreResult,
@@ -1128,7 +1274,7 @@ const hasActiveFilters = computed(() => {
 function computeSeverity(log: AuditLogOut): 'critical' | 'high' | 'medium' | 'low' {
   if (log.severity) {
     const s = String(log.severity).toLowerCase()
-    if (s === 'critical' || s === 'high' || s === 'medium' || s === 'low') return s
+    if (s === 'critical' || s === 'high' || s === 'medium' || s === 'low') return s as any
   }
   const act = String(log.action || '').toLowerCase()
   const stat = String(log.status || '').toLowerCase()
@@ -1136,18 +1282,21 @@ function computeSeverity(log: AuditLogOut): 'critical' | 'high' | 'medium' | 'lo
   if (act.includes('restore_failed') || act.includes('restore_started') || act.includes('restore_approved') || act.includes('hard_deleted')) {
     return 'critical'
   }
-  if (stat === 'failed' && (act.includes('access_denied') || act.includes('restore_validation_failed'))) {
+  if (stat === 'failed' && (act.includes('access_denied') || act.includes('restore_validation_failed') || act.includes('backup_failed') || act.includes('backup_verification_failed'))) {
     return 'critical'
   }
-  if (act.includes('access_denied') || act.includes('login_failed') || act.includes('backup_failed') || act.includes('restore_validation_failed')) {
-    return 'high'
-  }
-  if (stat === 'failed') {
-    return 'high'
-  }
+  // High in the system: Backup & restore operations, access denials, authentication anomalies
   if (
     act.includes('backup') ||
     act.includes('restore') ||
+    act.includes('access_denied') ||
+    act.includes('login_failed') ||
+    act.includes('password_reset') ||
+    stat === 'failed'
+  ) {
+    return 'high'
+  }
+  if (
     act.includes('created') ||
     act.includes('updated') ||
     act.includes('assigned') ||
@@ -1333,6 +1482,12 @@ const showCreateModal = ref(false)
 const newBackupNotes = ref('')
 const creatingBackup = ref(false)
 
+// Automated Schedule State
+const scheduleConfig = ref<BackupScheduleConfig | null>(null)
+const scheduleCadence = ref('every_2_weeks')
+const updatingSchedule = ref(false)
+const runningScheduleNow = ref(false)
+
 const showRestoreModal = ref(false)
 const selectedBackupForRestore = ref<BackupItem | null>(null)
 const restorePreview = ref<RestorePreview | null>(null)
@@ -1368,16 +1523,62 @@ function switchTabToBackup() {
 async function loadBackupData() {
   backupLoading.value = true
   try {
-    const [statusData, backupList] = await Promise.all([
+    const [statusData, backupList, scheduleData] = await Promise.all([
       adminService.getBackupStatus(),
       adminService.getBackups(),
+      adminService.getBackupSchedule().catch(() => null),
     ])
     dbStatus.value = statusData
     backups.value = backupList
+    if (scheduleData) {
+      scheduleConfig.value = scheduleData
+      if (scheduleData.cadence) {
+        scheduleCadence.value = scheduleData.cadence
+      }
+    } else if (statusData?.schedule) {
+      scheduleConfig.value = statusData.schedule
+      if (statusData.schedule.cadence) {
+        scheduleCadence.value = statusData.schedule.cadence
+      }
+    }
   } catch (err) {
     setFeedback(err instanceof ApiError ? err.message : 'Failed to load backup data.', 'error')
   } finally {
     backupLoading.value = false
+  }
+}
+
+async function handleCadenceChange() {
+  updatingSchedule.value = true
+  try {
+    const isEnabled = scheduleCadence.value !== 'disabled'
+    const updated = await adminService.updateBackupSchedule({
+      enabled: isEnabled,
+      cadence: scheduleCadence.value,
+    })
+    scheduleConfig.value = updated
+    setFeedback(`Automated backup schedule set to ${updated.cadence_human}!`, 'success')
+  } catch (err) {
+    setFeedback(err instanceof ApiError ? err.message : 'Failed to update backup schedule.', 'error')
+  } finally {
+    updatingSchedule.value = false
+  }
+}
+
+async function triggerScheduleNow() {
+  runningScheduleNow.value = true
+  try {
+    const created = await adminService.triggerScheduledBackup()
+    if (created) {
+      setFeedback(`Automated snapshot '${created.backup_id}' completed and verified!`, 'success')
+      await loadBackupData()
+    } else {
+      setFeedback('Automated schedule is up to date.', 'success')
+    }
+  } catch (err) {
+    setFeedback(err instanceof ApiError ? err.message : 'Failed to trigger scheduled backup.', 'error')
+  } finally {
+    runningScheduleNow.value = false
   }
 }
 

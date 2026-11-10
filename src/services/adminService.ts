@@ -9,6 +9,7 @@ import type {
   ReportOut,
   PaginatedResponse,
   DatabaseStatus,
+  BackupScheduleConfig,
   BackupItem,
   BackupVerifyResult,
   RestorePreview,
@@ -176,6 +177,28 @@ export const adminService = {
     return apiFetch<RestoreResult>(`/admin/backup/${backupId}/restore`, {
       method: 'POST',
       body: JSON.stringify({ confirmation_text: confirmationText })
+    })
+  },
+
+  async getBackupSchedule(): Promise<BackupScheduleConfig> {
+    return apiFetch<BackupScheduleConfig>('/admin/backup/schedule')
+  },
+
+  async updateBackupSchedule(payload: {
+    enabled?: boolean
+    cadence?: string
+    retention_count?: number
+    auto_verify?: boolean
+  }): Promise<BackupScheduleConfig> {
+    return apiFetch<BackupScheduleConfig>('/admin/backup/schedule', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
+  },
+
+  async triggerScheduledBackup(): Promise<BackupItem | null> {
+    return apiFetch<BackupItem | null>('/admin/backup/schedule/run-now', {
+      method: 'POST'
     })
   }
 }

@@ -72,12 +72,29 @@ export interface DatabaseStatus {
     backup_capable: boolean;
     restore_capable: boolean;
     backup_storage_path: string;
+    vault_relative_path?: string;
+    manifest_path?: string;
     total_backups: number;
     last_backup_time?: string | null;
     last_verified_time?: string | null;
     environment: string;
     production_safeguards_active: boolean;
     status_message: string;
+    schedule?: BackupScheduleConfig;
+}
+
+export interface BackupScheduleConfig {
+    enabled: boolean;
+    cadence: 'every_2_weeks' | 'every_1_month' | 'weekly' | 'daily' | 'disabled' | string;
+    cadence_human: string;
+    last_run_time?: string | null;
+    next_run_time?: string | null;
+    vault_path: string;
+    absolute_vault_path?: string;
+    manifest_path: string;
+    retention_count: number;
+    auto_verify: boolean;
+    message: string;
 }
 
 export interface BackupItem {
